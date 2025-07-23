@@ -29,30 +29,22 @@ export const generalInfoSchema = yup.object({
     .required("نام و نام خانوادگی الزامی است")
     .min(2, "نام باید حداقل ۲ کاراکتر باشد")
     .max(50, "نام نباید بیشتر از ۵۰ کاراکتر باشد"),
-
   clientPhone: yup
     .string()
     .required("شماره تماس الزامی است")
     .test("phone-validation", "شماره تماس معتبر نیست", validatePhoneNumber),
-
   clientEmail: yup.string().required("ایمیل الزامی است").email("فرمت ایمیل صحیح نیست"),
-
   clientAddress: yup.string().required("آدرس الزامی است").min(10, "آدرس باید حداقل ۱۰ کاراکتر باشد"),
-
   nationalCode: yup
     .string()
     .required("کد ملی الزامی است")
     .test("national-code", "کد ملی معتبر نیست", validateNationalCode),
-
   priority: yup
     .string()
     .required("انتخاب اولویت الزامی است")
     .oneOf(["low", "medium", "high", "urgent"], "اولویت انتخاب شده معتبر نیست"),
-
-  category: yup
-    .string()
-    .required("انتخاب دسته‌بندی الزامی است")
-    .oneOf(["hardware", "software", "network", "email", "security", "access"], "دسته‌بندی انتخاب شده معتبر نیست"),
+  mainCategory: yup.string().required("انتخاب دسته‌بندی اصلی الزامی است"),
+  subCategory: yup.string().required("انتخاب دسته‌بندی فرعی الزامی است"),
 })
 
 // Base ticket schema
@@ -165,19 +157,39 @@ export const ticketAccessSchema = yup.object({
 })
 
 // Function to get combined schema based on category
-export const getCombinedSchema = (category: string) => {
-  const categorySchemas = {
-    hardware: hardwareSchema,
-    software: softwareSchema,
-    network: networkSchema,
-    email: emailSchema,
-    security: securitySchema,
-    access: accessSchema,
+export const getCombinedSchema = (mainCategory: string, subCategory: string) => {
+  let categorySchema = yup.object({})
+
+  switch (mainCategory) {
+    case "hardware":
+      switch (subCategory) {
+        case "desktop-pc":
+          categorySchema = hardwareSchema
+          break
+        case "laptop":
+          categorySchema = hardwareSchema
+          break
+        // Add other hardware sub-category schemas here
+        default:
+          break
+      }
+      break
+    case "software":
+      switch (subCategory) {
+        case "operating-system":
+          categorySchema = softwareSchema
+          break
+        // Add other software sub-category schemas here
+        default:
+          break
+      }
+      break
+    // Add other main category cases here
+    default:
+      break
   }
 
-  const categorySchema = categorySchemas[category] || yup.object({})
-
-  return generalInfoSchema.concat(baseTicketSchema).concat(categorySchema)
+  return baseTicketSchema.concat(categorySchema)
 }
 
 // Export individual schemas for specific use cases

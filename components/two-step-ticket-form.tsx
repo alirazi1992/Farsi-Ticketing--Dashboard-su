@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useForm } from "react-hook-form"
 import { yupResolver } from "@hookform/resolvers/yup"
 import { Button } from "@/components/ui/button"
@@ -25,6 +25,13 @@ export function TwoStepTicketForm({ onClose, onSubmit }: TwoStepTicketFormProps)
   const [step1Data, setStep1Data] = useState<any>(null)
   const [attachedFiles, setAttachedFiles] = useState<UploadedFile[]>([])
 
+  const currentValidationSchema = useMemo(() => {
+    if (currentStep === 2 && step1Data) {
+      return getCombinedSchema(step1Data.mainCategory, step1Data.subCategory)
+    }
+    return generalInfoSchema
+  }, [currentStep, step1Data])
+
   // Step 1 form
   const step1Form = useForm({
     resolver: yupResolver(generalInfoSchema),
@@ -35,13 +42,14 @@ export function TwoStepTicketForm({ onClose, onSubmit }: TwoStepTicketFormProps)
       clientAddress: "",
       nationalCode: "",
       priority: "",
-      category: "",
+      mainCategory: "",
+      subCategory: "",
     },
   })
 
   // Step 2 form
   const step2Form = useForm({
-    resolver: yupResolver(step1Data?.category ? getCombinedSchema(step1Data.category) : generalInfoSchema),
+    resolver: yupResolver(currentValidationSchema),
     defaultValues: {
       title: "",
       description: "",
@@ -58,14 +66,7 @@ export function TwoStepTicketForm({ onClose, onSubmit }: TwoStepTicketFormProps)
   const handleStep1Submit = (data: any) => {
     setStep1Data(data)
     setCurrentStep(2)
-
-    // Pre-fill step 2 form with step 1 data
-    step2Form.reset({
-      ...data,
-      title: "",
-      description: "",
-    })
-
+    step2Form.reset({ ...data, title: "", description: "" })
     toast({
       title: "مرحله اول تکمیل شد",
       description: "لطفاً جزئیات مشکل خود را در مرحله دوم وارد کنید",
@@ -82,18 +83,14 @@ export function TwoStepTicketForm({ onClose, onSubmit }: TwoStepTicketFormProps)
         createdAt: new Date().toISOString(),
         status: "open",
       }
-
       console.log("Complete Ticket Data:", completeData)
-
       if (onSubmit) {
         onSubmit(completeData)
       }
-
       toast({
         title: "تیکت با موفقیت ایجاد شد",
         description: `تیکت شما با شماره ${completeData.id} ثبت شد و به زودی بررسی خواهد شد`,
       })
-
       onClose()
     } catch (error) {
       toast({
@@ -208,7 +205,8 @@ export function TwoStepTicketForm({ onClose, onSubmit }: TwoStepTicketFormProps)
           <TicketFormStep2
             control={step2Form.control}
             errors={step2Form.formState.errors}
-            category={step1Data?.category || ""}
+            mainCategory={step1Data?.mainCategory || ""}
+            subCategory={step1Data?.subCategory || ""}
             attachedFiles={attachedFiles}
             onFilesChange={setAttachedFiles}
           />
@@ -259,14 +257,15 @@ export function TwoStepTicketForm({ onClose, onSubmit }: TwoStepTicketFormProps)
               </div>
             </div>
             <div className="text-right">
-              <span className="font-medium">دسته‌بندی:</span>
+              <span className="font-medium">دسته‌بندی اصلی:</span>
               <Badge className="mr-2" variant="outline">
-                {step1Data.category === "hardware" && "سخت‌افزار"}
-                {step1Data.category === "software" && "نرم‌افزار"}
-                {step1Data.category === "network" && "شبکه"}
-                {step1Data.category === "email" && "ایمیل"}
-                {step1Data.category === "security" && "امنیت"}
-                {step1Data.category === "access" && "دسترسی"}
+                {step1Data.mainCategory}
+              </Badge>
+            </div>
+            <div className="text-right">
+              <span className="font-medium">دسته‌بندی فرعی:</span>
+              <Badge className="mr-2" variant="outline">
+                {step1Data.subCategory}
               </Badge>
             </div>
           </CardContent>

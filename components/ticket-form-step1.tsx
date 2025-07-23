@@ -1,12 +1,83 @@
 "use client"
 
-import { Controller } from "react-hook-form"
+import { useState } from "react"
+import { Controller, useWatch } from "react-hook-form"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { User, Phone, Mail, CreditCard, AlertTriangle, FolderOpen } from "lucide-react"
+import { User, Phone, Mail, CreditCard, AlertTriangle, FolderOpen, ChevronDown } from "lucide-react"
+
+// Comprehensive issue categories
+const issueCategories = {
+  hardware: {
+    label: "سخت‌افزار",
+    icon: <CreditCard className="w-4 h-4" />,
+    subCategories: {
+      "desktop-pc": "کامپیوتر رومیزی",
+      laptop: "لپ‌تاپ",
+      printer: "چاپگر و اسکنر",
+      "network-device": "تجهیزات شبکه",
+      "peripheral-device": "دستگاه‌های جانبی",
+    },
+  },
+  software: {
+    label: "نرم‌افزار",
+    icon: <FolderOpen className="w-4 h-4" />,
+    subCategories: {
+      "operating-system": "سیستم عامل",
+      "application-software": "نرم‌افزارهای کاربردی",
+      "custom-software": "نرم‌افزارهای سفارشی",
+      "driver-issue": "مشکلات درایور",
+      "malware-virus": "بدافزار و ویروس",
+    },
+  },
+  network: {
+    label: "شبکه",
+    icon: <Phone className="w-4 h-4" />,
+    subCategories: {
+      "internet-connection": "اتصال به اینترنت",
+      "internal-network": "شبکه داخلی",
+      "vpn-access": "دسترسی VPN",
+      "firewall-config": "تنظیمات فایروال",
+      "wireless-issue": "مشکلات شبکه بی‌سیم",
+    },
+  },
+  email: {
+    label: "ایمیل",
+    icon: <Mail className="w-4 h-4" />,
+    subCategories: {
+      "send-receive-issue": "مشکل در ارسال/دریافت",
+      "spam-phishing": "اسپم و فیشینگ",
+      "account-config": "تنظیمات حساب",
+      "storage-limit": "محدودیت فضای ذخیره‌سازی",
+      "group-email": "ایمیل‌های گروهی",
+    },
+  },
+  security: {
+    label: "امنیت",
+    icon: <AlertTriangle className="w-4 h-4" />,
+    subCategories: {
+      "unauthorized-access": "دسترسی غیرمجاز",
+      "password-reset": "بازنشانی رمز عبور",
+      "security-alert": "هشدارهای امنیتی",
+      "data-leak": "نشت اطلاعات",
+      "security-policy": "سیاست‌های امنیتی",
+    },
+  },
+  access: {
+    label: "دسترسی‌ها",
+    icon: <User className="w-4 h-4" />,
+    subCategories: {
+      "new-user": "کاربر جدید",
+      "permission-change": "تغییر سطح دسترسی",
+      "resource-access": "دسترسی به منابع",
+      "account-lockout": "قفل شدن حساب",
+      "access-removal": "حذف دسترسی",
+    },
+  },
+}
 
 interface TicketFormStep1Props {
   control: any
@@ -14,6 +85,11 @@ interface TicketFormStep1Props {
 }
 
 export function TicketFormStep1({ control, errors }: TicketFormStep1Props) {
+  const mainCategory = useWatch({
+    control,
+    name: "mainCategory",
+  })
+
   return (
     <div className="space-y-6" dir="rtl">
       {/* Personal Information */}
@@ -158,68 +234,70 @@ export function TicketFormStep1({ control, errors }: TicketFormStep1Props) {
               />
               {errors.priority && <p className="text-sm text-red-500 text-right">{errors.priority.message}</p>}
             </div>
+            <div />
+          </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="category" className="text-right">
-                دسته‌بندی مشکل *
+              <Label htmlFor="mainCategory" className="text-right">
+                دسته‌بندی اصلی *
               </Label>
               <Controller
-                name="category"
+                name="mainCategory"
                 control={control}
                 render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value} dir="rtl">
                     <SelectTrigger className="text-right">
-                      <SelectValue placeholder="انتخاب دسته‌بندی" />
+                      <SelectValue placeholder="انتخاب دسته‌بندی اصلی" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="hardware">
-                        <div className="flex items-center gap-2 text-right">
-                          <CreditCard className="w-4 h-4" />
-                          سخت‌افزار - مشکلات فیزیکی دستگاه
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="software">
-                        <div className="flex items-center gap-2 text-right">
-                          <FolderOpen className="w-4 h-4" />
-                          نرم‌افزار - برنامه‌ها و سیستم عامل
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="network">
-                        <div className="flex items-center gap-2 text-right">
-                          <Phone className="w-4 h-4" />
-                          شبکه - اتصال اینترنت و شبکه
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="email">
-                        <div className="flex items-center gap-2 text-right">
-                          <Mail className="w-4 h-4" />
-                          ایمیل - مشکلات پست الکترونیک
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="security">
-                        <div className="flex items-center gap-2 text-right">
-                          <AlertTriangle className="w-4 h-4" />
-                          امنیت - حوادث امنیتی
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="access">
-                        <div className="flex items-center gap-2 text-right">
-                          <User className="w-4 h-4" />
-                          دسترسی - درخواست مجوزها
-                        </div>
-                      </SelectItem>
+                      {Object.entries(issueCategories).map(([key, { label, icon }]) => (
+                        <SelectItem key={key} value={key}>
+                          <div className="flex items-center gap-2 text-right">
+                            {icon}
+                            {label}
+                          </div>
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 )}
               />
-              {errors.category && <p className="text-sm text-red-500 text-right">{errors.category.message}</p>}
+              {errors.mainCategory && <p className="text-sm text-red-500 text-right">{errors.mainCategory.message}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="subCategory" className="text-right">
+                دسته‌بندی فرعی *
+              </Label>
+              <Controller
+                name="subCategory"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value} dir="rtl" disabled={!mainCategory}>
+                    <SelectTrigger className="text-right">
+                      <SelectValue placeholder="ابتدا دسته‌بندی اصلی را انتخاب کنید" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {mainCategory &&
+                        issueCategories[mainCategory] &&
+                        Object.entries(issueCategories[mainCategory].subCategories).map(([key, label]) => (
+                          <SelectItem key={key} value={key}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.subCategory && <p className="text-sm text-red-500 text-right">{errors.subCategory.message}</p>}
             </div>
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-blue-800 text-right">
-              <strong>راهنما:</strong> انتخاب دقیق دسته‌بندی و اولویت به ما کمک می‌کند تا مشکل شما را سریع‌تر حل کنیم. در
-              مرحله بعد، سوالات تخصصی مربوط به دسته‌بندی انتخابی نمایش داده خواهد شد.
+              <strong>راهنما:</strong> انتخاب دقیق دسته‌بندی به ما کمک می‌کند تا مشکل شما را سریع‌تر حل کنیم. در مرحله
+              بعد، سوالات تخصصی مربوط به دسته‌بندی انتخابی نمایش داده خواهد شد.
             </p>
           </div>
         </CardContent>
