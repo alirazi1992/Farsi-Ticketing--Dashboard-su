@@ -1,523 +1,579 @@
 "use client"
 
-import { Label } from "@/components/ui/label"
-
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Progress } from "@/components/ui/progress"
 import { toast } from "@/hooks/use-toast"
-import { Bot, Settings, Users, Clock, AlertCircle, CheckCircle, Zap, Target, BarChart3, Activity } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  Brain,
+  Zap,
+  Target,
+  TrendingUp,
+  Users,
+  Clock,
+  Star,
+  AlertTriangle,
+  CheckCircle,
+  BarChart3,
+  Settings,
+} from "lucide-react"
 
 interface EnhancedAutoAssignmentProps {
   tickets: any[]
-  technicians: any[]
   onTicketUpdate: (ticketId: string, updates: any) => void
-  onSettingsUpdate: (settings: any) => void
 }
 
-const defaultSettings = {
-  enabled: true,
-  assignmentCriteria: {
-    prioritizeSpecialty: true,
-    considerWorkload: true,
-    considerRating: true,
-    considerResponseTime: true,
-    maxTicketsPerTechnician: 5,
-  },
-  priorityWeights: {
-    urgent: 1.0,
-    high: 0.8,
-    medium: 0.6,
-    low: 0.4,
-  },
-  autoAssignmentRules: {
-    immediateAssignment: true,
-    businessHoursOnly: false,
-    skipWeekends: false,
-  },
-}
+export function EnhancedAutoAssignment({ tickets = [], onTicketUpdate }: EnhancedAutoAssignmentProps) {
+  const [aiEnabled, setAiEnabled] = useState(true)
+  const [learningMode, setLearningMode] = useState("adaptive")
+  const [confidenceThreshold, setConfidenceThreshold] = useState(75)
+  const [predictionDialogOpen, setPredictionDialogOpen] = useState(false)
+  const [predictions, setPredictions] = useState<any[]>([])
 
-export function EnhancedAutoAssignment({
-  tickets = [],
-  technicians = [],
-  onTicketUpdate,
-  onSettingsUpdate,
-}: EnhancedAutoAssignmentProps) {
-  const [settings, setSettings] = useState(defaultSettings)
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [assignmentStats, setAssignmentStats] = useState({
-    totalAssigned: 0,
-    successRate: 0,
-    avgAssignmentTime: 0,
-    pendingTickets: 0,
-  })
+  const safeTickets = Array.isArray(tickets) ? tickets : []
 
-  // Calculate assignment statistics
-  useEffect(() => {
-    const assignedTickets = tickets.filter((ticket) => ticket?.assignedTo)
-    const pendingTickets = tickets.filter((ticket) => !ticket?.assignedTo && ticket?.status === "open")
+  // Mock AI predictions and analytics
+  const aiMetrics = {
+    accuracy: 94.2,
+    avgResponseTime: 1.8,
+    successRate: 96.7,
+    learningProgress: 78,
+  }
 
-    setAssignmentStats({
-      totalAssigned: assignedTickets.length,
-      successRate: tickets.length > 0 ? Math.round((assignedTickets.length / tickets.length) * 100) : 0,
-      avgAssignmentTime: 2.3, // Mock data - in real app, calculate from actual assignment times
-      pendingTickets: pendingTickets.length,
+  // Mock technician performance data
+  const technicianPerformance = [
+    {
+      id: "tech-001",
+      name: "علی احمدی",
+      aiScore: 92,
+      specialties: ["hardware", "network"],
+      avgResolutionTime: 2.4,
+      customerSatisfaction: 4.8,
+      predictedLoad: 85,
+    },
+    {
+      id: "tech-002",
+      name: "سارا محمدی",
+      aiScore: 96,
+      specialties: ["software", "email"],
+      avgResolutionTime: 1.9,
+      customerSatisfaction: 4.9,
+      predictedLoad: 70,
+    },
+    {
+      id: "tech-003",
+      name: "محمد رضایی",
+      aiScore: 88,
+      specialties: ["security", "access"],
+      avgResolutionTime: 3.1,
+      customerSatisfaction: 4.7,
+      predictedLoad: 60,
+    },
+  ]
+
+  const generateAIPredictions = () => {
+    const unassignedTickets = safeTickets.filter((ticket) => !ticket.assignedTo).slice(0, 5)
+
+    const predictions = unassignedTickets.map((ticket) => {
+      const bestTechnician = technicianPerformance
+        .filter((tech) => tech.predictedLoad < 90)
+        .sort((a, b) => b.aiScore - a.aiScore)[0]
+
+      return {
+        ticket,
+        recommendedTechnician: bestTechnician,
+        confidence: Math.floor(Math.random() * 30) + 70,
+        estimatedResolutionTime: Math.floor(Math.random() * 4) + 1,
+        riskFactors: generateRiskFactors(ticket),
+      }
     })
-  }, [tickets])
 
-  // Enhanced assignment algorithm
-  const calculateTechnicianScore = (technician: any, ticket: any) => {
-    let score = 0
-
-    // Base availability score
-    if (technician.status === "available") {
-      score += 100
-    } else if (
-      technician.status === "busy" &&
-      technician.activeTickets < settings.assignmentCriteria.maxTicketsPerTechnician
-    ) {
-      score += 50
-    } else {
-      return 0 // Technician is not available
-    }
-
-    // Specialty match bonus
-    if (settings.assignmentCriteria.prioritizeSpecialty && technician.specialties?.includes(ticket.category)) {
-      score += 50
-    }
-
-    // Rating bonus
-    if (settings.assignmentCriteria.considerRating) {
-      score += (technician.rating || 0) * 10
-    }
-
-    // Workload penalty
-    if (settings.assignmentCriteria.considerWorkload) {
-      score -= (technician.activeTickets || 0) * 5
-    }
-
-    // Response time bonus (lower is better)
-    if (settings.assignmentCriteria.considerResponseTime && technician.avgResponseTime) {
-      const responseHours = Number.parseFloat(technician.avgResponseTime.split(" ")[0]) || 3
-      score += Math.max(0, 20 - responseHours * 2)
-    }
-
-    // Priority weight
-    const priorityWeight = settings.priorityWeights[ticket.priority] || 0.5
-    score *= priorityWeight
-
-    return Math.max(0, score)
+    setPredictions(predictions)
+    setPredictionDialogOpen(true)
   }
 
-  // Find best technician for a ticket
-  const findBestTechnician = (ticket: any) => {
-    if (!ticket || !technicians.length) return null
-
-    const scoredTechnicians = technicians
-      .map((tech) => ({
-        ...tech,
-        score: calculateTechnicianScore(tech, ticket),
-      }))
-      .filter((tech) => tech.score > 0)
-      .sort((a, b) => b.score - a.score)
-
-    return scoredTechnicians.length > 0 ? scoredTechnicians[0] : null
+  const generateRiskFactors = (ticket: any) => {
+    const factors = []
+    if (ticket.priority === "urgent") factors.push("اولویت بالا")
+    if (ticket.category === "security") factors.push("حساسیت امنیتی")
+    if (!ticket.description || ticket.description.length < 20) factors.push("توضیحات ناکافی")
+    return factors
   }
 
-  // Auto-assign single ticket
-  const autoAssignTicket = async (ticket: any) => {
-    if (!settings.enabled) return false
-
-    const bestTechnician = findBestTechnician(ticket)
-
-    if (bestTechnician) {
-      onTicketUpdate(ticket.id, {
-        assignedTo: bestTechnician.id,
-        assignedTechnicianName: bestTechnician.name,
-        status: "in-progress",
-        assignedAt: new Date().toISOString(),
-        assignmentMethod: "auto",
-      })
-
-      toast({
-        title: "تیکت به صورت خودکار تعیین شد",
-        description: `تیکت ${ticket.id} به ${bestTechnician.name} واگذار شد`,
-      })
-
-      return true
-    }
-
-    return false
-  }
-
-  // Bulk auto-assignment
-  const handleBulkAutoAssignment = async () => {
-    if (!settings.enabled) {
-      toast({
-        title: "تعیین خودکار غیرفعال است",
-        description: "لطفاً ابتدا تعیین خودکار را فعال کنید",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsProcessing(true)
-
-    const unassignedTickets = tickets.filter((ticket) => !ticket?.assignedTo && ticket?.status === "open")
-
-    if (unassignedTickets.length === 0) {
-      toast({
-        title: "تیکت بدون تعیین وجود ندارد",
-        description: "همه تیکت‌ها قبلاً تعیین شده‌اند",
-      })
-      setIsProcessing(false)
-      return
-    }
-
+  const handleAIAssignment = () => {
+    const unassignedTickets = safeTickets.filter((ticket) => !ticket.assignedTo)
     let assignedCount = 0
 
-    for (const ticket of unassignedTickets) {
-      const success = await autoAssignTicket(ticket)
-      if (success) assignedCount++
+    unassignedTickets.forEach((ticket) => {
+      const bestTechnician = technicianPerformance
+        .filter((tech) => tech.predictedLoad < 90)
+        .sort((a, b) => b.aiScore - a.aiScore)[0]
 
-      // Add small delay to prevent overwhelming the system
-      await new Promise((resolve) => setTimeout(resolve, 100))
-    }
-
-    setIsProcessing(false)
+      if (bestTechnician) {
+        onTicketUpdate(ticket.id, {
+          assignedTo: bestTechnician.id,
+          assignedTechnicianName: bestTechnician.name,
+          status: "in-progress",
+        })
+        assignedCount++
+      }
+    })
 
     toast({
-      title: "تعیین خودکار انجام شد",
-      description: `${assignedCount} از ${unassignedTickets.length} تیکت با موفقیت تعیین شد`,
+      title: "تعیین هوشمند انجام شد",
+      description: `${assignedCount} تیکت با استفاده از هوش مصنوعی واگذار شد`,
     })
-  }
-
-  // Update settings
-  const updateSettings = (newSettings: any) => {
-    setSettings(newSettings)
-    onSettingsUpdate(newSettings)
-  }
-
-  // Get technician workload distribution
-  const getWorkloadDistribution = () => {
-    return technicians.map((tech) => ({
-      name: tech.name || "نامشخص",
-      activeTickets: tech.activeTickets || 0,
-      maxCapacity: settings.assignmentCriteria.maxTicketsPerTechnician,
-      utilization: Math.round(((tech.activeTickets || 0) / settings.assignmentCriteria.maxTicketsPerTechnician) * 100),
-      status: tech.status || "unknown",
-    }))
   }
 
   return (
     <div className="space-y-6" dir="rtl">
-      {/* Main Control Panel */}
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <Brain className="w-6 h-6 text-purple-600" />
+            تعیین هوشمند با AI
+          </h2>
+          <p className="text-muted-foreground">سیستم تعیین خودکار مبتنی بر هوش مصنوعی</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={generateAIPredictions}>
+            <Target className="w-4 h-4 ml-2" />
+            پیش‌بینی AI
+          </Button>
+          <Button onClick={handleAIAssignment} disabled={!aiEnabled}>
+            <Zap className="w-4 h-4 ml-2" />
+            اجرای تعیین هوشمند
+          </Button>
+        </div>
+      </div>
+
+      {/* AI Status */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Bot className="w-5 h-5" />
-              <CardTitle>تعیین خودکار پیشرفته</CardTitle>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={settings.enabled}
-                  onCheckedChange={(enabled) => updateSettings({ ...settings, enabled })}
-                />
-                <Label>{settings.enabled ? "فعال" : "غیرفعال"}</Label>
-              </div>
-              <Button onClick={handleBulkAutoAssignment} disabled={!settings.enabled || isProcessing} className="gap-2">
-                {isProcessing ? (
-                  <>
-                    <Activity className="w-4 h-4 animate-spin" />
-                    در حال پردازش...
-                  </>
-                ) : (
-                  <>
-                    <Zap className="w-4 h-4" />
-                    تعیین خودکار همه
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <Brain className="w-5 h-5 text-purple-600" />
+            وضعیت سیستم هوش مصنوعی
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Statistics */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-blue-50 p-4 rounded-lg text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <CheckCircle className="w-5 h-5 text-blue-600" />
-                <span className="font-medium text-blue-900">تعیین شده</span>
-              </div>
-              <div className="text-2xl font-bold text-blue-600">{assignmentStats.totalAssigned}</div>
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <div className="text-2xl font-bold text-green-600">{aiMetrics.accuracy}%</div>
+              <div className="text-sm text-green-600">دقت پیش‌بینی</div>
             </div>
-
-            <div className="bg-green-50 p-4 rounded-lg text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Target className="w-5 h-5 text-green-600" />
-                <span className="font-medium text-green-900">نرخ موفقیت</span>
-              </div>
-              <div className="text-2xl font-bold text-green-600">{assignmentStats.successRate}%</div>
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600">{aiMetrics.avgResponseTime}s</div>
+              <div className="text-sm text-blue-600">زمان پردازش</div>
             </div>
-
-            <div className="bg-orange-50 p-4 rounded-lg text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Clock className="w-5 h-5 text-orange-600" />
-                <span className="font-medium text-orange-900">میانگین زمان</span>
-              </div>
-              <div className="text-2xl font-bold text-orange-600">{assignmentStats.avgAssignmentTime}s</div>
+            <div className="text-center p-4 bg-purple-50 rounded-lg">
+              <div className="text-2xl font-bold text-purple-600">{aiMetrics.successRate}%</div>
+              <div className="text-sm text-purple-600">نرخ موفقیت</div>
             </div>
-
-            <div className="bg-red-50 p-4 rounded-lg text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <AlertCircle className="w-5 h-5 text-red-600" />
-                <span className="font-medium text-red-900">در انتظار</span>
-              </div>
-              <div className="text-2xl font-bold text-red-600">{assignmentStats.pendingTickets}</div>
+            <div className="text-center p-4 bg-orange-50 rounded-lg">
+              <div className="text-2xl font-bold text-orange-600">{aiMetrics.learningProgress}%</div>
+              <div className="text-sm text-orange-600">پیشرفت یادگیری</div>
             </div>
           </div>
 
-          <Separator className="my-6" />
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-base">فعال‌سازی هوش مصنوعی</Label>
+              <p className="text-sm text-muted-foreground">استفاده از الگوریتم‌های یادگیری ماشین</p>
+            </div>
+            <Switch checked={aiEnabled} onCheckedChange={setAiEnabled} />
+          </div>
+        </CardContent>
+      </Card>
 
-          {/* Assignment Settings */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <h3 className="font-medium flex items-center gap-2">
-                <Settings className="w-4 h-4" />
-                معیارهای تعیین
-              </h3>
+      {/* Main Content */}
+      <Tabs defaultValue="performance" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="performance">عملکرد تکنسین‌ها</TabsTrigger>
+          <TabsTrigger value="learning">یادگیری سیستم</TabsTrigger>
+          <TabsTrigger value="analytics">تحلیل‌ها</TabsTrigger>
+          <TabsTrigger value="settings">تنظیمات پیشرفته</TabsTrigger>
+        </TabsList>
 
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label>اولویت تخصص</Label>
-                  <Switch
-                    checked={settings.assignmentCriteria.prioritizeSpecialty}
-                    onCheckedChange={(checked) =>
-                      updateSettings({
-                        ...settings,
-                        assignmentCriteria: { ...settings.assignmentCriteria, prioritizeSpecialty: checked },
-                      })
-                    }
+        <TabsContent value="performance">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                عملکرد تکنسین‌ها با AI
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {technicianPerformance.map((tech) => (
+                  <Card key={tech.id} className="p-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h4 className="font-medium">{tech.name}</h4>
+                        <div className="flex gap-2 mt-1">
+                          {tech.specialties.map((specialty) => (
+                            <Badge key={specialty} variant="outline" className="text-xs">
+                              {specialty}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="text-left">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Brain className="w-4 h-4 text-purple-600" />
+                          <span className="font-bold text-purple-600">{tech.aiScore}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground">امتیاز AI</div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <div className="flex items-center gap-1 mb-1">
+                          <Clock className="w-3 h-3" />
+                          <span>زمان حل مسئله</span>
+                        </div>
+                        <div className="font-medium">{tech.avgResolutionTime} ساعت</div>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1 mb-1">
+                          <Star className="w-3 h-3" />
+                          <span>رضایت مشتری</span>
+                        </div>
+                        <div className="font-medium">{tech.customerSatisfaction}/5</div>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1 mb-1">
+                          <TrendingUp className="w-3 h-3" />
+                          <span>بار کاری پیش‌بینی شده</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Progress value={tech.predictedLoad} className="flex-1" />
+                          <span className="text-xs">{tech.predictedLoad}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="learning">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="w-5 h-5" />
+                یادگیری و بهبود سیستم
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <Label>حالت یادگیری</Label>
+                <Select value={learningMode} onValueChange={setLearningMode}>
+                  <SelectTrigger className="mt-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="adaptive">تطبیقی (Adaptive)</SelectItem>
+                    <SelectItem value="reinforcement">تقویتی (Reinforcement)</SelectItem>
+                    <SelectItem value="supervised">نظارت شده (Supervised)</SelectItem>
+                    <SelectItem value="hybrid">ترکیبی (Hybrid)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>آستانه اطمینان ({confidenceThreshold}%)</Label>
+                <div className="mt-2 px-3">
+                  <input
+                    type="range"
+                    min="50"
+                    max="95"
+                    value={confidenceThreshold}
+                    onChange={(e) => setConfidenceThreshold(Number(e.target.value))}
+                    className="w-full"
                   />
                 </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  تعیین خودکار فقط زمانی انجام شود که اطمینان سیستم بالاتر از این مقدار باشد
+                </p>
+              </div>
 
-                <div className="flex items-center justify-between">
-                  <Label>در نظر گیری بار کاری</Label>
-                  <Switch
-                    checked={settings.assignmentCriteria.considerWorkload}
-                    onCheckedChange={(checked) =>
-                      updateSettings({
-                        ...settings,
-                        assignmentCriteria: { ...settings.assignmentCriteria, considerWorkload: checked },
-                      })
-                    }
-                  />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card className="p-4">
+                  <h4 className="font-medium mb-3">الگوهای شناسایی شده</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>تیکت‌های سخت‌افزاری صبح</span>
+                      <Badge variant="outline">بالا</Badge>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>مشکلات شبکه عصر</span>
+                      <Badge variant="outline">متوسط</Badge>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>درخواست‌های نرم‌افزاری</span>
+                      <Badge variant="outline">بالا</Badge>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="p-4">
+                  <h4 className="font-medium mb-3">بهبودهای اخیر</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <span>دقت پیش‌بینی +3.2%</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <span>زمان پردازش -0.4s</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <span>رضایت مشتری +0.3</span>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="analytics">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5" />
+                تحلیل‌های پیشرفته
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-medium mb-4">روند عملکرد هفتگی</h4>
+                  <div className="space-y-3">
+                    {["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنج‌شنبه", "جمعه"].map((day, index) => (
+                      <div key={day} className="flex items-center justify-between">
+                        <span className="text-sm">{day}</span>
+                        <div className="flex items-center gap-2">
+                          <Progress value={Math.floor(Math.random() * 40) + 60} className="w-24" />
+                          <span className="text-xs text-muted-foreground">{Math.floor(Math.random() * 40) + 60}%</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <Label>در نظر گیری امتیاز</Label>
-                  <Switch
-                    checked={settings.assignmentCriteria.considerRating}
-                    onCheckedChange={(checked) =>
-                      updateSettings({
-                        ...settings,
-                        assignmentCriteria: { ...settings.assignmentCriteria, considerRating: checked },
-                      })
-                    }
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <Label>در نظر گیری زمان پاسخ</Label>
-                  <Switch
-                    checked={settings.assignmentCriteria.considerResponseTime}
-                    onCheckedChange={(checked) =>
-                      updateSettings({
-                        ...settings,
-                        assignmentCriteria: { ...settings.assignmentCriteria, considerResponseTime: checked },
-                      })
-                    }
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>حداکثر تیکت به ازای هر تکنسین</Label>
-                  <Select
-                    value={settings.assignmentCriteria.maxTicketsPerTechnician.toString()}
-                    onValueChange={(value) =>
-                      updateSettings({
-                        ...settings,
-                        assignmentCriteria: {
-                          ...settings.assignmentCriteria,
-                          maxTicketsPerTechnician: Number.parseInt(value),
-                        },
-                      })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="3">3 تیکت</SelectItem>
-                      <SelectItem value="5">5 تیکت</SelectItem>
-                      <SelectItem value="7">7 تیکت</SelectItem>
-                      <SelectItem value="10">10 تیکت</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div>
+                  <h4 className="font-medium mb-4">توزیع دسته‌بندی‌ها</h4>
+                  <div className="space-y-3">
+                    {[
+                      { name: "سخت‌افزار", value: 35 },
+                      { name: "نرم‌افزار", value: 28 },
+                      { name: "شبکه", value: 20 },
+                      { name: "ایمیل", value: 10 },
+                      { name: "امنیت", value: 7 },
+                    ].map((category) => (
+                      <div key={category.name} className="flex items-center justify-between">
+                        <span className="text-sm">{category.name}</span>
+                        <div className="flex items-center gap-2">
+                          <Progress value={category.value} className="w-24" />
+                          <span className="text-xs text-muted-foreground">{category.value}%</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-            <div className="space-y-4">
-              <h3 className="font-medium flex items-center gap-2">
-                <BarChart3 className="w-4 h-4" />
-                وزن اولویت‌ها
-              </h3>
-
-              <div className="space-y-3">
-                {Object.entries(settings.priorityWeights).map(([priority, weight]) => (
-                  <div key={priority} className="flex items-center justify-between">
-                    <Label>
-                      {priority === "urgent"
-                        ? "فوری"
-                        : priority === "high"
-                          ? "بالا"
-                          : priority === "medium"
-                            ? "متوسط"
-                            : "کم"}
-                    </Label>
-                    <Select
-                      value={weight.toString()}
-                      onValueChange={(value) =>
-                        updateSettings({
-                          ...settings,
-                          priorityWeights: { ...settings.priorityWeights, [priority]: Number.parseFloat(value) },
-                        })
-                      }
-                    >
-                      <SelectTrigger className="w-20">
+        <TabsContent value="settings">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="w-5 h-5" />
+                تنظیمات پیشرفته AI
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label>الگوریتم یادگیری</Label>
+                    <Select defaultValue="neural-network">
+                      <SelectTrigger className="mt-2">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="1.0">1.0</SelectItem>
-                        <SelectItem value="0.8">0.8</SelectItem>
-                        <SelectItem value="0.6">0.6</SelectItem>
-                        <SelectItem value="0.4">0.4</SelectItem>
-                        <SelectItem value="0.2">0.2</SelectItem>
+                        <SelectItem value="neural-network">شبکه عصبی</SelectItem>
+                        <SelectItem value="random-forest">جنگل تصادفی</SelectItem>
+                        <SelectItem value="gradient-boosting">تقویت گرادیان</SelectItem>
+                        <SelectItem value="svm">ماشین بردار پشتیبان</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Technician Workload Distribution */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
-            توزیع بار کاری تکنسین‌ها
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {getWorkloadDistribution().map((tech, index) => (
-              <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="text-sm font-medium">{tech.name}</div>
-                  <Badge variant={tech.status === "available" ? "default" : "secondary"}>
-                    {tech.status === "available" ? "آزاد" : "مشغول"}
-                  </Badge>
+                  <div>
+                    <Label>فرکانس به‌روزرسانی مدل</Label>
+                    <Select defaultValue="daily">
+                      <SelectTrigger className="mt-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="realtime">بلادرنگ</SelectItem>
+                        <SelectItem value="hourly">ساعتی</SelectItem>
+                        <SelectItem value="daily">روزانه</SelectItem>
+                        <SelectItem value="weekly">هفتگی</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-sm text-muted-foreground">
-                    {tech.activeTickets} / {tech.maxCapacity} تیکت
+
+                <div className="space-y-4">
+                  <div>
+                    <Label>حجم داده‌های آموزشی</Label>
+                    <Select defaultValue="6months">
+                      <SelectTrigger className="mt-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1month">1 ماه</SelectItem>
+                        <SelectItem value="3months">3 ماه</SelectItem>
+                        <SelectItem value="6months">6 ماه</SelectItem>
+                        <SelectItem value="1year">1 سال</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className="w-24 bg-gray-200 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full ${
-                        tech.utilization > 80 ? "bg-red-500" : tech.utilization > 60 ? "bg-yellow-500" : "bg-green-500"
-                      }`}
-                      style={{ width: `${Math.min(tech.utilization, 100)}%` }}
-                    />
+
+                  <div>
+                    <Label>سطح پیچیدگی مدل</Label>
+                    <Select defaultValue="medium">
+                      <SelectTrigger className="mt-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="simple">ساده</SelectItem>
+                        <SelectItem value="medium">متوسط</SelectItem>
+                        <SelectItem value="complex">پیچیده</SelectItem>
+                        <SelectItem value="advanced">پیشرفته</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className="text-sm font-medium w-12 text-left">{tech.utilization}%</div>
                 </div>
               </div>
+
+              <div className="flex justify-center pt-4">
+                <Button
+                  onClick={() =>
+                    toast({ title: "تنظیمات ذخیره شد", description: "تنظیمات AI با موفقیت به‌روزرسانی شد" })
+                  }
+                >
+                  <Settings className="w-4 h-4 ml-2" />
+                  ذخیره تنظیمات
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* AI Predictions Dialog */}
+      <Dialog open={predictionDialogOpen} onOpenChange={setPredictionDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Brain className="w-5 h-5 text-purple-600" />
+              پیش‌بینی‌های هوش مصنوعی
+            </DialogTitle>
+            <DialogDescription>تحلیل و پیش‌بینی سیستم AI برای تعیین بهترین تکنسین</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {predictions.map((prediction, index) => (
+              <Card key={index} className="p-4">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1">
+                    <h4 className="font-medium mb-2">{prediction.ticket.title || "عنوان نامشخص"}</h4>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge variant="outline">{prediction.ticket.category || "نامشخص"}</Badge>
+                      <Badge variant={prediction.ticket.priority === "urgent" ? "destructive" : "secondary"}>
+                        {prediction.ticket.priority === "urgent"
+                          ? "فوری"
+                          : prediction.ticket.priority === "high"
+                            ? "بالا"
+                            : prediction.ticket.priority === "medium"
+                              ? "متوسط"
+                              : "پایین"}
+                      </Badge>
+                    </div>
+                    {prediction.riskFactors.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-orange-500" />
+                        <span className="text-sm text-orange-600">عوامل ریسک: {prediction.riskFactors.join("، ")}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="text-left">
+                    {prediction.recommendedTechnician ? (
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <CheckCircle className="w-5 h-5 text-green-500" />
+                          <span className="font-medium">{prediction.recommendedTechnician.name}</span>
+                        </div>
+                        <div className="space-y-1 text-sm text-muted-foreground">
+                          <div>اطمینان: {prediction.confidence}%</div>
+                          <div>زمان تخمینی: {prediction.estimatedResolutionTime} ساعت</div>
+                          <div>امتیاز AI: {prediction.recommendedTechnician.aiScore}</div>
+                        </div>
+                        <Progress value={prediction.confidence} className="mt-2 w-24" />
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-red-600">
+                        <AlertTriangle className="w-5 h-5" />
+                        <span>تکنسین مناسب یافت نشد</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Card>
             ))}
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Assignment Rules */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="w-5 h-5" />
-            قوانین تعیین خودکار
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="font-medium">تعیین فوری</Label>
-                <p className="text-sm text-muted-foreground">تیکت‌ها بلافاصله پس از ایجاد تعیین شوند</p>
-              </div>
-              <Switch
-                checked={settings.autoAssignmentRules.immediateAssignment}
-                onCheckedChange={(checked) =>
-                  updateSettings({
-                    ...settings,
-                    autoAssignmentRules: { ...settings.autoAssignmentRules, immediateAssignment: checked },
-                  })
-                }
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="font-medium">فقط در ساعات کاری</Label>
-                <p className="text-sm text-muted-foreground">تعیین خودکار فقط در ساعات اداری انجام شود</p>
-              </div>
-              <Switch
-                checked={settings.autoAssignmentRules.businessHoursOnly}
-                onCheckedChange={(checked) =>
-                  updateSettings({
-                    ...settings,
-                    autoAssignmentRules: { ...settings.autoAssignmentRules, businessHoursOnly: checked },
-                  })
-                }
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="font-medium">عدم تعیین در آخر هفته</Label>
-                <p className="text-sm text-muted-foreground">تیکت‌ها در روزهای تعطیل تعیین نشوند</p>
-              </div>
-              <Switch
-                checked={settings.autoAssignmentRules.skipWeekends}
-                onCheckedChange={(checked) =>
-                  updateSettings({
-                    ...settings,
-                    autoAssignmentRules: { ...settings.autoAssignmentRules, skipWeekends: checked },
-                  })
-                }
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPredictionDialogOpen(false)}>
+              بستن
+            </Button>
+            <Button
+              onClick={() => {
+                handleAIAssignment()
+                setPredictionDialogOpen(false)
+              }}
+            >
+              اجرای تعیین‌های پیشنهادی
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

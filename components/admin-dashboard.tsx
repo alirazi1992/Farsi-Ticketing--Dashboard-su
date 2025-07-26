@@ -35,15 +35,24 @@ interface AdminDashboardProps {
   onCategoriesUpdate: (categories: any[]) => void
 }
 
-export function AdminDashboard({ tickets, categories, onTicketUpdate, onCategoriesUpdate }: AdminDashboardProps) {
+export function AdminDashboard({
+  tickets = [],
+  categories = [],
+  onTicketUpdate,
+  onCategoriesUpdate,
+}: AdminDashboardProps) {
   const [settingsOpen, setSettingsOpen] = useState(false)
 
+  // Safe array operations
+  const safeTickets = Array.isArray(tickets) ? tickets : []
+  const safeCategories = Array.isArray(categories) ? categories : []
+
   // Calculate statistics
-  const totalTickets = tickets.length
-  const openTickets = tickets.filter((t) => t.status === "open").length
-  const inProgressTickets = tickets.filter((t) => t.status === "in-progress").length
-  const resolvedTickets = tickets.filter((t) => t.status === "resolved").length
-  const urgentTickets = tickets.filter((t) => t.priority === "urgent").length
+  const totalTickets = safeTickets.length
+  const openTickets = safeTickets.filter((t) => t?.status === "open").length
+  const inProgressTickets = safeTickets.filter((t) => t?.status === "in-progress").length
+  const resolvedTickets = safeTickets.filter((t) => t?.status === "resolved").length
+  const urgentTickets = safeTickets.filter((t) => t?.priority === "urgent").length
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
@@ -163,23 +172,23 @@ export function AdminDashboard({ tickets, categories, onTicketUpdate, onCategori
           </TabsList>
 
           <TabsContent value="tickets" className="mt-6">
-            <AdminTicketManagement tickets={tickets} onTicketUpdate={onTicketUpdate} />
+            <AdminTicketManagement tickets={safeTickets} onTicketUpdate={onTicketUpdate} />
           </TabsContent>
 
           <TabsContent value="categories" className="mt-6">
-            <CategoryManagement categories={categories} onCategoriesUpdate={onCategoriesUpdate} />
+            <CategoryManagement categories={safeCategories} onCategoriesUpdate={onCategoriesUpdate} />
           </TabsContent>
 
           <TabsContent value="assignment" className="mt-6">
-            <AdminTechnicianAssignment tickets={tickets} onTicketUpdate={onTicketUpdate} />
+            <AdminTechnicianAssignment tickets={safeTickets} onTicketUpdate={onTicketUpdate} />
           </TabsContent>
 
           <TabsContent value="auto-assignment" className="mt-6">
-            <AutoAssignmentSettings tickets={tickets} onTicketUpdate={onTicketUpdate} />
+            <AutoAssignmentSettings tickets={safeTickets} onTicketUpdate={onTicketUpdate} />
           </TabsContent>
 
           <TabsContent value="enhanced-auto" className="mt-6">
-            <EnhancedAutoAssignment tickets={tickets} onTicketUpdate={onTicketUpdate} />
+            <EnhancedAutoAssignment tickets={safeTickets} onTicketUpdate={onTicketUpdate} />
           </TabsContent>
 
           <TabsContent value="analytics" className="mt-6">

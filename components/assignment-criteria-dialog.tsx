@@ -3,11 +3,10 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
-import { toast } from "@/hooks/use-toast"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Progress } from "@/components/ui/progress"
+import { Separator } from "@/components/ui/separator"
 import {
   Dialog,
   DialogContent,
@@ -16,287 +15,375 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Settings, Plus, Trash2 } from "lucide-react"
+import { Target, Star, Clock, TrendingUp, Users, Zap, CheckCircle, AlertTriangle, Brain } from "lucide-react"
 
 interface AssignmentCriteriaDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  technicians: any[]
+  ticket?: any
+  technicians?: any[]
+  onAssign?: (technicianId: string) => void
 }
 
-export function AssignmentCriteriaDialog({ open, onOpenChange, technicians = [] }: AssignmentCriteriaDialogProps) {
-  const [autoAssignEnabled, setAutoAssignEnabled] = useState(true)
-  const [workingHours, setWorkingHours] = useState({ start: "08:00", end: "17:00" })
-  const [maxTicketsPerTechnician, setMaxTicketsPerTechnician] = useState(10)
-  const [priorityWeights, setPriorityWeights] = useState({
-    urgent: 4,
-    high: 3,
-    medium: 2,
-    low: 1,
-  })
-  const [assignmentRules, setAssignmentRules] = useState([
-    {
-      id: "rule-1",
-      name: "واگذاری بر اساس تخصص",
-      condition: "category_match",
-      action: "assign_specialist",
-      enabled: true,
-    },
-    {
-      id: "rule-2",
-      name: "توزیع متعادل بار کاری",
-      condition: "workload_balance",
-      action: "assign_least_busy",
-      enabled: true,
-    },
-    {
-      id: "rule-3",
-      name: "اولویت‌بندی فوری",
-      condition: "priority_urgent",
-      action: "assign_immediately",
-      enabled: true,
-    },
-  ])
+export function AssignmentCriteriaDialog({
+  open,
+  onOpenChange,
+  ticket,
+  technicians = [],
+  onAssign,
+}: AssignmentCriteriaDialogProps) {
+  const [selectedTechnician, setSelectedTechnician] = useState<string | null>(null)
 
-  const handleSaveSettings = () => {
-    // Here you would typically save the settings to your backend
-    toast({
-      title: "تنظیمات ذخیره شد",
-      description: "تنظیمات واگذاری خودکار با موفقیت ذخیره شد",
-    })
-    onOpenChange(false)
+  // Helper functions for safe operations
+  const safeString = (value: any): string => {
+    return value && typeof value === "string" ? value : ""
   }
 
-  const handleAddRule = () => {
-    const newRule = {
-      id: `rule-${Date.now()}`,
-      name: "قانون جدید",
-      condition: "custom",
-      action: "assign_available",
-      enabled: true,
+  const getDisplayName = (name: any): string => {
+    const safeName = safeString(name)
+    return safeName || "نام نامشخص"
+  }
+
+  const getAvatarFallback = (name: any): string => {
+    const safeName = safeString(name)
+    return safeName && safeName.length > 0 ? safeName.charAt(0) : "N"
+  }
+
+  // Calculate comprehensive score for each technician
+  const calculateDetailedScore = (technician: any, ticket: any) => {
+    if (!ticket || !technician) return { total: 0, breakdown: {} }
+
+    const breakdown = {
+      specialty: 0,
+      availability: 0,
+      experience: 0,
+      rating: 0,
+      workload: 0,
+      priority: 0,
     }
-    setAssignmentRules([...assignmentRules, newRule])
+
+    // Specialty match (30%)
+    if (technician.specialties && technician.specialties.includes(ticket.category)) {
+      breakdown.specialty = 30
+    } else {
+      breakdown.specialty = 5
+    }
+
+    // Availability (25%)
+    if (technician.status === "available") {
+      breakdown.availability = 25
+    } else if (technician.status === "busy") {
+      breakdown.availability = 10
+    } else {
+      breakdown.availability = 0
+    }
+
+    // Experience (20%)
+    const completedTickets = technician.completedTickets || 0
+    if (completedTickets >= 50) {
+      breakdown.experience = 20
+    } else if (completedTickets >= 20) {
+      breakdown.experience = 15
+    } else if (completedTickets >= 10) {
+      breakdown.experience = 10
+    } else {
+      breakdown.experience = 5
+    }
+
+    // Rating (15%)
+    const rating = technician.rating || 0
+    breakdown.rating = (rating / 5) * 15
+
+    // Workload (10%)
+    const currentTickets = technician.activeTickets || technician.currentTickets || 0
+    const maxTickets = technician.maxTickets || 10
+    const workloadPercentage = currentTickets / maxTickets
+    breakdown.workload = Math.max(0, (1 - workloadPercentage) * 10)
+
+    // Priority handling capability (bonus)
+    if (ticket.priority === "urgent" && rating >= 4.5) {
+      breakdown.priority = 5
+    } else if (ticket.priority === "high" && rating >= 4.0) {
+      breakdown.priority = 3
+    } else {
+      breakdown.priority = 0
+    }
+
+    const total = Object.values(breakdown).reduce((sum, score) => sum + score, 0)
+
+    return { total: Math.round(total), breakdown }
   }
 
-  const handleDeleteRule = (ruleId: string) => {
-    setAssignmentRules(assignmentRules.filter((rule) => rule.id !== ruleId))
+  // Get scored and sorted technicians
+  const scoredTechnicians = technicians
+    .map((tech) => {
+      const scoreData = calculateDetailedScore(tech, ticket)
+      return {
+        ...tech,
+        scoreData,
+      }
+    })
+    .sort((a, b) => b.scoreData.total - a.scoreData.total)
+
+  const handleAssign = () => {
+    if (selectedTechnician && onAssign) {
+      onAssign(selectedTechnician)
+      onOpenChange(false)
+    }
   }
 
-  const handleToggleRule = (ruleId: string) => {
-    setAssignmentRules(assignmentRules.map((rule) => (rule.id === ruleId ? { ...rule, enabled: !rule.enabled } : rule)))
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "urgent":
+        return "bg-red-100 text-red-800"
+      case "high":
+        return "bg-orange-100 text-orange-800"
+      case "medium":
+        return "bg-yellow-100 text-yellow-800"
+      case "low":
+        return "bg-green-100 text-green-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "available":
+        return <CheckCircle className="w-4 h-4 text-green-500" />
+      case "busy":
+        return <Clock className="w-4 h-4 text-yellow-500" />
+      default:
+        return <AlertTriangle className="w-4 h-4 text-red-500" />
+    }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" dir="rtl">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-right">
-            <Settings className="w-5 h-5" />
-            تنظیمات واگذاری خودکار
+          <DialogTitle className="flex items-center gap-2">
+            <Target className="w-5 h-5 text-purple-600" />
+            تحلیل معیارهای واگذاری
           </DialogTitle>
-          <DialogDescription className="text-right">
-            قوانین و معیارهای واگذاری خودکار تیکت‌ها را تنظیم کنید
-          </DialogDescription>
+          <DialogDescription>تحلیل جامع و انتخاب بهترین تکنسین بر اساس معیارهای مختلف</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* General Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">تنظیمات کلی</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label className="text-base">واگذاری خودکار</Label>
-                  <p className="text-sm text-muted-foreground">
-                    فعال‌سازی واگذاری خودکار تیکت‌ها بر اساس قوانین تعریف شده
-                  </p>
+        {ticket && (
+          <div className="space-y-6">
+            {/* Ticket Information */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">اطلاعات تیکت</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="font-medium mb-2">{safeString(ticket.title) || "عنوان نامشخص"}</h3>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {safeString(ticket.description) || "توضیحات موجود نیست"}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Badge className={getPriorityColor(ticket.priority)}>
+                        {ticket.priority === "urgent"
+                          ? "فوری"
+                          : ticket.priority === "high"
+                            ? "بالا"
+                            : ticket.priority === "medium"
+                              ? "متوسط"
+                              : "پایین"}
+                      </Badge>
+                      <Badge variant="outline">{safeString(ticket.category) || "نامشخص"}</Badge>
+                    </div>
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm text-muted-foreground">درخواست‌کننده</p>
+                    <p className="font-medium">{getDisplayName(ticket.clientName)}</p>
+                  </div>
                 </div>
-                <Switch checked={autoAssignEnabled} onCheckedChange={setAutoAssignEnabled} />
+              </CardContent>
+            </Card>
+
+            {/* Technician Analysis */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Brain className="w-5 h-5 text-purple-600" />
+                <h3 className="text-lg font-semibold">تحلیل تکنسین‌ها</h3>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="start-time">ساعت شروع کار</Label>
-                  <Input
-                    id="start-time"
-                    type="time"
-                    value={workingHours.start}
-                    onChange={(e) => setWorkingHours({ ...workingHours, start: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="end-time">ساعت پایان کار</Label>
-                  <Input
-                    id="end-time"
-                    type="time"
-                    value={workingHours.end}
-                    onChange={(e) => setWorkingHours({ ...workingHours, end: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="max-tickets">حداکثر تیکت به ازای هر تکنسین</Label>
-                <Input
-                  id="max-tickets"
-                  type="number"
-                  min="1"
-                  max="50"
-                  value={maxTicketsPerTechnician}
-                  onChange={(e) => setMaxTicketsPerTechnician(Number.parseInt(e.target.value))}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Priority Weights */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">وزن اولویت‌ها</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="urgent-weight">فوری</Label>
-                  <Input
-                    id="urgent-weight"
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={priorityWeights.urgent}
-                    onChange={(e) =>
-                      setPriorityWeights({ ...priorityWeights, urgent: Number.parseInt(e.target.value) })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="high-weight">بالا</Label>
-                  <Input
-                    id="high-weight"
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={priorityWeights.high}
-                    onChange={(e) => setPriorityWeights({ ...priorityWeights, high: Number.parseInt(e.target.value) })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="medium-weight">متوسط</Label>
-                  <Input
-                    id="medium-weight"
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={priorityWeights.medium}
-                    onChange={(e) =>
-                      setPriorityWeights({ ...priorityWeights, medium: Number.parseInt(e.target.value) })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="low-weight">پایین</Label>
-                  <Input
-                    id="low-weight"
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={priorityWeights.low}
-                    onChange={(e) => setPriorityWeights({ ...priorityWeights, low: Number.parseInt(e.target.value) })}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Assignment Rules */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">قوانین واگذاری</CardTitle>
-                <Button onClick={handleAddRule} size="sm" className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  افزودن قانون
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {assignmentRules.map((rule) => (
-                  <Card key={rule.id} className="p-4">
-                    <div className="flex items-center justify-between">
+              <div className="grid gap-4">
+                {scoredTechnicians.map((technician, index) => (
+                  <Card
+                    key={technician.id}
+                    className={`p-4 cursor-pointer transition-all ${
+                      selectedTechnician === technician.id ? "ring-2 ring-primary bg-primary/5" : "hover:bg-muted/50"
+                    }`}
+                    onClick={() => setSelectedTechnician(technician.id)}
+                  >
+                    <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
-                        <Switch checked={rule.enabled} onCheckedChange={() => handleToggleRule(rule.id)} />
+                        <Avatar className="w-12 h-12">
+                          <AvatarFallback className="text-lg">{getAvatarFallback(technician.name)}</AvatarFallback>
+                        </Avatar>
                         <div>
-                          <h4 className="font-medium">{rule.name}</h4>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-medium">{getDisplayName(technician.name)}</h4>
+                            {index === 0 && (
+                              <Badge className="bg-yellow-100 text-yellow-800">
+                                <Star className="w-3 h-3 ml-1" />
+                                پیشنهاد اول
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">{safeString(technician.email)}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="outline" className="text-xs">
-                              {rule.condition === "category_match"
-                                ? "تطبیق دسته‌بندی"
-                                : rule.condition === "workload_balance"
-                                  ? "توازن بار کاری"
-                                  : rule.condition === "priority_urgent"
-                                    ? "اولویت فوری"
-                                    : "سفارشی"}
-                            </Badge>
-                            <Badge variant="secondary" className="text-xs">
-                              {rule.action === "assign_specialist"
-                                ? "واگذاری به متخصص"
-                                : rule.action === "assign_least_busy"
-                                  ? "واگذاری به کم‌کارترین"
-                                  : rule.action === "assign_immediately"
-                                    ? "واگذاری فوری"
-                                    : "واگذاری به دردسترس"}
-                            </Badge>
+                            {getStatusIcon(technician.status)}
+                            <span className="text-sm">
+                              {technician.status === "available"
+                                ? "آزاد"
+                                : technician.status === "busy"
+                                  ? "مشغول"
+                                  : "غیرفعال"}
+                            </span>
                           </div>
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteRule(rule.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+
+                      <div className="text-left">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Target className="w-5 h-5 text-purple-600" />
+                          <span className="text-2xl font-bold text-purple-600">{technician.scoreData.total}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">امتیاز کل</p>
+                      </div>
+                    </div>
+
+                    {/* Score Breakdown */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-xs text-muted-foreground">تخصص</span>
+                          <span className="text-xs font-medium">{technician.scoreData.breakdown.specialty}/30</span>
+                        </div>
+                        <Progress value={(technician.scoreData.breakdown.specialty / 30) * 100} className="h-2" />
+                      </div>
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-xs text-muted-foreground">در دسترس بودن</span>
+                          <span className="text-xs font-medium">{technician.scoreData.breakdown.availability}/25</span>
+                        </div>
+                        <Progress value={(technician.scoreData.breakdown.availability / 25) * 100} className="h-2" />
+                      </div>
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-xs text-muted-foreground">تجربه</span>
+                          <span className="text-xs font-medium">{technician.scoreData.breakdown.experience}/20</span>
+                        </div>
+                        <Progress value={(technician.scoreData.breakdown.experience / 20) * 100} className="h-2" />
+                      </div>
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-xs text-muted-foreground">امتیاز</span>
+                          <span className="text-xs font-medium">
+                            {Math.round(technician.scoreData.breakdown.rating)}/15
+                          </span>
+                        </div>
+                        <Progress value={(technician.scoreData.breakdown.rating / 15) * 100} className="h-2" />
+                      </div>
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-xs text-muted-foreground">بار کاری</span>
+                          <span className="text-xs font-medium">
+                            {Math.round(technician.scoreData.breakdown.workload)}/10
+                          </span>
+                        </div>
+                        <Progress value={(technician.scoreData.breakdown.workload / 10) * 100} className="h-2" />
+                      </div>
+                      {technician.scoreData.breakdown.priority > 0 && (
+                        <div>
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-xs text-muted-foreground">اولویت</span>
+                            <span className="text-xs font-medium">{technician.scoreData.breakdown.priority}/5</span>
+                          </div>
+                          <Progress value={(technician.scoreData.breakdown.priority / 5) * 100} className="h-2" />
+                        </div>
+                      )}
+                    </div>
+
+                    <Separator className="my-3" />
+
+                    {/* Technician Details */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div className="flex items-center gap-2">
+                        <Star className="w-4 h-4 text-yellow-500" />
+                        <span>امتیاز: {technician.rating || 0}/5</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-blue-500" />
+                        <span>فعال: {technician.activeTickets || technician.currentTickets || 0}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-green-500" />
+                        <span>تکمیل: {technician.completedTickets || 0}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-purple-500" />
+                        <span>ظرفیت: {technician.maxTickets || 10}</span>
+                      </div>
+                    </div>
+
+                    {/* Specialties */}
+                    <div className="mt-3">
+                      <p className="text-xs text-muted-foreground mb-2">تخصص‌ها:</p>
+                      <div className="flex gap-1 flex-wrap">
+                        {(technician.specialties || []).map((specialty: string) => (
+                          <Badge
+                            key={specialty}
+                            variant={specialty === ticket.category ? "default" : "outline"}
+                            className="text-xs"
+                          >
+                            {specialty}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
                   </Card>
                 ))}
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Technician Status */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">وضعیت تکنسین‌ها</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {technicians.map((technician) => (
-                  <div key={technician.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <h4 className="font-medium">{technician.name || "نام نامشخص"}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {technician.currentTickets || 0}/{technician.maxTickets || 0} تیکت فعال
-                      </p>
-                    </div>
-                    <Badge variant={technician.status === "available" ? "default" : "secondary"}>
-                      {technician.status === "available" ? "آزاد" : "مشغول"}
-                    </Badge>
+            {/* Recommendation Summary */}
+            {scoredTechnicians.length > 0 && (
+              <Card className="bg-blue-50 border-blue-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Zap className="w-5 h-5 text-blue-600" />
+                    <h4 className="font-medium text-blue-900">توصیه سیستم</h4>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                  <p className="text-sm text-blue-700">
+                    بر اساس تحلیل معیارهای مختلف، <strong>{getDisplayName(scoredTechnicians[0].name)}</strong> با امتیاز{" "}
+                    <strong>{scoredTechnicians[0].scoreData.total}</strong> بهترین گزینه برای این تیکت است.
+                  </p>
+                  {scoredTechnicians[0].scoreData.breakdown.specialty === 30 && (
+                    <p className="text-xs text-blue-600 mt-1">✓ تطبیق کامل تخصص با دسته‌بندی تیکت</p>
+                  )}
+                  {scoredTechnicians[0].scoreData.breakdown.availability === 25 && (
+                    <p className="text-xs text-blue-600 mt-1">✓ در حال حاضر آزاد و قابل دسترس</p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             انصراف
           </Button>
-          <Button onClick={handleSaveSettings}>ذخیره تنظیمات</Button>
+          <Button onClick={handleAssign} disabled={!selectedTechnician} className="gap-2">
+            <Users className="w-4 h-4" />
+            واگذاری به تکنسین انتخابی
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
