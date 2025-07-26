@@ -35,6 +35,8 @@ import {
   TrendingUp,
   Users,
   Activity,
+  BookOpen,
+  Wrench,
 } from "lucide-react"
 
 const statusColors = {
@@ -65,31 +67,26 @@ const priorityLabels = {
   urgent: "فوری",
 }
 
-const categoryIcons = {
+// Available icons mapping
+const availableIcons = {
   hardware: HardDrive,
   software: Software,
   network: Network,
   email: Mail,
   security: Shield,
   access: Key,
-}
-
-const categoryLabels = {
-  hardware: "سخت‌افزار",
-  software: "نرم‌افزار",
-  network: "شبکه",
-  email: "ایمیل",
-  security: "امنیت",
-  access: "دسترسی",
+  training: BookOpen,
+  maintenance: Wrench,
 }
 
 interface ClientDashboardProps {
   tickets: any[]
   onTicketCreate: (ticket: any) => void
   currentUser: any
+  categories: any
 }
 
-export function ClientDashboard({ tickets, onTicketCreate, currentUser }: ClientDashboardProps) {
+export function ClientDashboard({ tickets, onTicketCreate, currentUser, categories }: ClientDashboardProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [filterStatus, setFilterStatus] = useState("all")
   const [filterPriority, setFilterPriority] = useState("all")
@@ -97,6 +94,18 @@ export function ClientDashboard({ tickets, onTicketCreate, currentUser }: Client
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
+
+  // Create dynamic category icons and labels from categories prop
+  const categoryIcons = Object.fromEntries(
+    Object.entries(categories).map(([key, category]: [string, any]) => [
+      key,
+      availableIcons[category.icon] || HardDrive,
+    ]),
+  )
+
+  const categoryLabels = Object.fromEntries(
+    Object.entries(categories).map(([key, category]: [string, any]) => [key, category.label]),
+  )
 
   // Filter tickets for current user
   const userTickets = tickets.filter((ticket) => ticket.clientEmail === currentUser?.email)
@@ -148,7 +157,7 @@ export function ClientDashboard({ tickets, onTicketCreate, currentUser }: Client
         ticket.title,
         statusLabels[ticket.status],
         priorityLabels[ticket.priority],
-        categoryLabels[ticket.category],
+        categoryLabels[ticket.category] || ticket.category,
         new Date(ticket.createdAt).toLocaleDateString("fa-IR"),
         new Date(ticket.updatedAt).toLocaleDateString("fa-IR"),
       ]),
@@ -224,7 +233,7 @@ export function ClientDashboard({ tickets, onTicketCreate, currentUser }: Client
                   <td>${ticket.title}</td>
                   <td class="status-${ticket.status}">${statusLabels[ticket.status]}</td>
                   <td>${priorityLabels[ticket.priority]}</td>
-                  <td>${categoryLabels[ticket.category]}</td>
+                  <td>${categoryLabels[ticket.category] || ticket.category}</td>
                   <td>${ticket.assignedTechnicianName || "تعیین نشده"}</td>
                   <td>${new Date(ticket.createdAt).toLocaleDateString("fa-IR")}</td>
                 </tr>
@@ -276,7 +285,7 @@ export function ClientDashboard({ tickets, onTicketCreate, currentUser }: Client
               <DialogHeader>
                 <DialogTitle className="text-right">ایجاد درخواست جدید</DialogTitle>
               </DialogHeader>
-              <TwoStepTicketForm onSubmit={handleCreateTicket} />
+              <TwoStepTicketForm onSubmit={handleCreateTicket} categories={categories} />
             </DialogContent>
           </Dialog>
         </div>
@@ -454,7 +463,7 @@ export function ClientDashboard({ tickets, onTicketCreate, currentUser }: Client
               <TableBody>
                 {filteredTickets.length > 0 ? (
                   filteredTickets.map((ticket) => {
-                    const CategoryIcon = categoryIcons[ticket.category]
+                    const CategoryIcon = categoryIcons[ticket.category] || HardDrive
 
                     return (
                       <TableRow key={ticket.id}>
@@ -473,7 +482,7 @@ export function ClientDashboard({ tickets, onTicketCreate, currentUser }: Client
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <CategoryIcon className="w-4 h-4" />
-                            <span className="text-sm">{categoryLabels[ticket.category]}</span>
+                            <span className="text-sm">{categoryLabels[ticket.category] || ticket.category}</span>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -572,7 +581,7 @@ export function ClientDashboard({ tickets, onTicketCreate, currentUser }: Client
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">دسته‌بندی:</span>
-                        <span>{categoryLabels[selectedTicket.category]}</span>
+                        <span>{categoryLabels[selectedTicket.category] || selectedTicket.category}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">زیر دسته:</span>
