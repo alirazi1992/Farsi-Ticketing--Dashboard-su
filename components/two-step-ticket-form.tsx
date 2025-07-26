@@ -1,18 +1,17 @@
 "use client"
 
-import { Separator } from "@/components/ui/separator"
-
-import { Label } from "@/components/ui/label"
-
 import { useState } from "react"
-import { TicketFormStep1 } from "./ticket-form-step1"
-import { TicketFormStep2 } from "./ticket-form-step2"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { toast } from "@/hooks/use-toast"
+import { CheckCircle, User, FolderOpen, FileText } from "lucide-react"
+
+import { TicketFormStep1 } from "@/components/ticket-form-step1"
+import { TicketFormStep2 } from "@/components/ticket-form-step2"
 import { useAuth } from "@/lib/auth-context"
 import type { UploadedFile } from "@/lib/file-upload"
-import { ChevronLeft, ChevronRight, CheckCircle, User, FolderOpen, FileText } from "lucide-react"
 
 // Issues data for display labels
 const issuesData = {
@@ -149,7 +148,7 @@ export function TwoStepTicketForm({ onTicketSubmit, categories }: TwoStepTicketF
     const completeTicketData = {
       ...step1Data,
       ...step2Data,
-      id: Date.now().toString(),
+      id: `TK-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 999) + 1).padStart(3, "0")}`,
       status: "open",
       createdAt: new Date().toISOString(),
       responses: [],
@@ -161,6 +160,11 @@ export function TwoStepTicketForm({ onTicketSubmit, categories }: TwoStepTicketF
     setCurrentStep(1)
     setStep1Data(null)
     setAttachedFiles([])
+
+    toast({
+      title: "تیکت با موفقیت ثبت شد",
+      description: `شماره تیکت شما: ${completeTicketData.id}`,
+    })
   }
 
   const handleBackToStep1 = () => {
@@ -180,8 +184,7 @@ export function TwoStepTicketForm({ onTicketSubmit, categories }: TwoStepTicketF
           <Label htmlFor="clientName" className="text-right">
             نام و نام خانوادگی *
           </Label>
-          <input
-            type="text"
+          <Input
             id="clientName"
             defaultValue={user?.name || ""}
             placeholder="نام کامل خود را وارد کنید"
@@ -195,9 +198,9 @@ export function TwoStepTicketForm({ onTicketSubmit, categories }: TwoStepTicketF
             <Label htmlFor="clientEmail" className="text-right">
               ایمیل *
             </Label>
-            <input
-              type="email"
+            <Input
               id="clientEmail"
+              type="email"
               defaultValue={user?.email || ""}
               placeholder="email@example.com"
               className="text-right"
@@ -209,8 +212,7 @@ export function TwoStepTicketForm({ onTicketSubmit, categories }: TwoStepTicketF
             <Label htmlFor="clientPhone" className="text-right">
               شماره تماس *
             </Label>
-            <input
-              type="text"
+            <Input
               id="clientPhone"
               defaultValue={user?.phone || ""}
               placeholder="09123456789"
@@ -250,15 +252,15 @@ export function TwoStepTicketForm({ onTicketSubmit, categories }: TwoStepTicketF
           <div className="bg-gray-50 rounded-lg p-3 space-y-1">
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">نام:</span>
-              <span className="text-sm font-medium">{step1Data?.clientName || "وارد نشده"}</span>
+              <span className="text-sm font-medium">{step1Data?.requesterName || "وارد نشده"}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">تلفن:</span>
-              <span className="text-sm font-medium">{step1Data?.clientPhone || "وارد نشده"}</span>
+              <span className="text-sm font-medium">{step1Data?.phone || "وارد نشده"}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">ایمیل:</span>
-              <span className="text-sm font-medium">{step1Data?.clientEmail || "وارد نشده"}</span>
+              <span className="text-sm font-medium">{step1Data?.email || "وارد نشده"}</span>
             </div>
           </div>
         </div>
@@ -279,22 +281,12 @@ export function TwoStepTicketForm({ onTicketSubmit, categories }: TwoStepTicketF
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">مشکل اصلی:</span>
-              <span className="text-sm font-medium">
-                {step1Data?.mainIssue && issuesData[step1Data.mainIssue]
-                  ? issuesData[step1Data.mainIssue].label
-                  : "انتخاب نشده"}
-              </span>
+              <span className="text-sm text-muted-foreground">دسته‌بندی:</span>
+              <span className="text-sm font-medium">{step1Data?.category || "انتخاب نشده"}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">زیر دسته:</span>
-              <span className="text-sm font-medium">
-                {step1Data?.mainIssue &&
-                step1Data?.subIssue &&
-                issuesData[step1Data.mainIssue]?.subIssues[step1Data.subIssue]
-                  ? issuesData[step1Data.mainIssue].subIssues[step1Data.subIssue]
-                  : "انتخاب نشده"}
-              </span>
+              <span className="text-sm text-muted-foreground">زیردسته:</span>
+              <span className="text-sm font-medium">{step1Data?.subcategory || "انتخاب نشده"}</span>
             </div>
           </div>
         </div>
@@ -343,55 +335,55 @@ export function TwoStepTicketForm({ onTicketSubmit, categories }: TwoStepTicketF
   )
 
   return (
-    <Card className="w-full max-w-2xl mx-auto" dir="rtl">
-      <CardHeader>
-        <CardTitle className="text-center">ثبت تیکت جدید</CardTitle>
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm text-muted-foreground">
-            <span>مرحله {currentStep} از 2</span>
-            <span>{currentStep === 1 ? "اطلاعات اولیه" : "جزئیات تیکت"}</span>
+    <div className="space-y-6" dir="rtl">
+      {/* Progress Indicator */}
+      <div className="flex items-center justify-center space-x-4 space-x-reverse">
+        <div className={`flex items-center ${currentStep >= 1 ? "text-primary" : "text-muted-foreground"}`}>
+          <div
+            className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+              currentStep >= 1 ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground"
+            }`}
+          >
+            {currentStep > 1 ? <CheckCircle className="w-4 h-4" /> : "1"}
           </div>
-          <Progress value={currentStep * 50} className="w-full" />
+          <span className="mr-2 text-sm font-medium">اطلاعات اولیه</span>
         </div>
-      </CardHeader>
-      <CardContent>
-        {currentStep === 1 ? (
-          <TicketFormStep1 onNext={handleStep1Complete} initialData={step1Data} categories={categories} />
-        ) : (
-          <TicketFormStep2
-            onSubmit={handleStep2Complete}
-            onBack={handleBackToStep1}
-            step1Data={step1Data}
-            onFilesChange={setAttachedFiles}
-          />
-        )}
-      </CardContent>
-      <div className="flex justify-between items-center pt-6 border-t">
-        <div className="flex gap-2">
-          <Button type="button" variant="outline" onClick={handleBackToStep1}>
-            انصراف
-          </Button>
-          {currentStep === 2 && (
-            <Button type="button" variant="outline" onClick={handleBackToStep1}>
-              <ChevronRight className="w-4 h-4 ml-1" />
-              مرحله قبل
-            </Button>
+
+        <div className={`w-12 h-0.5 ${currentStep >= 2 ? "bg-primary" : "bg-muted-foreground"}`} />
+
+        <div className={`flex items-center ${currentStep >= 2 ? "text-primary" : "text-muted-foreground"}`}>
+          <div
+            className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+              currentStep >= 2 ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground"
+            }`}
+          >
+            2
+          </div>
+          <span className="mr-2 text-sm font-medium">جزئیات تیکت</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Content */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Step Content */}
+          {currentStep === 1 ? (
+            <TicketFormStep1 onNext={handleStep1Complete} initialData={step1Data} categories={categories} />
+          ) : (
+            <TicketFormStep2
+              onSubmit={handleStep2Complete}
+              onBack={handleBackToStep1}
+              step1Data={step1Data}
+              onFilesChange={setAttachedFiles}
+            />
           )}
         </div>
 
-        <div>
-          {currentStep === 1 ? (
-            <Button type="button" onClick={handleStep1Complete}>
-              مرحله بعد
-              <ChevronLeft className="w-4 h-4 mr-1" />
-            </Button>
-          ) : (
-            <Button type="button" onClick={() => handleStep2Complete({})}>
-              ثبت تیکت
-            </Button>
-          )}
+        {/* Summary Sidebar */}
+        <div className="lg:col-span-1">
+          <div className="sticky top-6">{renderSummary()}</div>
         </div>
       </div>
-    </Card>
+    </div>
   )
 }
