@@ -7,120 +7,121 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertTriangle, FolderOpen } from "lucide-react"
 
-// Issues and sub-issues data structure
-const issuesData = {
-  hardware: {
-    label: "مشکلات سخت‌افزاری",
-    icon: "💻",
-    subIssues: {
-      "computer-not-working": "رایانه کار نمی‌کند",
-      "printer-issues": "مشکلات چاپگر",
-      "monitor-problems": "مشکلات مانیتور",
-      "keyboard-mouse": "مشکلات کیبورد و ماوس",
-      "network-hardware": "مشکلات سخت‌افزار شبکه",
-      "ups-power": "مشکلات برق و UPS",
-      "other-hardware": "سایر مشکلات سخت‌افزاری",
-    },
-  },
-  software: {
-    label: "مشکلات نرم‌افزاری",
-    icon: "🖥️",
-    subIssues: {
-      "os-issues": "مشکلات سیستم عامل",
-      "application-problems": "مشکلات نرم‌افزارهای کاربردی",
-      "software-installation": "نصب و حذف نرم‌افزار",
-      "license-activation": "مشکلات لایسنس و فعال‌سازی",
-      "updates-patches": "به‌روزرسانی‌ها و وصله‌ها",
-      "performance-issues": "مشکلات عملکرد نرم‌افزار",
-      "other-software": "سایر مشکلات نرم‌افزاری",
-    },
-  },
-  network: {
-    label: "مشکلات شبکه و اینترنت",
-    icon: "🌐",
-    subIssues: {
-      "internet-connection": "مشکل اتصال اینترنت",
-      "wifi-problems": "مشکلات Wi-Fi",
-      "network-speed": "کندی شبکه",
-      "vpn-issues": "مشکلات VPN",
-      "network-sharing": "مشکلات اشتراک‌گذاری شبکه",
-      "firewall-security": "مشکلات فایروال و امنیت",
-      "other-network": "سایر مشکلات شبکه",
-    },
-  },
-  email: {
-    label: "مشکلات ایمیل",
-    icon: "📧",
-    subIssues: {
-      "cannot-send": "نمی‌توانم ایمیل ارسال کنم",
-      "cannot-receive": "ایمیل دریافت نمی‌کنم",
-      "login-problems": "مشکل ورود به ایمیل",
-      "sync-issues": "مشکلات همگام‌سازی",
-      "attachment-problems": "مشکلات پیوست",
-      "spam-issues": "مشکلات اسپم",
-      "other-email": "سایر مشکلات ایمیل",
-    },
-  },
-  security: {
-    label: "مشکلات امنیتی",
-    icon: "🔒",
-    subIssues: {
-      "virus-malware": "ویروس و بدافزار",
-      "suspicious-activity": "فعالیت مشکوک",
-      "data-breach": "نقض امنیت داده‌ها",
-      "phishing-attempt": "تلاش فیشینگ",
-      "unauthorized-access": "دسترسی غیرمجاز",
-      "password-issues": "مشکلات رمز عبور",
-      "other-security": "سایر مشکلات امنیتی",
-    },
-  },
-  access: {
-    label: "درخواست‌های دسترسی",
-    icon: "🔑",
-    subIssues: {
-      "new-account": "ایجاد حساب کاربری جدید",
-      "permission-change": "تغییر مجوزهای دسترسی",
-      "system-access": "دسترسی به سیستم‌ها",
-      "application-access": "دسترسی به نرم‌افزارها",
-      "network-access": "دسترسی شبکه",
-      "file-access": "دسترسی به فایل‌ها",
-      "other-access": "سایر درخواست‌های دسترسی",
-    },
-  },
-  training: {
-    label: "آموزش و راهنمایی",
-    icon: "📚",
-    subIssues: {
-      "software-training": "آموزش نرم‌افزار",
-      "hardware-guidance": "راهنمایی سخت‌افزار",
-      "security-awareness": "آگاهی امنیتی",
-      "best-practices": "بهترین روش‌های کاری",
-      troubleshooting: "آموزش عیب‌یابی",
-      documentation: "درخواست مستندات",
-      "other-training": "سایر آموزش‌ها",
-    },
-  },
-  maintenance: {
-    label: "نگهداری و تعمیرات",
-    icon: "🔧",
-    subIssues: {
-      "preventive-maintenance": "نگهداری پیشگیرانه",
-      "repair-request": "درخواست تعمیر",
-      "replacement-request": "درخواست تعویض",
-      "upgrade-request": "درخواست ارتقاء",
-      "cleaning-service": "خدمات نظافت تجهیزات",
-      calibration: "کالیبراسیون تجهیزات",
-      "other-maintenance": "سایر خدمات نگهداری",
-    },
-  },
-}
-
 interface TicketFormStep1Props {
   control: any
   errors: any
+  categories?: any // Add categories prop
 }
 
-export function TicketFormStep1({ control, errors }: TicketFormStep1Props) {
+export function TicketFormStep1({ control, errors, categories }: TicketFormStep1Props) {
+  // Use categories from props if available, otherwise fall back to hardcoded data
+  const issuesData = categories || {
+    hardware: {
+      label: "مشکلات سخت‌افزاری",
+      icon: "💻",
+      subIssues: {
+        "computer-not-working": "رایانه کار نمی‌کند",
+        "printer-issues": "مشکلات چاپگر",
+        "monitor-problems": "مشکلات مانیتور",
+        "keyboard-mouse": "مشکلات کیبورد و ماوس",
+        "network-hardware": "مشکلات سخت‌افزار شبکه",
+        "ups-power": "مشکلات برق و UPS",
+        "other-hardware": "سایر مشکلات سخت‌افزاری",
+      },
+    },
+    software: {
+      label: "مشکلات نرم‌افزاری",
+      icon: "🖥️",
+      subIssues: {
+        "os-issues": "مشکلات سیستم عامل",
+        "application-problems": "مشکلات نرم‌افزارهای کاربردی",
+        "software-installation": "نصب و حذف نرم‌افزار",
+        "license-activation": "مشکلات لایسنس و فعال‌سازی",
+        "updates-patches": "به‌روزرسانی‌ها و وصله‌ها",
+        "performance-issues": "مشکلات عملکرد نرم‌افزار",
+        "other-software": "سایر مشکلات نرم‌افزاری",
+      },
+    },
+    network: {
+      label: "مشکلات شبکه و اینترنت",
+      icon: "🌐",
+      subIssues: {
+        "internet-connection": "مشکل اتصال اینترنت",
+        "wifi-problems": "مشکلات Wi-Fi",
+        "network-speed": "کندی شبکه",
+        "vpn-issues": "مشکلات VPN",
+        "network-sharing": "مشکلات اشتراک‌گذاری شبکه",
+        "firewall-security": "مشکلات فایروال و امنیت",
+        "other-network": "سایر مشکلات شبکه",
+      },
+    },
+    email: {
+      label: "مشکلات ایمیل",
+      icon: "📧",
+      subIssues: {
+        "cannot-send": "نمی‌توانم ایمیل ارسال کنم",
+        "cannot-receive": "ایمیل دریافت نمی‌کنم",
+        "login-problems": "مشکل ورود به ایمیل",
+        "sync-issues": "مشکلات همگام‌سازی",
+        "attachment-problems": "مشکلات پیوست",
+        "spam-issues": "مشکلات اسپم",
+        "other-email": "سایر مشکلات ایمیل",
+      },
+    },
+    security: {
+      label: "مشکلات امنیتی",
+      icon: "🔒",
+      subIssues: {
+        "virus-malware": "ویروس و بدافزار",
+        "suspicious-activity": "فعالیت مشکوک",
+        "data-breach": "نقض امنیت داده‌ها",
+        "phishing-attempt": "تلاش فیشینگ",
+        "unauthorized-access": "دسترسی غیرمجاز",
+        "password-issues": "مشکلات رمز عبور",
+        "other-security": "سایر مشکلات امنیتی",
+      },
+    },
+    access: {
+      label: "درخواست‌های دسترسی",
+      icon: "🔑",
+      subIssues: {
+        "new-account": "ایجاد حساب کاربری جدید",
+        "permission-change": "تغییر مجوزهای دسترسی",
+        "system-access": "دسترسی به سیستم‌ها",
+        "application-access": "دسترسی به نرم‌افزارها",
+        "network-access": "دسترسی شبکه",
+        "file-access": "دسترسی به فایل‌ها",
+        "other-access": "سایر درخواست‌های دسترسی",
+      },
+    },
+    training: {
+      label: "آموزش و راهنمایی",
+      icon: "📚",
+      subIssues: {
+        "software-training": "آموزش نرم‌افزار",
+        "hardware-guidance": "راهنمایی سخت‌افزار",
+        "security-awareness": "آگاهی امنیتی",
+        "best-practices": "بهترین روش‌های کاری",
+        troubleshooting: "آموزش عیب‌یابی",
+        documentation: "درخواست مستندات",
+        "other-training": "سایر آموزش‌ها",
+      },
+    },
+    maintenance: {
+      label: "نگهداری و تعمیرات",
+      icon: "🔧",
+      subIssues: {
+        "preventive-maintenance": "نگهداری پیشگیرانه",
+        "repair-request": "درخواست تعمیر",
+        "replacement-request": "درخواست تعویض",
+        "upgrade-request": "درخواست ارتقاء",
+        "cleaning-service": "خدمات نظافت تجهیزات",
+        calibration: "کالیبراسیون تجهیزات",
+        "other-maintenance": "سایر خدمات نگهداری",
+      },
+    },
+  }
+
   const [selectedMainIssue, setSelectedMainIssue] = useState("")
   const [availableSubIssues, setAvailableSubIssues] = useState<Record<string, string>>({})
 

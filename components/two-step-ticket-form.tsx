@@ -137,9 +137,10 @@ const priorityLabels = {
 interface TwoStepTicketFormProps {
   onClose: () => void
   onSubmit: (data: any) => void
+  categories?: any // Add categories prop
 }
 
-export function TwoStepTicketForm({ onClose, onSubmit }: TwoStepTicketFormProps) {
+export function TwoStepTicketForm({ onClose, onSubmit, categories }: TwoStepTicketFormProps) {
   const { user } = useAuth()
   const [currentStep, setCurrentStep] = useState(1)
   const [attachedFiles, setAttachedFiles] = useState<UploadedFile[]>([])
@@ -492,7 +493,7 @@ export function TwoStepTicketForm({ onClose, onSubmit }: TwoStepTicketFormProps)
             {renderContactInfo()}
 
             {/* Step Content */}
-            {currentStep === 1 && <TicketFormStep1 control={control} errors={errors} />}
+            {currentStep === 1 && <TicketFormStep1 control={control} errors={errors} categories={categories} />}
 
             {currentStep === 2 && (
               <TicketFormStep2
