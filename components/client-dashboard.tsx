@@ -9,7 +9,22 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { TwoStepTicketForm } from "@/components/two-step-ticket-form"
 import { useTickets } from "@/lib/ticket-context"
 import { useAuth } from "@/lib/auth-context"
-import { Plus, Search, Clock, CheckCircle, AlertCircle, MessageSquare, Calendar, User, Mail } from "lucide-react"
+import { toast } from "@/hooks/use-toast"
+import {
+  Plus,
+  Search,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  MessageSquare,
+  Calendar,
+  User,
+  Mail,
+  Phone,
+  Building,
+  Ticket,
+  Eye,
+} from "lucide-react"
 
 export function ClientDashboard() {
   const { user } = useAuth()
@@ -17,6 +32,8 @@ export function ClientDashboard() {
   const [showNewTicketDialog, setShowNewTicketDialog] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedStatus, setSelectedStatus] = useState("all")
+  const [selectedTicket, setSelectedTicket] = useState<any>(null)
+  const [showTicketDetails, setShowTicketDetails] = useState(false)
 
   // Get user's tickets
   const userTickets = user ? getTicketsByUser(user.email) : []
@@ -46,7 +63,7 @@ export function ClientDashboard() {
       category: ticketData.mainIssue,
       clientName: user.name,
       clientEmail: user.email,
-      clientPhone: ticketData.clientPhone || "",
+      clientPhone: ticketData.clientPhone || user.phone || "",
       clientDepartment: user.department || "",
       assignedTo: null,
       assignedTechnicianName: null,
@@ -54,16 +71,32 @@ export function ClientDashboard() {
 
     addTicket(newTicket)
     setShowNewTicketDialog(false)
+
+    toast({
+      title: "تیکت با موفقیت ثبت شد",
+      description: `تیکت شما با شماره ${newTicket.id} ثبت گردید و به زودی بررسی خواهد شد.`,
+    })
+  }
+
+  const handleViewTicket = (ticket: any) => {
+    setSelectedTicket(ticket)
+    setShowTicketDetails(true)
   }
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      open: { label: "باز", color: "bg-blue-100 text-blue-800" },
-      "in-progress": { label: "در حال بررسی", color: "bg-yellow-100 text-yellow-800" },
-      resolved: { label: "حل شده", color: "bg-green-100 text-green-800" },
+      open: { label: "باز", color: "bg-blue-100 text-blue-800", icon: AlertCircle },
+      "in-progress": { label: "در حال بررسی", color: "bg-yellow-100 text-yellow-800", icon: Clock },
+      resolved: { label: "حل شده", color: "bg-green-100 text-green-800", icon: CheckCircle },
     }
     const config = statusConfig[status as keyof typeof statusConfig]
-    return <Badge className={config.color}>{config.label}</Badge>
+    const IconComponent = config.icon
+    return (
+      <Badge className={`${config.color} gap-1`}>
+        <IconComponent className="w-3 h-3" />
+        {config.label}
+      </Badge>
+    )
   }
 
   const getPriorityBadge = (priority: string) => {
@@ -75,6 +108,20 @@ export function ClientDashboard() {
     }
     const config = priorityConfig[priority as keyof typeof priorityConfig]
     return <Badge className={config.color}>{config.label}</Badge>
+  }
+
+  const getCategoryLabel = (category: string) => {
+    const categories: { [key: string]: string } = {
+      hardware: "سخت‌افزار",
+      software: "نرم‌افزار",
+      network: "شبکه",
+      email: "ایمیل",
+      security: "امنیت",
+      access: "دسترسی",
+      training: "آموزش",
+      maintenance: "نگهداری",
+    }
+    return categories[category] || category
   }
 
   const formatDate = (dateString: string) => {
@@ -96,7 +143,7 @@ export function ClientDashboard() {
             <h1 className="text-3xl font-bold text-gray-900">پنل کاربری</h1>
             <p className="text-gray-600 mt-1">مدیریت تیکت‌های پشتیبانی</p>
           </div>
-          <Button onClick={() => setShowNewTicketDialog(true)} className="gap-2">
+          <Button onClick={() => setShowNewTicketDialog(true)} className="gap-2 bg-blue-600 hover:bg-blue-700">
             <Plus className="w-4 h-4" />
             تیکت جدید
           </Button>
@@ -104,23 +151,29 @@ export function ClientDashboard() {
 
         {/* User Info Card */}
         {user && (
-          <Card>
+          <Card className="border-r-4 border-r-blue-500">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                  <User className="w-6 h-6 text-primary" />
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                  <User className="w-8 h-8 text-white" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-lg">{user.name}</h3>
-                  <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
-                    <div className="flex items-center gap-1">
-                      <Mail className="w-4 h-4" />
-                      {user.email}
+                  <h3 className="font-bold text-xl text-gray-900">{user.name}</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 mt-2">
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-blue-500" />
+                      <span>{user.email}</span>
                     </div>
+                    {user.phone && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-green-500" />
+                        <span>{user.phone}</span>
+                      </div>
+                    )}
                     {user.department && (
-                      <div className="flex items-center gap-1">
-                        <User className="w-4 h-4" />
-                        {user.department}
+                      <div className="flex items-center gap-2">
+                        <Building className="w-4 h-4 text-purple-500" />
+                        <span>{user.department}</span>
                       </div>
                     )}
                   </div>
@@ -132,57 +185,57 @@ export function ClientDashboard() {
 
         {/* Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
+          <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <MessageSquare className="w-5 h-5 text-blue-600" />
+                <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                  <Ticket className="w-6 h-6" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{stats.total}</p>
-                  <p className="text-sm text-gray-600">کل تیکت‌ها</p>
+                  <p className="text-sm opacity-90">کل تیکت‌ها</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white">
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-yellow-600" />
+                <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{stats.open}</p>
-                  <p className="text-sm text-gray-600">باز</p>
+                  <p className="text-sm opacity-90">باز</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <AlertCircle className="w-5 h-5 text-orange-600" />
+                <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                  <Clock className="w-6 h-6" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{stats.inProgress}</p>
-                  <p className="text-sm text-gray-600">در حال بررسی</p>
+                  <p className="text-sm opacity-90">در حال بررسی</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
             <CardContent className="p-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
+                <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                  <CheckCircle className="w-6 h-6" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{stats.resolved}</p>
-                  <p className="text-sm text-gray-600">حل شده</p>
+                  <p className="text-sm opacity-90">حل شده</p>
                 </div>
               </div>
             </CardContent>
@@ -230,28 +283,36 @@ export function ClientDashboard() {
           </CardHeader>
           <CardContent>
             {filteredTickets.length === 0 ? (
-              <div className="text-center py-8">
-                <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">هیچ تیکتی یافت نشد</p>
-                <Button onClick={() => setShowNewTicketDialog(true)} variant="outline" className="mt-4">
-                  ایجاد اولین تیکت
-                </Button>
+              <div className="text-center py-12">
+                <Ticket className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">هیچ تیکتی یافت نشد</h3>
+                <p className="text-gray-500 mb-4">
+                  {userTickets.length === 0 ? "شما هنوز هیچ تیکتی ثبت نکرده‌اید" : "تیکتی با فیلترهای انتخابی یافت نشد"}
+                </p>
+                {userTickets.length === 0 && (
+                  <Button onClick={() => setShowNewTicketDialog(true)} variant="outline" className="gap-2">
+                    <Plus className="w-4 h-4" />
+                    ایجاد اولین تیکت
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="space-y-4">
                 {filteredTickets.map((ticket) => (
                   <div
                     key={ticket.id}
-                    className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                    className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-all duration-200 bg-white"
                   >
-                    <div className="flex justify-between items-start mb-3">
+                    <div className="flex justify-between items-start mb-4">
                       <div className="flex-1">
-                        <h3 className="font-semibold text-lg mb-1">{ticket.title}</h3>
-                        <p className="text-gray-600 text-sm line-clamp-2">{ticket.description}</p>
-                      </div>
-                      <div className="flex flex-col gap-2 items-end">
-                        {getStatusBadge(ticket.status)}
-                        {getPriorityBadge(ticket.priority)}
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{ticket.id}</span>
+                          {getStatusBadge(ticket.status)}
+                          {getPriorityBadge(ticket.priority)}
+                          <Badge variant="outline">{getCategoryLabel(ticket.category)}</Badge>
+                        </div>
+                        <h3 className="font-bold text-lg mb-2 text-right">{ticket.title}</h3>
+                        <p className="text-gray-600 text-sm line-clamp-2 text-right">{ticket.description}</p>
                       </div>
                     </div>
 
@@ -272,7 +333,10 @@ export function ClientDashboard() {
                           </div>
                         )}
                       </div>
-                      <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{ticket.id}</span>
+                      <Button variant="outline" size="sm" onClick={() => handleViewTicket(ticket)} className="gap-2">
+                        <Eye className="w-4 h-4" />
+                        مشاهده جزئیات
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -288,6 +352,82 @@ export function ClientDashboard() {
               <DialogTitle className="text-right">ایجاد تیکت جدید</DialogTitle>
             </DialogHeader>
             <TwoStepTicketForm onSubmit={handleNewTicket} onCancel={() => setShowNewTicketDialog(false)} />
+          </DialogContent>
+        </Dialog>
+
+        {/* Ticket Details Dialog */}
+        <Dialog open={showTicketDetails} onOpenChange={setShowTicketDetails}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-right flex items-center gap-2">
+                <Ticket className="w-5 h-5" />
+                جزئیات تیکت {selectedTicket?.id}
+              </DialogTitle>
+            </DialogHeader>
+            {selectedTicket && (
+              <div className="space-y-6" dir="rtl">
+                {/* Ticket Header */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center gap-2 justify-end mb-3">
+                    {getStatusBadge(selectedTicket.status)}
+                    {getPriorityBadge(selectedTicket.priority)}
+                    <Badge variant="outline">{getCategoryLabel(selectedTicket.category)}</Badge>
+                  </div>
+                  <h3 className="font-bold text-xl mb-2 text-right">{selectedTicket.title}</h3>
+                  <p className="text-gray-600 text-right">{selectedTicket.description}</p>
+                </div>
+
+                {/* Ticket Info */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <span className="text-sm font-medium text-gray-500">تاریخ ایجاد:</span>
+                    <p className="text-right">{formatDate(selectedTicket.createdAt)}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <span className="text-sm font-medium text-gray-500">آخرین به‌روزرسانی:</span>
+                    <p className="text-right">{formatDate(selectedTicket.updatedAt)}</p>
+                  </div>
+                </div>
+
+                {selectedTicket.assignedTechnicianName && (
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 justify-end mb-2">
+                      <span className="font-medium">تکنسین مسئول:</span>
+                      <User className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <p className="font-semibold text-blue-800 text-right">{selectedTicket.assignedTechnicianName}</p>
+                  </div>
+                )}
+
+                {/* Responses */}
+                {selectedTicket.responses && selectedTicket.responses.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold mb-3 text-right flex items-center gap-2">
+                      <MessageSquare className="w-5 h-5" />
+                      تاریخچه مکالمات ({selectedTicket.responses.length})
+                    </h4>
+                    <div className="space-y-3 max-h-60 overflow-y-auto">
+                      {selectedTicket.responses.map((response: any) => (
+                        <div
+                          key={response.id}
+                          className={`rounded-lg p-4 ${
+                            response.type === "technician"
+                              ? "bg-blue-50 border-r-4 border-r-blue-500"
+                              : "bg-green-50 border-r-4 border-r-green-500"
+                          }`}
+                        >
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-xs text-gray-500">{formatDate(response.timestamp)}</span>
+                            <span className="font-semibold text-sm">{response.author}</span>
+                          </div>
+                          <p className="text-sm text-right">{response.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { yupResolver } from "@hookform/resolvers/yup"
 import { Button } from "@/components/ui/button"
@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { TicketFormStep2 } from "@/components/ticket-form-step2"
 import { getCombinedSchema } from "@/lib/validation-schemas"
+import { useAuth } from "@/lib/auth-context"
 import type { UploadedFile } from "@/lib/file-upload"
 
 interface TwoStepTicketFormProps {
@@ -17,21 +18,31 @@ interface TwoStepTicketFormProps {
 }
 
 export function TwoStepTicketForm({ onSubmit, onCancel }: TwoStepTicketFormProps) {
+  const { user } = useAuth()
   const [currentStep, setCurrentStep] = useState(1)
   const [attachedFiles, setAttachedFiles] = useState<UploadedFile[]>([])
+
+  // Initialize step1Data with user information
   const [step1Data, setStep1Data] = useState({
-    clientName: "",
-    clientEmail: "",
-    clientPhone: "",
+    clientName: user?.name || "",
+    clientEmail: user?.email || "",
+    clientPhone: user?.phone || "",
     priority: "medium",
     mainIssue: "",
     subIssue: "",
   })
 
-  // Form for step 1
+  // Form for step 1 - initialize with user data
   const step1Form = useForm({
     resolver: yupResolver(getCombinedSchema(1)),
-    defaultValues: step1Data,
+    defaultValues: {
+      clientName: user?.name || "",
+      clientEmail: user?.email || "",
+      clientPhone: user?.phone || "",
+      priority: "medium",
+      mainIssue: "",
+      subIssue: "",
+    },
   })
 
   // Form for step 2
@@ -40,9 +51,35 @@ export function TwoStepTicketForm({ onSubmit, onCancel }: TwoStepTicketFormProps
     defaultValues: {
       title: "",
       description: "",
-      ...step1Data,
+      clientName: user?.name || "",
+      clientEmail: user?.email || "",
+      clientPhone: user?.phone || "",
+      priority: "medium",
+      mainIssue: "",
+      subIssue: "",
     },
   })
+
+  // Update forms when user data changes
+  useEffect(() => {
+    if (user) {
+      const userData = {
+        clientName: user.name,
+        clientEmail: user.email,
+        clientPhone: user.phone || "",
+      }
+
+      step1Form.reset({
+        ...step1Form.getValues(),
+        ...userData,
+      })
+
+      setStep1Data((prev) => ({
+        ...prev,
+        ...userData,
+      }))
+    }
+  }, [user, step1Form])
 
   const handleStep1Submit = (data: any) => {
     setStep1Data(data)
@@ -127,14 +164,21 @@ export function TwoStepTicketForm({ onSubmit, onCancel }: TwoStepTicketFormProps
               {/* Contact Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-medium text-right">اطلاعات تماس</h3>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-blue-800 text-right">
+                    <strong>توجه:</strong> اطلاعات تماس از پروفایل شما تکمیل شده است. در صورت نیاز می‌توانید آن‌ها را
+                    ویرایش کنید.
+                  </p>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-right">نام و نام خانوادگی *</label>
                     <input
                       {...step1Form.register("clientName")}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-right"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-right bg-gray-50"
                       placeholder="نام کامل خود را وارد کنید"
                       dir="rtl"
+                      readOnly={!!user?.name}
                     />
                     {step1Form.formState.errors.clientName && (
                       <p className="text-sm text-red-500 text-right">{step1Form.formState.errors.clientName.message}</p>
@@ -145,9 +189,10 @@ export function TwoStepTicketForm({ onSubmit, onCancel }: TwoStepTicketFormProps
                     <input
                       {...step1Form.register("clientEmail")}
                       type="email"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-right"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-right bg-gray-50"
                       placeholder="example@company.com"
                       dir="rtl"
+                      readOnly={!!user?.email}
                     />
                     {step1Form.formState.errors.clientEmail && (
                       <p className="text-sm text-red-500 text-right">
@@ -167,6 +212,9 @@ export function TwoStepTicketForm({ onSubmit, onCancel }: TwoStepTicketFormProps
                   {step1Form.formState.errors.clientPhone && (
                     <p className="text-sm text-red-500 text-right">{step1Form.formState.errors.clientPhone.message}</p>
                   )}
+                  {user?.phone && (
+                    <p className="text-xs text-gray-500 text-right">شماره تماس از پروفایل شما: {user.phone}</p>
+                  )}
                 </div>
               </div>
 
@@ -180,10 +228,10 @@ export function TwoStepTicketForm({ onSubmit, onCancel }: TwoStepTicketFormProps
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-right"
                     dir="rtl"
                   >
-                    <option value="low">کم</option>
-                    <option value="medium">متوسط</option>
-                    <option value="high">بالا</option>
-                    <option value="urgent">فوری</option>
+                    <option value="low">کم - مشکل غیر فوری</option>
+                    <option value="medium">متوسط - مشکل معمولی</option>
+                    <option value="high">بالا - مشکل مهم</option>
+                    <option value="urgent">فوری - نیاز به رسیدگی سریع</option>
                   </select>
                 </div>
                 <div className="space-y-2">
@@ -194,14 +242,14 @@ export function TwoStepTicketForm({ onSubmit, onCancel }: TwoStepTicketFormProps
                     dir="rtl"
                   >
                     <option value="">انتخاب کنید</option>
-                    <option value="hardware">سخت‌افزار</option>
-                    <option value="software">نرم‌افزار</option>
-                    <option value="network">شبکه</option>
-                    <option value="email">ایمیل</option>
-                    <option value="security">امنیت</option>
-                    <option value="access">دسترسی</option>
-                    <option value="training">آموزش</option>
-                    <option value="maintenance">نگهداری</option>
+                    <option value="hardware">سخت‌افزار - مشکلات رایانه، چاپگر، مانیتور</option>
+                    <option value="software">نرم‌افزار - مشکلات برنامه‌ها و سیستم عامل</option>
+                    <option value="network">شبکه - مشکلات اینترنت و اتصال</option>
+                    <option value="email">ایمیل - مشکلات پست الکترونیک</option>
+                    <option value="security">امنیت - مشکلات امنیتی و ویروس</option>
+                    <option value="access">دسترسی - درخواست دسترسی به سیستم‌ها</option>
+                    <option value="training">آموزش - درخواست آموزش نرم‌افزار</option>
+                    <option value="maintenance">نگهداری - درخواست نگهداری تجهیزات</option>
                   </select>
                   {step1Form.formState.errors.mainIssue && (
                     <p className="text-sm text-red-500 text-right">{step1Form.formState.errors.mainIssue.message}</p>
@@ -222,6 +270,14 @@ export function TwoStepTicketForm({ onSubmit, onCancel }: TwoStepTicketFormProps
                     <option value="slow-performance">عملکرد کند</option>
                     <option value="internet-connection">مشکل اتصال اینترنت</option>
                     <option value="wifi-problems">مشکل Wi-Fi</option>
+                    <option value="email-not-working">ایمیل کار نمی‌کند</option>
+                    <option value="password-reset">بازنشانی رمز عبور</option>
+                    <option value="virus-malware">ویروس یا بدافزار</option>
+                    <option value="data-recovery">بازیابی اطلاعات</option>
+                    <option value="new-user-access">دسترسی کاربر جدید</option>
+                    <option value="software-training">آموزش نرم‌افزار</option>
+                    <option value="hardware-maintenance">نگهداری سخت‌افزار</option>
+                    <option value="other">سایر موارد</option>
                   </select>
                   {step1Form.formState.errors.subIssue && (
                     <p className="text-sm text-red-500 text-right">{step1Form.formState.errors.subIssue.message}</p>
@@ -296,7 +352,9 @@ export function TwoStepTicketForm({ onSubmit, onCancel }: TwoStepTicketFormProps
                   مرحله قبل
                 </Button>
               </div>
-              <Button type="submit">ارسال تیکت</Button>
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                ارسال تیکت
+              </Button>
             </div>
           </form>
         </div>
