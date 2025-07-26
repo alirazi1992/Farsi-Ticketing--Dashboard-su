@@ -9,7 +9,7 @@ import { AdminTechnicianAssignment } from "./admin-technician-assignment"
 import { CategoryManagement } from "./category-management"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TicketIcon, UserPlus, FolderTree } from "lucide-react"
-import { AutoAssignmentSettings } from "./auto-assignment-settings"
+import { EnhancedAutoAssignment } from "./enhanced-auto-assignment"
 import { Settings } from "lucide-react"
 
 interface AdminDashboardProps {
@@ -54,7 +54,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ tickets, onTicke
       </TabsContent>
 
       <TabsContent value="auto-settings">
-        <AutoAssignmentSettings />
+        <EnhancedAutoAssignment tickets={tickets} onTicketUpdate={onTicketUpdate} />
       </TabsContent>
     </Tabs>
   )
