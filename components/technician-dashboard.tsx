@@ -5,30 +5,30 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
-import { toast } from "@/hooks/use-toast"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 import {
   Search,
   Filter,
   Eye,
-  MessageSquare,
   Clock,
   AlertCircle,
   CheckCircle,
   Ticket,
-  Send,
-  Calendar,
   HardDrive,
-  Laptop,
+  Computer,
   Network,
   Mail,
   Shield,
   Key,
+  MessageSquare,
+  Calendar,
+  Send,
 } from "lucide-react"
 
 const statusColors = {
@@ -61,7 +61,7 @@ const priorityLabels = {
 
 const categoryIcons = {
   hardware: HardDrive,
-  software: Laptop,
+  software: Computer,
   network: Network,
   email: Mail,
   security: Shield,
@@ -89,20 +89,18 @@ export function TechnicianDashboard({ tickets, onTicketUpdate, currentUser }: Te
   const [filterPriority, setFilterPriority] = useState("all")
   const [selectedTicket, setSelectedTicket] = useState<any>(null)
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
-  const [responseDialogOpen, setResponseDialogOpen] = useState(false)
   const [responseMessage, setResponseMessage] = useState("")
   const [responseStatus, setResponseStatus] = useState("")
 
-  // Filter tickets assigned to current technician - Fixed to use user ID
-  const technicianTickets = tickets.filter((ticket) => ticket.assignedTo === currentUser?.id)
+  // Filter tickets assigned to current technician
+  const assignedTickets = tickets.filter((ticket) => ticket.assignedTo === currentUser?.id)
 
   // Filter tickets based on search and filters
-  const filteredTickets = technicianTickets.filter((ticket) => {
+  const filteredTickets = assignedTickets.filter((ticket) => {
     const matchesSearch =
       ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       ticket.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ticket.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ticket.clientName.toLowerCase().includes(searchQuery.toLowerCase())
+      ticket.id.toLowerCase().includes(searchQuery.toLowerCase())
 
     const matchesStatus = filterStatus === "all" || ticket.status === filterStatus
     const matchesPriority = filterPriority === "all" || ticket.priority === filterPriority
@@ -112,25 +110,12 @@ export function TechnicianDashboard({ tickets, onTicketUpdate, currentUser }: Te
 
   const handleViewTicket = (ticket: any) => {
     setSelectedTicket(ticket)
+    setResponseStatus(ticket.status)
     setViewDialogOpen(true)
   }
 
-  const handleResponseTicket = (ticket: any) => {
-    setSelectedTicket(ticket)
-    setResponseStatus(ticket.status)
-    setResponseMessage("")
-    setResponseDialogOpen(true)
-  }
-
   const handleSubmitResponse = () => {
-    if (!responseMessage.trim()) {
-      toast({
-        title: "خطا",
-        description: "لطفاً پیام پاسخ را وارد کنید",
-        variant: "destructive",
-      })
-      return
-    }
+    if (!responseMessage.trim()) return
 
     const response = {
       message: responseMessage,
@@ -139,7 +124,7 @@ export function TechnicianDashboard({ tickets, onTicketUpdate, currentUser }: Te
       timestamp: new Date().toISOString(),
     }
 
-    const updatedResponses = selectedTicket?.responses ? [...selectedTicket.responses, response] : [response]
+    const updatedResponses = [...(selectedTicket.responses || []), response]
 
     onTicketUpdate(selectedTicket.id, {
       status: responseStatus,
@@ -147,65 +132,58 @@ export function TechnicianDashboard({ tickets, onTicketUpdate, currentUser }: Te
       updatedAt: new Date().toISOString(),
     })
 
-    toast({
-      title: "پاسخ ارسال شد",
-      description: "پاسخ شما با موفقیت ثبت شد",
-    })
-
-    setResponseDialogOpen(false)
     setResponseMessage("")
+    setViewDialogOpen(false)
   }
 
   return (
-    <div className="space-y-6" dir="rtl">
-      <div className="flex justify-between items-center">
-        <div className="text-right">
-          <h2 className="text-2xl font-bold">پنل تکنسین</h2>
-          <p className="text-muted-foreground">مدیریت تیکت‌های واگذار شده</p>
-        </div>
+    <div className="space-y-6 font-iran" dir="rtl">
+      <div className="text-right">
+        <h2 className="text-2xl font-bold font-iran">پنل تکنسین</h2>
+        <p className="text-muted-foreground font-iran">مدیریت تیکت‌های اختصاص یافته</p>
       </div>
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-right">تیکت‌های من</CardTitle>
+            <CardTitle className="text-sm font-medium text-right font-iran">کل تیکت‌ها</CardTitle>
             <Ticket className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-right">{technicianTickets.length}</div>
+            <div className="text-2xl font-bold text-right font-iran">{assignedTickets.length}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-right">نیاز به پاسخ</CardTitle>
+            <CardTitle className="text-sm font-medium text-right font-iran">در انتظار پاسخ</CardTitle>
             <AlertCircle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-right">
-              {technicianTickets.filter((t) => t.status === "open").length}
+            <div className="text-2xl font-bold text-right font-iran">
+              {assignedTickets.filter((t) => t.status === "open").length}
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-right">در حال انجام</CardTitle>
+            <CardTitle className="text-sm font-medium text-right font-iran">در حال انجام</CardTitle>
             <Clock className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-right">
-              {technicianTickets.filter((t) => t.status === "in-progress").length}
+            <div className="text-2xl font-bold text-right font-iran">
+              {assignedTickets.filter((t) => t.status === "in-progress").length}
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-right">حل شده</CardTitle>
+            <CardTitle className="text-sm font-medium text-right font-iran">حل شده</CardTitle>
             <CheckCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-right">
-              {technicianTickets.filter((t) => t.status === "resolved").length}
+            <div className="text-2xl font-bold text-right font-iran">
+              {assignedTickets.filter((t) => t.status === "resolved").length}
             </div>
           </CardContent>
         </Card>
@@ -214,7 +192,7 @@ export function TechnicianDashboard({ tickets, onTicketUpdate, currentUser }: Te
       {/* Tickets Management */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-right">تیکت‌های واگذار شده</CardTitle>
+          <CardTitle className="text-right font-iran">تیکت‌های من</CardTitle>
         </CardHeader>
         <CardContent>
           {/* Filters */}
@@ -225,16 +203,16 @@ export function TechnicianDashboard({ tickets, onTicketUpdate, currentUser }: Te
                 placeholder="جستجو در تیکت‌ها..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-10 text-right"
+                className="pr-10 text-right font-iran"
                 dir="rtl"
               />
             </div>
 
             <Select value={filterStatus} onValueChange={setFilterStatus} dir="rtl">
-              <SelectTrigger className="text-right">
+              <SelectTrigger className="text-right font-iran">
                 <SelectValue placeholder="وضعیت" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="font-iran">
                 <SelectItem value="all">همه وضعیت‌ها</SelectItem>
                 <SelectItem value="open">باز</SelectItem>
                 <SelectItem value="in-progress">در حال انجام</SelectItem>
@@ -244,10 +222,10 @@ export function TechnicianDashboard({ tickets, onTicketUpdate, currentUser }: Te
             </Select>
 
             <Select value={filterPriority} onValueChange={setFilterPriority} dir="rtl">
-              <SelectTrigger className="text-right">
+              <SelectTrigger className="text-right font-iran">
                 <SelectValue placeholder="اولویت" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="font-iran">
                 <SelectItem value="all">همه اولویت‌ها</SelectItem>
                 <SelectItem value="low">کم</SelectItem>
                 <SelectItem value="medium">متوسط</SelectItem>
@@ -263,7 +241,7 @@ export function TechnicianDashboard({ tickets, onTicketUpdate, currentUser }: Te
                 setFilterStatus("all")
                 setFilterPriority("all")
               }}
-              className="gap-2"
+              className="gap-2 font-iran"
             >
               <Filter className="w-4 h-4" />
               پاک کردن فیلترها
@@ -275,14 +253,14 @@ export function TechnicianDashboard({ tickets, onTicketUpdate, currentUser }: Te
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-right">شماره تیکت</TableHead>
-                  <TableHead className="text-right">عنوان</TableHead>
-                  <TableHead className="text-right">وضعیت</TableHead>
-                  <TableHead className="text-right">اولویت</TableHead>
-                  <TableHead className="text-right">دسته‌بندی</TableHead>
-                  <TableHead className="text-right">درخواست‌کننده</TableHead>
-                  <TableHead className="text-right">تاریخ ایجاد</TableHead>
-                  <TableHead className="text-right">عملیات</TableHead>
+                  <TableHead className="text-right font-iran">شماره تیکت</TableHead>
+                  <TableHead className="text-right font-iran">عنوان</TableHead>
+                  <TableHead className="text-right font-iran">وضعیت</TableHead>
+                  <TableHead className="text-right font-iran">اولویت</TableHead>
+                  <TableHead className="text-right font-iran">دسته‌بندی</TableHead>
+                  <TableHead className="text-right font-iran">کاربر</TableHead>
+                  <TableHead className="text-right font-iran">تاریخ ایجاد</TableHead>
+                  <TableHead className="text-right font-iran">عملیات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -292,56 +270,51 @@ export function TechnicianDashboard({ tickets, onTicketUpdate, currentUser }: Te
 
                     return (
                       <TableRow key={ticket.id}>
-                        <TableCell className="font-mono text-sm">{ticket.id}</TableCell>
+                        <TableCell className="font-mono text-sm font-iran">{ticket.id}</TableCell>
                         <TableCell className="max-w-xs">
-                          <div className="truncate" title={ticket.title}>
+                          <div className="truncate font-iran" title={ticket.title}>
                             {ticket.title}
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge className={statusColors[ticket.status]}>{statusLabels[ticket.status]}</Badge>
+                          <Badge className={`${statusColors[ticket.status]} font-iran`}>
+                            {statusLabels[ticket.status]}
+                          </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge className={priorityColors[ticket.priority]}>{priorityLabels[ticket.priority]}</Badge>
+                          <Badge className={`${priorityColors[ticket.priority]} font-iran`}>
+                            {priorityLabels[ticket.priority]}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <CategoryIcon className="w-4 h-4" />
-                            <span className="text-sm">{categoryLabels[ticket.category]}</span>
+                            <span className="text-sm font-iran">{categoryLabels[ticket.category]}</span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Avatar className="w-6 h-6">
-                              <AvatarFallback className="text-xs">{ticket.clientName.charAt(0)}</AvatarFallback>
+                              <AvatarFallback className="text-xs font-iran">
+                                {ticket.clientName.charAt(0)}
+                              </AvatarFallback>
                             </Avatar>
-                            <span className="text-sm">{ticket.clientName}</span>
+                            <span className="text-sm font-iran">{ticket.clientName}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-sm">
+                        <TableCell className="text-sm font-iran">
                           {new Date(ticket.createdAt).toLocaleDateString("fa-IR")}
                         </TableCell>
                         <TableCell>
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleViewTicket(ticket)}
-                              className="gap-1"
-                            >
-                              <Eye className="w-3 h-3" />
-                              مشاهده
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleResponseTicket(ticket)}
-                              className="gap-1"
-                            >
-                              <MessageSquare className="w-3 h-3" />
-                              پاسخ
-                            </Button>
-                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewTicket(ticket)}
+                            className="gap-1 font-iran"
+                          >
+                            <Eye className="w-3 h-3" />
+                            مشاهده و پاسخ
+                          </Button>
                         </TableCell>
                       </TableRow>
                     )
@@ -351,7 +324,7 @@ export function TechnicianDashboard({ tickets, onTicketUpdate, currentUser }: Te
                     <TableCell colSpan={8} className="text-center py-8">
                       <div className="flex flex-col items-center gap-2">
                         <Search className="w-8 h-8 text-muted-foreground" />
-                        <p className="text-muted-foreground">تیکتی یافت نشد</p>
+                        <p className="text-muted-foreground font-iran">تیکتی یافت نشد</p>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -362,28 +335,30 @@ export function TechnicianDashboard({ tickets, onTicketUpdate, currentUser }: Te
         </CardContent>
       </Card>
 
-      {/* View Ticket Dialog */}
+      {/* View and Respond to Ticket Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto font-iran" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-right">جزئیات تیکت {selectedTicket?.id}</DialogTitle>
+            <DialogTitle className="text-right font-iran">جزئیات و پاسخ به تیکت {selectedTicket?.id}</DialogTitle>
           </DialogHeader>
           {selectedTicket && (
             <div className="space-y-6">
               {/* Ticket Header */}
               <div className="flex justify-between items-start">
                 <div className="text-right space-y-2">
-                  <h3 className="text-xl font-semibold">{selectedTicket.title}</h3>
+                  <h3 className="text-xl font-semibold font-iran">{selectedTicket.title}</h3>
                   <div className="flex gap-2">
-                    <Badge className={statusColors[selectedTicket.status]}>{statusLabels[selectedTicket.status]}</Badge>
-                    <Badge className={priorityColors[selectedTicket.priority]}>
+                    <Badge className={`${statusColors[selectedTicket.status]} font-iran`}>
+                      {statusLabels[selectedTicket.status]}
+                    </Badge>
+                    <Badge className={`${priorityColors[selectedTicket.priority]} font-iran`}>
                       {priorityLabels[selectedTicket.priority]}
                     </Badge>
                   </div>
                 </div>
                 <div className="text-left space-y-1">
-                  <p className="text-sm text-muted-foreground">شماره تیکت</p>
-                  <p className="font-mono text-lg">{selectedTicket.id}</p>
+                  <p className="text-sm text-muted-foreground font-iran">شماره تیکت</p>
+                  <p className="font-mono text-lg font-iran">{selectedTicket.id}</p>
                 </div>
               </div>
 
@@ -393,23 +368,27 @@ export function TechnicianDashboard({ tickets, onTicketUpdate, currentUser }: Te
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
-                    <h4 className="font-medium mb-2">اطلاعات کلی</h4>
+                    <h4 className="font-medium mb-2 font-iran">اطلاعات کلی</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">دسته‌بندی:</span>
-                        <span>{categoryLabels[selectedTicket.category]}</span>
+                        <span className="text-muted-foreground font-iran">دسته‌بندی:</span>
+                        <span className="font-iran">{categoryLabels[selectedTicket.category]}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">زیر دسته:</span>
-                        <span>{selectedTicket.subcategory}</span>
+                        <span className="text-muted-foreground font-iran">زیر دسته:</span>
+                        <span className="font-iran">{selectedTicket.subcategory}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">تاریخ ایجاد:</span>
-                        <span>{new Date(selectedTicket.createdAt).toLocaleDateString("fa-IR")}</span>
+                        <span className="text-muted-foreground font-iran">تاریخ ایجاد:</span>
+                        <span className="font-iran">
+                          {new Date(selectedTicket.createdAt).toLocaleDateString("fa-IR")}
+                        </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">آخرین به‌روزرسانی:</span>
-                        <span>{new Date(selectedTicket.updatedAt).toLocaleDateString("fa-IR")}</span>
+                        <span className="text-muted-foreground font-iran">آخرین به‌روزرسانی:</span>
+                        <span className="font-iran">
+                          {new Date(selectedTicket.updatedAt).toLocaleDateString("fa-IR")}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -417,23 +396,23 @@ export function TechnicianDashboard({ tickets, onTicketUpdate, currentUser }: Te
 
                 <div className="space-y-4">
                   <div>
-                    <h4 className="font-medium mb-2">اطلاعات درخواست‌کننده</h4>
+                    <h4 className="font-medium mb-2 font-iran">اطلاعات کاربر</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">نام:</span>
-                        <span>{selectedTicket.clientName}</span>
+                        <span className="text-muted-foreground font-iran">نام:</span>
+                        <span className="font-iran">{selectedTicket.clientName}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">ایمیل:</span>
-                        <span>{selectedTicket.clientEmail}</span>
+                        <span className="text-muted-foreground font-iran">ایمیل:</span>
+                        <span className="font-iran">{selectedTicket.clientEmail}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">تلفن:</span>
-                        <span>{selectedTicket.clientPhone}</span>
+                        <span className="text-muted-foreground font-iran">تلفن:</span>
+                        <span className="font-iran">{selectedTicket.clientPhone}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">بخش:</span>
-                        <span>{selectedTicket.department}</span>
+                        <span className="text-muted-foreground font-iran">بخش:</span>
+                        <span className="font-iran">{selectedTicket.department}</span>
                       </div>
                     </div>
                   </div>
@@ -444,18 +423,18 @@ export function TechnicianDashboard({ tickets, onTicketUpdate, currentUser }: Te
 
               {/* Description */}
               <div>
-                <h4 className="font-medium mb-2">شرح مشکل</h4>
+                <h4 className="font-medium mb-2 font-iran">شرح مشکل</h4>
                 <div className="bg-muted p-4 rounded-lg text-right">
-                  <p className="whitespace-pre-wrap">{selectedTicket.description}</p>
+                  <p className="whitespace-pre-wrap font-iran">{selectedTicket.description}</p>
                 </div>
               </div>
 
-              {/* Responses */}
+              {/* Previous Responses */}
               {selectedTicket.responses && selectedTicket.responses.length > 0 && (
                 <div>
-                  <h4 className="font-medium mb-4 flex items-center gap-2">
+                  <h4 className="font-medium mb-4 flex items-center gap-2 font-iran">
                     <MessageSquare className="w-4 h-4" />
-                    پاسخ‌ها و به‌روزرسانی‌ها
+                    پاسخ‌های قبلی
                   </h4>
                   <div className="space-y-4">
                     {selectedTicket.responses.map((response: any, index: number) => (
@@ -463,17 +442,17 @@ export function TechnicianDashboard({ tickets, onTicketUpdate, currentUser }: Te
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex items-center gap-2">
                             <Avatar className="w-6 h-6">
-                              <AvatarFallback className="text-xs">
+                              <AvatarFallback className="text-xs font-iran">
                                 {response.technicianName?.charAt(0) || "T"}
                               </AvatarFallback>
                             </Avatar>
-                            <span className="font-medium text-sm">{response.technicianName}</span>
+                            <span className="font-medium text-sm font-iran">{response.technicianName}</span>
                           </div>
                           <div className="text-left">
-                            <Badge className={statusColors[response.status]} className="mb-1">
+                            <Badge className={`${statusColors[response.status]} mb-1 font-iran`}>
                               {statusLabels[response.status]}
                             </Badge>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <p className="text-xs text-muted-foreground flex items-center gap-1 font-iran">
                               <Calendar className="w-3 h-3" />
                               {new Date(response.timestamp).toLocaleDateString("fa-IR")} -
                               {new Date(response.timestamp).toLocaleTimeString("fa-IR")}
@@ -481,65 +460,68 @@ export function TechnicianDashboard({ tickets, onTicketUpdate, currentUser }: Te
                           </div>
                         </div>
                         <div className="bg-muted/50 p-3 rounded text-right">
-                          <p className="whitespace-pre-wrap">{response.message}</p>
+                          <p className="whitespace-pre-wrap font-iran">{response.message}</p>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
+
+              <Separator />
+
+              {/* Response Form */}
+              <div className="space-y-4">
+                <h4 className="font-medium flex items-center gap-2 font-iran">
+                  <Send className="w-4 h-4" />
+                  ارسال پاسخ
+                </h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="status" className="text-right font-iran">
+                      وضعیت جدید
+                    </Label>
+                    <Select value={responseStatus} onValueChange={setResponseStatus} dir="rtl">
+                      <SelectTrigger className="text-right font-iran">
+                        <SelectValue placeholder="انتخاب وضعیت" />
+                      </SelectTrigger>
+                      <SelectContent className="font-iran">
+                        <SelectItem value="open">باز</SelectItem>
+                        <SelectItem value="in-progress">در حال انجام</SelectItem>
+                        <SelectItem value="resolved">حل شده</SelectItem>
+                        <SelectItem value="closed">بسته</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="response" className="text-right font-iran">
+                    پیام پاسخ
+                  </Label>
+                  <Textarea
+                    id="response"
+                    placeholder="پاسخ خود را اینجا بنویسید..."
+                    value={responseMessage}
+                    onChange={(e) => setResponseMessage(e.target.value)}
+                    className="min-h-[120px] text-right font-iran"
+                    dir="rtl"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setViewDialogOpen(false)} className="font-iran">
+                    انصراف
+                  </Button>
+                  <Button onClick={handleSubmitResponse} disabled={!responseMessage.trim()} className="gap-2 font-iran">
+                    <Send className="w-4 h-4" />
+                    ارسال پاسخ
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Response Dialog */}
-      <Dialog open={responseDialogOpen} onOpenChange={setResponseDialogOpen}>
-        <DialogContent className="max-w-2xl" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="text-right">پاسخ به تیکت {selectedTicket?.id}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <h4 className="font-medium mb-2">{selectedTicket?.title}</h4>
-              <p className="text-sm text-muted-foreground">درخواست‌کننده: {selectedTicket?.clientName}</p>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">وضعیت جدید</label>
-              <Select value={responseStatus} onValueChange={setResponseStatus} dir="rtl">
-                <SelectTrigger className="text-right">
-                  <SelectValue placeholder="انتخاب وضعیت" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="in-progress">در حال انجام</SelectItem>
-                  <SelectItem value="resolved">حل شده</SelectItem>
-                  <SelectItem value="closed">بسته</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">پیام پاسخ</label>
-              <Textarea
-                placeholder="پاسخ خود را اینجا بنویسید..."
-                value={responseMessage}
-                onChange={(e) => setResponseMessage(e.target.value)}
-                className="min-h-[120px] text-right"
-                dir="rtl"
-              />
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setResponseDialogOpen(false)}>
-                انصراف
-              </Button>
-              <Button onClick={handleSubmitResponse} className="gap-2">
-                <Send className="w-4 h-4" />
-                ارسال پاسخ
-              </Button>
-            </div>
-          </div>
         </DialogContent>
       </Dialog>
     </div>
