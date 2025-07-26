@@ -9,6 +9,7 @@ import { TechnicianDashboard } from "@/components/technician-dashboard"
 import { AdminDashboard } from "@/components/admin-dashboard"
 import { UserMenu } from "@/components/user-menu"
 import { useAuth } from "@/lib/auth-context"
+import { TicketProvider } from "@/lib/ticket-context"
 import { Ticket, Users, LogIn, Shield, Wrench, User, Target, Brain } from "lucide-react"
 
 export default function HomePage() {
@@ -147,27 +148,29 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50" dir="rtl">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <Ticket className="w-6 h-6 text-white" />
+    <TicketProvider>
+      <div className="min-h-screen bg-gray-50" dir="rtl">
+        {/* Header */}
+        <header className="bg-white shadow-sm border-b">
+          <div className="container mx-auto px-6 py-4">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                  <Ticket className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-gray-900">سیستم مدیریت خدمات IT</h1>
+                  <p className="text-sm text-gray-600">خوش آمدید، {user.name}</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">سیستم مدیریت خدمات IT</h1>
-                <p className="text-sm text-gray-600">خوش آمدید، {user.name}</p>
-              </div>
+              <UserMenu />
             </div>
-            <UserMenu />
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main Content */}
-      <main>{renderDashboard()}</main>
-    </div>
+        {/* Main Content */}
+        <main>{renderDashboard()}</main>
+      </div>
+    </TicketProvider>
   )
 }
