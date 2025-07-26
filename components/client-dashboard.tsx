@@ -1,15 +1,14 @@
 "use client"
 
-import { Label } from "@/components/ui/label"
-
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TwoStepTicketForm } from "./two-step-ticket-form"
+import { Plus, Clock, CheckCircle, AlertCircle, XCircle, Eye } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { toast } from "@/hooks/use-toast"
-import { Plus, Clock, CheckCircle, XCircle, AlertCircle, MessageSquare, Calendar, User, Eye } from "lucide-react"
+import { Separator } from "@/components/ui/separator"
 
 interface ClientDashboardProps {
   tickets: any[]
@@ -19,331 +18,740 @@ interface ClientDashboardProps {
 }
 
 export function ClientDashboard({ tickets, onTicketCreate, currentUser, categoriesData }: ClientDashboardProps) {
-  const [createTicketOpen, setCreateTicketOpen] = useState(false)
   const [selectedTicket, setSelectedTicket] = useState<any>(null)
-  const [previewOpen, setPreviewOpen] = useState(false)
+  const [ticketDialogOpen, setTicketDialogOpen] = useState(false)
+  const [createTicketDialogOpen, setCreateTicketDialogOpen] = useState(false)
 
   // Filter tickets for current user
   const userTickets = tickets.filter((ticket) => ticket.clientEmail === currentUser.email)
 
-  // Get status info
-  const getStatusInfo = (status: string) => {
-    switch (status) {
-      case "open":
-        return { label: "باز", color: "bg-blue-500", icon: Clock }
-      case "in-progress":
-        return { label: "در حال انجام", color: "bg-yellow-500", icon: AlertCircle }
-      case "resolved":
-        return { label: "حل شده", color: "bg-green-500", icon: CheckCircle }
-      case "closed":
-        return { label: "بسته شده", color: "bg-gray-500", icon: XCircle }
-      default:
-        return { label: "نامشخص", color: "bg-gray-400", icon: Clock }
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      open: { label: "باز", variant: "destructive" as const, icon: AlertCircle },
+      "in-progress": { label: "در حال بررسی", variant: "default" as const, icon: Clock },
+      resolved: { label: "حل شده", variant: "secondary" as const, icon: CheckCircle },
+      closed: { label: "بسته شده", variant: "outline" as const, icon: XCircle },
     }
+
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.open
+    const Icon = config.icon
+
+    return (
+      <Badge variant={config.variant} className="gap-1">
+        <Icon className="w-3 h-3" />
+        {config.label}
+      </Badge>
+    )
   }
 
-  // Get priority info
-  const getPriorityInfo = (priority: string) => {
-    switch (priority) {
-      case "urgent":
-        return { label: "فوری", color: "destructive" }
-      case "high":
-        return { label: "بالا", color: "destructive" }
-      case "medium":
-        return { label: "متوسط", color: "default" }
-      case "low":
-        return { label: "پایین", color: "secondary" }
-      default:
-        return { label: "نامشخص", color: "outline" }
+  const getPriorityBadge = (priority: string) => {
+    const priorityConfig = {
+      urgent: { label: "فوری", className: "bg-red-100 text-red-800 border-red-200" },
+      high: { label: "بالا", className: "bg-orange-100 text-orange-800 border-orange-200" },
+      medium: { label: "متوسط", className: "bg-yellow-100 text-yellow-800 border-yellow-200" },
+      low: { label: "پایین", className: "bg-green-100 text-green-800 border-green-200" },
     }
+
+    const config = priorityConfig[priority as keyof typeof priorityConfig] || priorityConfig.medium
+
+    return <Badge className={config.className}>{config.label}</Badge>
   }
 
-  // Handle ticket creation
-  const handleTicketSubmit = (ticketData: any) => {
-    onTicketCreate({
-      ...ticketData,
-      clientName: currentUser.name,
-      clientEmail: currentUser.email,
-      clientPhone: currentUser.phone || "تعریف نشده",
-      department: currentUser.department || "تعریف نشده",
-    })
-    setCreateTicketOpen(false)
-    toast({
-      title: "تیکت ایجاد شد",
-      description: "تیکت شما با موفقیت ثبت شد و به زودی بررسی خواهد شد",
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("fa-IR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     })
   }
 
-  // Handle ticket preview
-  const handlePreview = (ticket: any) => {
-    setSelectedTicket(ticket)
-    setPreviewOpen(true)
-  }
-
-  // Get ticket stats
-  const ticketStats = {
-    total: userTickets.length,
-    open: userTickets.filter((t) => t.status === "open").length,
-    inProgress: userTickets.filter((t) => t.status === "in-progress").length,
-    resolved: userTickets.filter((t) => t.status === "resolved").length,
-    closed: userTickets.filter((t) => t.status === "closed").length,
+  const handleTicketCreate = (ticketData: any) => {
+    onTicketCreate(ticketData)
+    setCreateTicketDialogOpen(false)
   }
 
   return (
     <div className="space-y-6" dir="rtl">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-right">داشبورد کاربر</h2>
-          <p className="text-muted-foreground text-right">مدیریت تیکت‌ها و درخواست‌های پشتیبانی</p>
-        </div>
-        <Dialog open={createTicketOpen} onOpenChange={setCreateTicketOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="w-4 h-4" />
-              تیکت جدید
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
-            <DialogHeader>
-              <DialogTitle className="text-right">ایجاد تیکت جدید</DialogTitle>
-            </DialogHeader>
-            <TwoStepTicketForm onSubmit={handleTicketSubmit} categoriesData={categoriesData} />
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{ticketStats.total}</div>
-              <div className="text-sm text-muted-foreground">کل تیکت‌ها</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-500">{ticketStats.open}</div>
-              <div className="text-sm text-muted-foreground">باز</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-500">{ticketStats.inProgress}</div>
-              <div className="text-sm text-muted-foreground">در حال انجام</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-500">{ticketStats.resolved}</div>
-              <div className="text-sm text-muted-foreground">حل شده</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-500">{ticketStats.closed}</div>
-              <div className="text-sm text-muted-foreground">بسته شده</div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tickets List */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-right">تیکت‌های من</CardTitle>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle className="text-right">داشبورد کاربر</CardTitle>
+              <p className="text-muted-foreground text-right mt-1">مدیریت تیکت‌های شما</p>
+            </div>
+            <Dialog open={createTicketDialogOpen} onOpenChange={setCreateTicketDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  تیکت جدید
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
+                <DialogHeader>
+                  <DialogTitle className="text-right">ایجاد تیکت جدید</DialogTitle>
+                </DialogHeader>
+                <TwoStepTicketForm
+                  onSubmit={handleTicketCreate}
+                  currentUser={currentUser}
+                  categoriesData={categoriesData}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
         </CardHeader>
         <CardContent>
-          {userTickets.length === 0 ? (
-            <div className="text-center py-12">
-              <MessageSquare className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-muted-foreground">تیکتی وجود ندارد</h3>
-              <p className="text-sm text-muted-foreground mt-1">برای شروع، تیکت جدیدی ایجاد کنید</p>
-              <Button className="mt-4 gap-2" onClick={() => setCreateTicketOpen(true)}>
-                <Plus className="w-4 h-4" />
-                تیکت جدید
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {userTickets.map((ticket) => {
-                const statusInfo = getStatusInfo(ticket.status)
-                const priorityInfo = getPriorityInfo(ticket.priority)
-                const StatusIcon = statusInfo.icon
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{userTickets.length}</div>
+                  <div className="text-sm text-muted-foreground">کل تیکت‌ها</div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {userTickets.filter((t) => t.status === "open" || t.status === "in-progress").length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">در حال بررسی</div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">
+                    {userTickets.filter((t) => t.status === "resolved").length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">حل شده</div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-600">
+                    {userTickets.filter((t) => t.status === "closed").length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">بسته شده</div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-                return (
-                  <div key={ticket.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold text-right">{ticket.title}</h3>
-                          <Badge variant="outline" className="text-xs">
-                            {ticket.id}
-                          </Badge>
-                        </div>
+          <Tabs defaultValue="all" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="all">همه تیکت‌ها</TabsTrigger>
+              <TabsTrigger value="open">باز</TabsTrigger>
+              <TabsTrigger value="in-progress">در حال بررسی</TabsTrigger>
+              <TabsTrigger value="resolved">حل شده</TabsTrigger>
+            </TabsList>
 
-                        <p className="text-sm text-muted-foreground text-right mb-3 line-clamp-2">
-                          {ticket.description}
-                        </p>
-
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            <span>{new Date(ticket.createdAt).toLocaleDateString("fa-IR")}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Badge variant={priorityInfo.color as any} className="text-xs">
-                              {priorityInfo.label}
-                            </Badge>
-                          </div>
-                          {ticket.assignedTechnicianName && (
-                            <div className="flex items-center gap-1">
-                              <User className="w-3 h-3" />
-                              <span>{ticket.assignedTechnicianName}</span>
+            <TabsContent value="all" className="space-y-4">
+              {userTickets.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-muted-foreground">هنوز تیکتی ایجاد نکرده‌اید</div>
+                  <Button className="mt-4 gap-2" onClick={() => setCreateTicketDialogOpen(true)}>
+                    <Plus className="w-4 h-4" />
+                    اولین تیکت خود را ایجاد کنید
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {userTickets.map((ticket) => (
+                    <Card key={ticket.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h3 className="font-semibold text-right">{ticket.title}</h3>
+                              <Badge variant="outline" className="text-xs">
+                                {ticket.id}
+                              </Badge>
                             </div>
-                          )}
+                            <p className="text-sm text-muted-foreground text-right mb-3 line-clamp-2">
+                              {ticket.description}
+                            </p>
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              {getStatusBadge(ticket.status)}
+                              {getPriorityBadge(ticket.priority)}
+                              <Badge variant="outline">
+                                {categoriesData[ticket.category]?.label || ticket.category}
+                              </Badge>
+                            </div>
+                            <div className="flex justify-between items-center text-xs text-muted-foreground">
+                              <span>ایجاد شده: {formatDate(ticket.createdAt)}</span>
+                              {ticket.assignedTechnicianName && <span>تکنسین: {ticket.assignedTechnicianName}</span>}
+                            </div>
+                          </div>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-2 bg-transparent"
+                                onClick={() => setSelectedTicket(ticket)}
+                              >
+                                <Eye className="w-4 h-4" />
+                                مشاهده
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
+                              <DialogHeader>
+                                <DialogTitle className="text-right">جزئیات تیکت {ticket.id}</DialogTitle>
+                              </DialogHeader>
+                              {selectedTicket && (
+                                <div className="space-y-4">
+                                  <div>
+                                    <h3 className="font-semibold text-right mb-2">{selectedTicket.title}</h3>
+                                    <p className="text-sm text-muted-foreground text-right">
+                                      {selectedTicket.description}
+                                    </p>
+                                  </div>
+
+                                  <Separator />
+
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">وضعیت</label>
+                                      <div className="mt-1">{getStatusBadge(selectedTicket.status)}</div>
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">اولویت</label>
+                                      <div className="mt-1">{getPriorityBadge(selectedTicket.priority)}</div>
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">دسته‌بندی</label>
+                                      <div className="mt-1">
+                                        <Badge variant="outline">
+                                          {categoriesData[selectedTicket.category]?.label || selectedTicket.category}
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">زیردسته</label>
+                                      <div className="mt-1">
+                                        <Badge variant="outline">{selectedTicket.subcategory}</Badge>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <Separator />
+
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">تاریخ ایجاد</label>
+                                      <div className="text-sm mt-1">{formatDate(selectedTicket.createdAt)}</div>
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">
+                                        آخرین بروزرسانی
+                                      </label>
+                                      <div className="text-sm mt-1">{formatDate(selectedTicket.updatedAt)}</div>
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">بخش</label>
+                                      <div className="text-sm mt-1">{selectedTicket.department}</div>
+                                    </div>
+                                    {selectedTicket.assignedTechnicianName && (
+                                      <div>
+                                        <label className="text-xs font-medium text-muted-foreground">
+                                          تکنسین مسئول
+                                        </label>
+                                        <div className="text-sm mt-1">{selectedTicket.assignedTechnicianName}</div>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {selectedTicket.responses && selectedTicket.responses.length > 0 && (
+                                    <>
+                                      <Separator />
+                                      <div>
+                                        <h4 className="font-medium text-right mb-3">پاسخ‌های تکنسین</h4>
+                                        <div className="space-y-3">
+                                          {selectedTicket.responses.map((response: any, index: number) => (
+                                            <div key={index} className="bg-muted/50 p-3 rounded-lg">
+                                              <div className="flex justify-between items-start mb-2">
+                                                <span className="text-sm font-medium">{response.technicianName}</span>
+                                                <span className="text-xs text-muted-foreground">
+                                                  {formatDate(response.timestamp)}
+                                                </span>
+                                              </div>
+                                              <p className="text-sm text-right">{response.message}</p>
+                                              {response.status && (
+                                                <div className="mt-2">{getStatusBadge(response.status)}</div>
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                            </DialogContent>
+                          </Dialog>
                         </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <div
-                          className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs text-white ${statusInfo.color}`}
-                        >
-                          <StatusIcon className="w-3 h-3" />
-                          <span>{statusInfo.label}</span>
-                        </div>
-                        <Button variant="ghost" size="sm" onClick={() => handlePreview(ticket)}>
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    {ticket.responses && ticket.responses.length > 0 && (
-                      <div className="mt-3 pt-3 border-t">
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <MessageSquare className="w-3 h-3" />
-                          <span>آخرین پاسخ: {ticket.responses[ticket.responses.length - 1].message}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Ticket Preview Dialog */}
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="text-right">جزئیات تیکت</DialogTitle>
-          </DialogHeader>
-          {selectedTicket && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">شماره تیکت</Label>
-                  <p className="text-sm text-muted-foreground">{selectedTicket.id}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">وضعیت</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    {(() => {
-                      const statusInfo = getStatusInfo(selectedTicket.status)
-                      const StatusIcon = statusInfo.icon
-                      return (
-                        <div
-                          className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs text-white ${statusInfo.color}`}
-                        >
-                          <StatusIcon className="w-3 h-3" />
-                          <span>{statusInfo.label}</span>
-                        </div>
-                      )
-                    })()}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium">عنوان</Label>
-                <p className="text-sm text-muted-foreground mt-1">{selectedTicket.title}</p>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium">توضیحات</Label>
-                <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{selectedTicket.description}</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">اولویت</Label>
-                  <div className="mt-1">
-                    {(() => {
-                      const priorityInfo = getPriorityInfo(selectedTicket.priority)
-                      return (
-                        <Badge variant={priorityInfo.color as any} className="text-xs">
-                          {priorityInfo.label}
-                        </Badge>
-                      )
-                    })()}
-                  </div>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">تکنسین مسئول</Label>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {selectedTicket.assignedTechnicianName || "تعیین نشده"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">تاریخ ایجاد</Label>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {new Date(selectedTicket.createdAt).toLocaleDateString("fa-IR")}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">آخرین به‌روزرسانی</Label>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {new Date(selectedTicket.updatedAt).toLocaleDateString("fa-IR")}
-                  </p>
-                </div>
-              </div>
-
-              {selectedTicket.responses && selectedTicket.responses.length > 0 && (
-                <div>
-                  <Label className="text-sm font-medium">پاسخ‌ها</Label>
-                  <div className="space-y-3 mt-2">
-                    {selectedTicket.responses.map((response: any, index: number) => (
-                      <div key={index} className="border rounded-lg p-3 bg-muted/50">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium">{response.technicianName}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(response.timestamp).toLocaleDateString("fa-IR")}
-                          </span>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{response.message}</p>
-                      </div>
-                    ))}
-                  </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+            </TabsContent>
+
+            <TabsContent value="open" className="space-y-4">
+              <div className="space-y-4">
+                {userTickets
+                  .filter((ticket) => ticket.status === "open")
+                  .map((ticket) => (
+                    <Card key={ticket.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h3 className="font-semibold text-right">{ticket.title}</h3>
+                              <Badge variant="outline" className="text-xs">
+                                {ticket.id}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground text-right mb-3 line-clamp-2">
+                              {ticket.description}
+                            </p>
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              {getStatusBadge(ticket.status)}
+                              {getPriorityBadge(ticket.priority)}
+                              <Badge variant="outline">
+                                {categoriesData[ticket.category]?.label || ticket.category}
+                              </Badge>
+                            </div>
+                            <div className="flex justify-between items-center text-xs text-muted-foreground">
+                              <span>ایجاد شده: {formatDate(ticket.createdAt)}</span>
+                              {ticket.assignedTechnicianName && <span>تکنسین: {ticket.assignedTechnicianName}</span>}
+                            </div>
+                          </div>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-2 bg-transparent"
+                                onClick={() => setSelectedTicket(ticket)}
+                              >
+                                <Eye className="w-4 h-4" />
+                                مشاهده
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
+                              <DialogHeader>
+                                <DialogTitle className="text-right">جزئیات تیکت {ticket.id}</DialogTitle>
+                              </DialogHeader>
+                              {selectedTicket && (
+                                <div className="space-y-4">
+                                  <div>
+                                    <h3 className="font-semibold text-right mb-2">{selectedTicket.title}</h3>
+                                    <p className="text-sm text-muted-foreground text-right">
+                                      {selectedTicket.description}
+                                    </p>
+                                  </div>
+
+                                  <Separator />
+
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">وضعیت</label>
+                                      <div className="mt-1">{getStatusBadge(selectedTicket.status)}</div>
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">اولویت</label>
+                                      <div className="mt-1">{getPriorityBadge(selectedTicket.priority)}</div>
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">دسته‌بندی</label>
+                                      <div className="mt-1">
+                                        <Badge variant="outline">
+                                          {categoriesData[selectedTicket.category]?.label || selectedTicket.category}
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">زیردسته</label>
+                                      <div className="mt-1">
+                                        <Badge variant="outline">{selectedTicket.subcategory}</Badge>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <Separator />
+
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">تاریخ ایجاد</label>
+                                      <div className="text-sm mt-1">{formatDate(selectedTicket.createdAt)}</div>
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">
+                                        آخرین بروزرسانی
+                                      </label>
+                                      <div className="text-sm mt-1">{formatDate(selectedTicket.updatedAt)}</div>
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">بخش</label>
+                                      <div className="text-sm mt-1">{selectedTicket.department}</div>
+                                    </div>
+                                    {selectedTicket.assignedTechnicianName && (
+                                      <div>
+                                        <label className="text-xs font-medium text-muted-foreground">
+                                          تکنسین مسئول
+                                        </label>
+                                        <div className="text-sm mt-1">{selectedTicket.assignedTechnicianName}</div>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {selectedTicket.responses && selectedTicket.responses.length > 0 && (
+                                    <>
+                                      <Separator />
+                                      <div>
+                                        <h4 className="font-medium text-right mb-3">پاسخ‌های تکنسین</h4>
+                                        <div className="space-y-3">
+                                          {selectedTicket.responses.map((response: any, index: number) => (
+                                            <div key={index} className="bg-muted/50 p-3 rounded-lg">
+                                              <div className="flex justify-between items-start mb-2">
+                                                <span className="text-sm font-medium">{response.technicianName}</span>
+                                                <span className="text-xs text-muted-foreground">
+                                                  {formatDate(response.timestamp)}
+                                                </span>
+                                              </div>
+                                              <p className="text-sm text-right">{response.message}</p>
+                                              {response.status && (
+                                                <div className="mt-2">{getStatusBadge(response.status)}</div>
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                {userTickets.filter((ticket) => ticket.status === "open").length === 0 && (
+                  <div className="text-center py-8">
+                    <div className="text-muted-foreground">تیکت باز وجود ندارد</div>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="in-progress" className="space-y-4">
+              <div className="space-y-4">
+                {userTickets
+                  .filter((ticket) => ticket.status === "in-progress")
+                  .map((ticket) => (
+                    <Card key={ticket.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h3 className="font-semibold text-right">{ticket.title}</h3>
+                              <Badge variant="outline" className="text-xs">
+                                {ticket.id}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground text-right mb-3 line-clamp-2">
+                              {ticket.description}
+                            </p>
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              {getStatusBadge(ticket.status)}
+                              {getPriorityBadge(ticket.priority)}
+                              <Badge variant="outline">
+                                {categoriesData[ticket.category]?.label || ticket.category}
+                              </Badge>
+                            </div>
+                            <div className="flex justify-between items-center text-xs text-muted-foreground">
+                              <span>ایجاد شده: {formatDate(ticket.createdAt)}</span>
+                              {ticket.assignedTechnicianName && <span>تکنسین: {ticket.assignedTechnicianName}</span>}
+                            </div>
+                          </div>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-2 bg-transparent"
+                                onClick={() => setSelectedTicket(ticket)}
+                              >
+                                <Eye className="w-4 h-4" />
+                                مشاهده
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
+                              <DialogHeader>
+                                <DialogTitle className="text-right">جزئیات تیکت {ticket.id}</DialogTitle>
+                              </DialogHeader>
+                              {selectedTicket && (
+                                <div className="space-y-4">
+                                  <div>
+                                    <h3 className="font-semibold text-right mb-2">{selectedTicket.title}</h3>
+                                    <p className="text-sm text-muted-foreground text-right">
+                                      {selectedTicket.description}
+                                    </p>
+                                  </div>
+
+                                  <Separator />
+
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">وضعیت</label>
+                                      <div className="mt-1">{getStatusBadge(selectedTicket.status)}</div>
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">اولویت</label>
+                                      <div className="mt-1">{getPriorityBadge(selectedTicket.priority)}</div>
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">دسته‌بندی</label>
+                                      <div className="mt-1">
+                                        <Badge variant="outline">
+                                          {categoriesData[selectedTicket.category]?.label || selectedTicket.category}
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">زیردسته</label>
+                                      <div className="mt-1">
+                                        <Badge variant="outline">{selectedTicket.subcategory}</Badge>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <Separator />
+
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">تاریخ ایجاد</label>
+                                      <div className="text-sm mt-1">{formatDate(selectedTicket.createdAt)}</div>
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">
+                                        آخرین بروزرسانی
+                                      </label>
+                                      <div className="text-sm mt-1">{formatDate(selectedTicket.updatedAt)}</div>
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">بخش</label>
+                                      <div className="text-sm mt-1">{selectedTicket.department}</div>
+                                    </div>
+                                    {selectedTicket.assignedTechnicianName && (
+                                      <div>
+                                        <label className="text-xs font-medium text-muted-foreground">
+                                          تکنسین مسئول
+                                        </label>
+                                        <div className="text-sm mt-1">{selectedTicket.assignedTechnicianName}</div>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {selectedTicket.responses && selectedTicket.responses.length > 0 && (
+                                    <>
+                                      <Separator />
+                                      <div>
+                                        <h4 className="font-medium text-right mb-3">پاسخ‌های تکنسین</h4>
+                                        <div className="space-y-3">
+                                          {selectedTicket.responses.map((response: any, index: number) => (
+                                            <div key={index} className="bg-muted/50 p-3 rounded-lg">
+                                              <div className="flex justify-between items-start mb-2">
+                                                <span className="text-sm font-medium">{response.technicianName}</span>
+                                                <span className="text-xs text-muted-foreground">
+                                                  {formatDate(response.timestamp)}
+                                                </span>
+                                              </div>
+                                              <p className="text-sm text-right">{response.message}</p>
+                                              {response.status && (
+                                                <div className="mt-2">{getStatusBadge(response.status)}</div>
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                {userTickets.filter((ticket) => ticket.status === "in-progress").length === 0 && (
+                  <div className="text-center py-8">
+                    <div className="text-muted-foreground">تیکت در حال بررسی وجود ندارد</div>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="resolved" className="space-y-4">
+              <div className="space-y-4">
+                {userTickets
+                  .filter((ticket) => ticket.status === "resolved")
+                  .map((ticket) => (
+                    <Card key={ticket.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h3 className="font-semibold text-right">{ticket.title}</h3>
+                              <Badge variant="outline" className="text-xs">
+                                {ticket.id}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground text-right mb-3 line-clamp-2">
+                              {ticket.description}
+                            </p>
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              {getStatusBadge(ticket.status)}
+                              {getPriorityBadge(ticket.priority)}
+                              <Badge variant="outline">
+                                {categoriesData[ticket.category]?.label || ticket.category}
+                              </Badge>
+                            </div>
+                            <div className="flex justify-between items-center text-xs text-muted-foreground">
+                              <span>ایجاد شده: {formatDate(ticket.createdAt)}</span>
+                              {ticket.assignedTechnicianName && <span>تکنسین: {ticket.assignedTechnicianName}</span>}
+                            </div>
+                          </div>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-2 bg-transparent"
+                                onClick={() => setSelectedTicket(ticket)}
+                              >
+                                <Eye className="w-4 h-4" />
+                                مشاهده
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
+                              <DialogHeader>
+                                <DialogTitle className="text-right">جزئیات تیکت {ticket.id}</DialogTitle>
+                              </DialogHeader>
+                              {selectedTicket && (
+                                <div className="space-y-4">
+                                  <div>
+                                    <h3 className="font-semibold text-right mb-2">{selectedTicket.title}</h3>
+                                    <p className="text-sm text-muted-foreground text-right">
+                                      {selectedTicket.description}
+                                    </p>
+                                  </div>
+
+                                  <Separator />
+
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">وضعیت</label>
+                                      <div className="mt-1">{getStatusBadge(selectedTicket.status)}</div>
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">اولویت</label>
+                                      <div className="mt-1">{getPriorityBadge(selectedTicket.priority)}</div>
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">دسته‌بندی</label>
+                                      <div className="mt-1">
+                                        <Badge variant="outline">
+                                          {categoriesData[selectedTicket.category]?.label || selectedTicket.category}
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">زیردسته</label>
+                                      <div className="mt-1">
+                                        <Badge variant="outline">{selectedTicket.subcategory}</Badge>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <Separator />
+
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">تاریخ ایجاد</label>
+                                      <div className="text-sm mt-1">{formatDate(selectedTicket.createdAt)}</div>
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">
+                                        آخرین بروزرسانی
+                                      </label>
+                                      <div className="text-sm mt-1">{formatDate(selectedTicket.updatedAt)}</div>
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground">بخش</label>
+                                      <div className="text-sm mt-1">{selectedTicket.department}</div>
+                                    </div>
+                                    {selectedTicket.assignedTechnicianName && (
+                                      <div>
+                                        <label className="text-xs font-medium text-muted-foreground">
+                                          تکنسین مسئول
+                                        </label>
+                                        <div className="text-sm mt-1">{selectedTicket.assignedTechnicianName}</div>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {selectedTicket.responses && selectedTicket.responses.length > 0 && (
+                                    <>
+                                      <Separator />
+                                      <div>
+                                        <h4 className="font-medium text-right mb-3">پاسخ‌های تکنسین</h4>
+                                        <div className="space-y-3">
+                                          {selectedTicket.responses.map((response: any, index: number) => (
+                                            <div key={index} className="bg-muted/50 p-3 rounded-lg">
+                                              <div className="flex justify-between items-start mb-2">
+                                                <span className="text-sm font-medium">{response.technicianName}</span>
+                                                <span className="text-xs text-muted-foreground">
+                                                  {formatDate(response.timestamp)}
+                                                </span>
+                                              </div>
+                                              <p className="text-sm text-right">{response.message}</p>
+                                              {response.status && (
+                                                <div className="mt-2">{getStatusBadge(response.status)}</div>
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                {userTickets.filter((ticket) => ticket.status === "resolved").length === 0 && (
+                  <div className="text-center py-8">
+                    <div className="text-muted-foreground">تیکت حل شده وجود ندارد</div>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   )
 }
