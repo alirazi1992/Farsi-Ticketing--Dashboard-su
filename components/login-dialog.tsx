@@ -1,40 +1,17 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
-import { useForm, Controller } from "react-hook-form"
-import { yupResolver } from "@hookform/resolvers/yup"
-import * as yup from "yup"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { toast } from "@/hooks/use-toast"
-import { Eye, EyeOff, LogIn, UserPlus, Shield, Wrench, User } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
-
-// Validation schemas
-const loginSchema = yup.object({
-  email: yup.string().required("ایمیل الزامی است").email("فرمت ایمیل صحیح نیست"),
-  password: yup.string().required("رمز عبور الزامی است").min(6, "رمز عبور باید حداقل ۶ کاراکتر باشد"),
-})
-
-const signupSchema = yup.object({
-  name: yup.string().required("نام و نام خانوادگی الزامی است").min(2, "نام باید حداقل ۲ کاراکتر باشد"),
-  email: yup.string().required("ایمیل الزامی است").email("فرمت ایمیل صحیح نیست"),
-  phone: yup
-    .string()
-    .required("شماره تماس الزامی است")
-    .matches(/^(\+98|0)?9\d{9}$/, "شماره تماس معتبر نیست"),
-  department: yup.string().required("انتخاب بخش الزامی است"),
-  role: yup.string().required("انتخاب نقش الزامی است"),
-  password: yup.string().required("رمز عبور الزامی است").min(6, "رمز عبور باید حداقل ۶ کاراکتر باشد"),
-  confirmPassword: yup
-    .string()
-    .required("تکرار رمز عبور الزامی است")
-    .oneOf([yup.ref("password")], "رمزهای عبور مطابقت ندارند"),
-})
+import { toast } from "@/hooks/use-toast"
+import { Eye, EyeOff, LogIn, UserPlus, User, Wrench, Shield } from "lucide-react"
 
 interface LoginDialogProps {
   open: boolean
@@ -42,159 +19,182 @@ interface LoginDialogProps {
 }
 
 export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
-  const { login, register } = useAuth()
+  const { login, register, isLoading } = useAuth()
   const [activeTab, setActiveTab] = useState("login")
-  const [loginType, setLoginType] = useState("client")
   const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
-  // Login form
-  const loginForm = useForm({
-    resolver: yupResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+  // Login form state
+  const [loginForm, setLoginForm] = useState({
+    email: "",
+    password: "",
+    role: "",
   })
 
-  // Signup form
-  const signupForm = useForm({
-    resolver: yupResolver(signupSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      phone: "",
-      department: "",
-      role: "client",
-      password: "",
-      confirmPassword: "",
-    },
+  // Register form state
+  const [registerForm, setRegisterForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    department: "",
+    role: "",
+    password: "",
+    confirmPassword: "",
   })
 
-  const handleLogin = async (data: any) => {
-    try {
-      const success = await login(data.email, data.password, loginType)
-      if (success) {
-        toast({
-          title: "ورود موفق",
-          description: "به سیستم خوش آمدید",
-        })
-        onOpenChange(false)
-        loginForm.reset()
-      } else {
-        toast({
-          title: "خطا در ورود",
-          description: "ایمیل یا رمز عبور اشتباه است",
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!loginForm.email || !loginForm.password) {
+      toast({
+        title: "خطا",
+        description: "لطفاً تمام فیلدها را پر کنید",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const success = await login(loginForm.email, loginForm.password, loginForm.role)
+
+    if (success) {
+      toast({
+        title: "ورود موفق",
+        description: "با موفقیت وارد سیستم شدید",
+      })
+      onOpenChange(false)
+      setLoginForm({ email: "", password: "", role: "" })
+    } else {
       toast({
         title: "خطا در ورود",
-        description: "مشکلی در سیستم رخ داده است",
+        description: "ایمیل، رمز عبور یا نقش کاربری اشتباه است",
         variant: "destructive",
       })
     }
   }
 
-  const handleSignup = async (data: any) => {
-    try {
-      const success = await register({
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        department: data.department,
-        role: data.role,
-        password: data.password,
-      })
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault()
 
-      if (success) {
-        toast({
-          title: "ثبت‌نام موفق",
-          description: "حساب شما با موفقیت ایجاد شد",
-        })
-        onOpenChange(false)
-        signupForm.reset()
-        setActiveTab("login")
-      } else {
-        toast({
-          title: "خطا در ثبت‌نام",
-          description: "این ایمیل قبلاً ثبت شده است",
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
+    if (!registerForm.name || !registerForm.email || !registerForm.password || !registerForm.role) {
       toast({
-        title: "خطا در ثبت‌نام",
-        description: "مشکلی در سیستم رخ داده است",
+        title: "خطا",
+        description: "لطفاً تمام فیلدهای ضروری را پر کنید",
         variant: "destructive",
       })
+      return
+    }
+
+    if (registerForm.password !== registerForm.confirmPassword) {
+      toast({
+        title: "خطا",
+        description: "رمز عبور و تکرار آن یکسان نیستند",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const success = await register({
+      name: registerForm.name,
+      email: registerForm.email,
+      phone: registerForm.phone,
+      department: registerForm.department,
+      role: registerForm.role,
+      password: registerForm.password,
+    })
+
+    if (success) {
+      toast({
+        title: "ثبت‌نام موفق",
+        description: "حساب کاربری شما با موفقیت ایجاد شد",
+      })
+      onOpenChange(false)
+      setRegisterForm({
+        name: "",
+        email: "",
+        phone: "",
+        department: "",
+        role: "",
+        password: "",
+        confirmPassword: "",
+      })
+    } else {
+      toast({
+        title: "خطا در ثبت‌نام",
+        description: "کاربری با این ایمیل قبلاً ثبت‌نام کرده است",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const quickLoginOptions = [
+    {
+      role: "client",
+      email: "ahmad@company.com",
+      password: "123456",
+      name: "احمد محمدی (کاربر)",
+      icon: User,
+      color: "bg-gray-500",
+    },
+    {
+      role: "engineer",
+      email: "ali@company.com",
+      password: "123456",
+      name: "علی تکنسین (تکنسین)",
+      icon: Wrench,
+      color: "bg-green-500",
+    },
+    {
+      role: "admin",
+      email: "admin@company.com",
+      password: "123456",
+      name: "مدیر سیستم (مدیر)",
+      icon: Shield,
+      color: "bg-blue-500",
+    },
+  ]
+
+  const handleQuickLogin = async (email: string, password: string, role: string) => {
+    const success = await login(email, password, role)
+    if (success) {
+      toast({
+        title: "ورود موفق",
+        description: "با موفقیت وارد سیستم شدید",
+      })
+      onOpenChange(false)
     }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg" dir="rtl">
-        <DialogHeader className="text-right">
-          <DialogTitle className="text-right">
-            {activeTab === "login" ? "ورود به سیستم" : "ثبت‌نام در سیستم"}
-          </DialogTitle>
+      <DialogContent className="sm:max-w-[500px]" dir="rtl">
+        <DialogHeader>
+          <DialogTitle className="text-right">ورود به سیستم</DialogTitle>
           <DialogDescription className="text-right">
-            {activeTab === "login"
-              ? "برای دسترسی به سیستم، اطلاعات خود را وارد کنید"
-              : "برای ایجاد حساب کاربری جدید، فرم زیر را تکمیل کنید"}
+            برای دسترسی به سیستم مدیریت تیکت، وارد حساب کاربری خود شوید
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
-          <TabsList className="grid w-full grid-cols-2" dir="rtl">
-            <TabsTrigger value="login" className="gap-2 flex-row-reverse">
-              <LogIn className="w-4 h-4" />
-              ورود
-            </TabsTrigger>
-            <TabsTrigger value="signup" className="gap-2 flex-row-reverse">
-              <UserPlus className="w-4 h-4" />
-              ثبت‌نام
-            </TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="login">ورود</TabsTrigger>
+            <TabsTrigger value="register">ثبت‌نام</TabsTrigger>
+            <TabsTrigger value="demo">ورود سریع</TabsTrigger>
           </TabsList>
 
           <TabsContent value="login" className="space-y-4">
-            {/* Role Selection for Login */}
-            <div className="space-y-2">
-              <Label className="text-right">نوع کاربری</Label>
-              <Tabs value={loginType} onValueChange={setLoginType} className="w-full" dir="rtl">
-                <TabsList className="grid w-full grid-cols-3" dir="rtl">
-                  <TabsTrigger value="client" className="gap-1 text-xs flex-row-reverse">
-                    <User className="w-3 h-3" />
-                    کاربر
-                  </TabsTrigger>
-                  <TabsTrigger value="technician" className="gap-1 text-xs flex-row-reverse">
-                    <Wrench className="w-3 h-3" />
-                    تکنسین
-                  </TabsTrigger>
-                  <TabsTrigger value="admin" className="gap-1 text-xs flex-row-reverse">
-                    <Shield className="w-3 h-3" />
-                    مدیر
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-
-            <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-right">
                   ایمیل
                 </Label>
-                <Controller
-                  name="email"
-                  control={loginForm.control}
-                  render={({ field }) => (
-                    <Input {...field} type="email" placeholder="example@domain.com" className="text-right" dir="rtl" />
-                  )}
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="example@company.com"
+                  className="text-right"
+                  dir="rtl"
+                  value={loginForm.email}
+                  onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
                 />
-                {loginForm.formState.errors.email && (
-                  <p className="text-sm text-red-500 text-right">{loginForm.formState.errors.email.message}</p>
-                )}
               </div>
 
               <div className="space-y-2">
@@ -202,18 +202,14 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                   رمز عبور
                 </Label>
                 <div className="relative">
-                  <Controller
-                    name="password"
-                    control={loginForm.control}
-                    render={({ field }) => (
-                      <Input
-                        {...field}
-                        type={showPassword ? "text" : "password"}
-                        placeholder="رمز عبور خود را وارد کنید"
-                        className="text-right pr-10"
-                        dir="rtl"
-                      />
-                    )}
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="رمز عبور خود را وارد کنید"
+                    className="text-right pr-10"
+                    dir="rtl"
+                    value={loginForm.password}
+                    onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
                   />
                   <Button
                     type="button"
@@ -229,251 +225,200 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                     )}
                   </Button>
                 </div>
-                {loginForm.formState.errors.password && (
-                  <p className="text-sm text-red-500 text-right">{loginForm.formState.errors.password.message}</p>
-                )}
               </div>
 
-              <Button type="submit" className="w-full" disabled={loginForm.formState.isSubmitting}>
-                {loginForm.formState.isSubmitting ? "در حال ورود..." : "ورود"}
+              <div className="space-y-2">
+                <Label htmlFor="role" className="text-right">
+                  نقش کاربری
+                </Label>
+                <Select value={loginForm.role} onValueChange={(value) => setLoginForm({ ...loginForm, role: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="نقش خود را انتخاب کنید" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="client">کاربر</SelectItem>
+                    <SelectItem value="technician">تکنسین</SelectItem>
+                    <SelectItem value="admin">مدیر</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    در حال ورود...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <LogIn className="w-4 h-4" />
+                    ورود
+                  </div>
+                )}
               </Button>
             </form>
-
-            {/* Demo Accounts */}
-            <div className="pt-4 border-t">
-              <p className="text-xs text-muted-foreground text-center mb-2">حساب‌های نمونه برای تست:</p>
-              <div className="space-y-1 text-xs text-muted-foreground">
-                <div className="flex justify-between items-center p-2 bg-muted/50 rounded text-right">
-                  <span>کاربر: ahmad@company.com / 123456</span>
-                  <User className="w-3 h-3" />
-                </div>
-                <div className="flex justify-between items-center p-2 bg-muted/50 rounded text-right">
-                  <span>تکنسین: ali@company.com / 123456</span>
-                  <Wrench className="w-3 h-3" />
-                </div>
-                <div className="flex justify-between items-center p-2 bg-muted/50 rounded text-right">
-                  <span>مدیر: admin@company.com / 123456</span>
-                  <Shield className="w-3 h-3" />
-                </div>
-              </div>
-            </div>
-
-            <div className="text-center text-sm text-muted-foreground">
-              <p>حساب کاربری ندارید؟</p>
-              <Button variant="link" className="p-0 h-auto text-primary" onClick={() => setActiveTab("signup")}>
-                ثبت‌نام کنید
-              </Button>
-            </div>
           </TabsContent>
 
-          <TabsContent value="signup" className="space-y-4">
-            <form onSubmit={signupForm.handleSubmit(handleSignup)} className="space-y-4">
-              <div className="grid grid-cols-1 gap-4">
+          <TabsContent value="register" className="space-y-4">
+            <form onSubmit={handleRegister} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-right">
-                    نام و نام خانوادگی *
+                    نام و نام خانوادگی
                   </Label>
-                  <Controller
-                    name="name"
-                    control={signupForm.control}
-                    render={({ field }) => (
-                      <Input {...field} placeholder="نام کامل خود را وارد کنید" className="text-right" dir="rtl" />
-                    )}
+                  <Input
+                    id="name"
+                    placeholder="نام کامل"
+                    className="text-right"
+                    dir="rtl"
+                    value={registerForm.name}
+                    onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
                   />
-                  {signupForm.formState.errors.name && (
-                    <p className="text-sm text-red-500 text-right">{signupForm.formState.errors.name.message}</p>
-                  )}
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-right">
-                    ایمیل *
-                  </Label>
-                  <Controller
-                    name="email"
-                    control={signupForm.control}
-                    render={({ field }) => (
-                      <Input
-                        {...field}
-                        type="email"
-                        placeholder="example@domain.com"
-                        className="text-right"
-                        dir="rtl"
-                      />
-                    )}
-                  />
-                  {signupForm.formState.errors.email && (
-                    <p className="text-sm text-red-500 text-right">{signupForm.formState.errors.email.message}</p>
-                  )}
-                </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="phone" className="text-right">
-                    شماره تماس *
+                    شماره تماس
                   </Label>
-                  <Controller
-                    name="phone"
-                    control={signupForm.control}
-                    render={({ field }) => (
-                      <Input {...field} placeholder="09xxxxxxxxx" className="text-right" dir="rtl" />
-                    )}
+                  <Input
+                    id="phone"
+                    placeholder="09123456789"
+                    className="text-right"
+                    dir="rtl"
+                    value={registerForm.phone}
+                    onChange={(e) => setRegisterForm({ ...registerForm, phone: e.target.value })}
                   />
-                  {signupForm.formState.errors.phone && (
-                    <p className="text-sm text-red-500 text-right">{signupForm.formState.errors.phone.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="department" className="text-right">
-                    بخش *
-                  </Label>
-                  <Controller
-                    name="department"
-                    control={signupForm.control}
-                    render={({ field }) => (
-                      <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                        <SelectTrigger className="text-right">
-                          <SelectValue placeholder="انتخاب بخش" />
-                        </SelectTrigger>
-                        <SelectContent dir="rtl">
-                          <SelectItem value="it">فناوری اطلاعات</SelectItem>
-                          <SelectItem value="hr">منابع انسانی</SelectItem>
-                          <SelectItem value="finance">مالی</SelectItem>
-                          <SelectItem value="marketing">بازاریابی</SelectItem>
-                          <SelectItem value="operations">عملیات</SelectItem>
-                          <SelectItem value="accounting">حسابداری</SelectItem>
-                          <SelectItem value="sales">فروش</SelectItem>
-                          <SelectItem value="other">سایر</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {signupForm.formState.errors.department && (
-                    <p className="text-sm text-red-500 text-right">{signupForm.formState.errors.department.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="role" className="text-right">
-                    نقش *
-                  </Label>
-                  <Controller
-                    name="role"
-                    control={signupForm.control}
-                    render={({ field }) => (
-                      <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                        <SelectTrigger className="text-right">
-                          <SelectValue placeholder="انتخاب نقش" />
-                        </SelectTrigger>
-                        <SelectContent dir="rtl">
-                          <SelectItem value="client">
-                            <div className="flex items-center gap-2 flex-row-reverse">
-                              <User className="w-4 h-4" />
-                              کاربر
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="technician">
-                            <div className="flex items-center gap-2 flex-row-reverse">
-                              <Wrench className="w-4 h-4" />
-                              تکنسین
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {signupForm.formState.errors.role && (
-                    <p className="text-sm text-red-500 text-right">{signupForm.formState.errors.role.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-right">
-                    رمز عبور *
-                  </Label>
-                  <div className="relative">
-                    <Controller
-                      name="password"
-                      control={signupForm.control}
-                      render={({ field }) => (
-                        <Input
-                          {...field}
-                          type={showPassword ? "text" : "password"}
-                          placeholder="حداقل ۶ کاراکتر"
-                          className="text-right pr-10"
-                          dir="rtl"
-                        />
-                      )}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4 text-gray-400" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-gray-400" />
-                      )}
-                    </Button>
-                  </div>
-                  {signupForm.formState.errors.password && (
-                    <p className="text-sm text-red-500 text-right">{signupForm.formState.errors.password.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-right">
-                    تکرار رمز عبور *
-                  </Label>
-                  <div className="relative">
-                    <Controller
-                      name="confirmPassword"
-                      control={signupForm.control}
-                      render={({ field }) => (
-                        <Input
-                          {...field}
-                          type={showConfirmPassword ? "text" : "password"}
-                          placeholder="رمز عبور را مجدداً وارد کنید"
-                          className="text-right pr-10"
-                          dir="rtl"
-                        />
-                      )}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    >
-                      {showConfirmPassword ? (
-                        <EyeOff className="h-4 w-4 text-gray-400" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-gray-400" />
-                      )}
-                    </Button>
-                  </div>
-                  {signupForm.formState.errors.confirmPassword && (
-                    <p className="text-sm text-red-500 text-right">
-                      {signupForm.formState.errors.confirmPassword.message}
-                    </p>
-                  )}
                 </div>
               </div>
 
-              <Button type="submit" className="w-full" disabled={signupForm.formState.isSubmitting}>
-                {signupForm.formState.isSubmitting ? "در حال ثبت‌نام..." : "ثبت‌نام"}
+              <div className="space-y-2">
+                <Label htmlFor="reg-email" className="text-right">
+                  ایمیل
+                </Label>
+                <Input
+                  id="reg-email"
+                  type="email"
+                  placeholder="example@company.com"
+                  className="text-right"
+                  dir="rtl"
+                  value={registerForm.email}
+                  onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="department" className="text-right">
+                    بخش
+                  </Label>
+                  <Select
+                    value={registerForm.department}
+                    onValueChange={(value) => setRegisterForm({ ...registerForm, department: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="بخش" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="IT">فناوری اطلاعات</SelectItem>
+                      <SelectItem value="HR">منابع انسانی</SelectItem>
+                      <SelectItem value="Finance">مالی</SelectItem>
+                      <SelectItem value="Operations">عملیات</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="reg-role" className="text-right">
+                    نقش
+                  </Label>
+                  <Select
+                    value={registerForm.role}
+                    onValueChange={(value) => setRegisterForm({ ...registerForm, role: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="نقش" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="client">کاربر</SelectItem>
+                      <SelectItem value="engineer">تکنسین</SelectItem>
+                      <SelectItem value="admin">مدیر</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reg-password" className="text-right">
+                    رمز عبور
+                  </Label>
+                  <Input
+                    id="reg-password"
+                    type="password"
+                    placeholder="رمز عبور"
+                    className="text-right"
+                    dir="rtl"
+                    value={registerForm.password}
+                    onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password" className="text-right">
+                    تکرار رمز عبور
+                  </Label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    placeholder="تکرار رمز عبور"
+                    className="text-right"
+                    dir="rtl"
+                    value={registerForm.confirmPassword}
+                    onChange={(e) => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    در حال ثبت‌نام...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <UserPlus className="w-4 h-4" />
+                    ثبت‌نام
+                  </div>
+                )}
               </Button>
             </form>
+          </TabsContent>
 
-            <div className="text-center text-sm text-muted-foreground">
-              <p>قبلاً ثبت‌نام کرده‌اید؟</p>
-              <Button variant="link" className="p-0 h-auto text-primary" onClick={() => setActiveTab("login")}>
-                وارد شوید
-              </Button>
+          <TabsContent value="demo" className="space-y-4">
+            <div className="text-center mb-4">
+              <h3 className="text-lg font-semibold mb-2">ورود سریع برای تست</h3>
+              <p className="text-sm text-muted-foreground">برای تست سیستم، از حساب‌های آماده استفاده کنید</p>
+            </div>
+
+            <div className="space-y-3">
+              {quickLoginOptions.map((option) => (
+                <Button
+                  key={option.role}
+                  variant="outline"
+                  className="w-full justify-between h-auto p-4 bg-transparent"
+                  onClick={() => handleQuickLogin(option.email, option.password, option.role)}
+                  disabled={isLoading}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full ${option.color} flex items-center justify-center`}>
+                      <option.icon className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="text-right">
+                      <div className="font-medium">{option.name}</div>
+                      <div className="text-sm text-muted-foreground">{option.email}</div>
+                    </div>
+                  </div>
+                  <LogIn className="w-4 h-4" />
+                </Button>
+              ))}
             </div>
           </TabsContent>
         </Tabs>

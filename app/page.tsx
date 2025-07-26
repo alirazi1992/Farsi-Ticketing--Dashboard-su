@@ -140,8 +140,9 @@ export default function HomePage() {
     switch (user.role) {
       case "admin":
         return <AdminDashboard onLogout={() => window.location.reload()} />
-      case "technician":
+      case "engineer":
         return <TechnicianDashboard onLogout={() => window.location.reload()} />
+      case "client":
       default:
         return <ClientDashboard onLogout={() => window.location.reload()} />
     }
@@ -160,7 +161,10 @@ export default function HomePage() {
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-gray-900">سیستم مدیریت خدمات IT</h1>
-                  <p className="text-sm text-gray-600">خوش آمدید، {user.name}</p>
+                  <p className="text-sm text-gray-600">
+                    خوش آمدید، {user.name} -{" "}
+                    {user.role === "admin" ? "مدیر" : user.role === "engineer" ? "تکنسین" : "کاربر"}
+                  </p>
                 </div>
               </div>
               <UserMenu />

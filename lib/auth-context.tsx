@@ -29,32 +29,62 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// Mock users database
+// Mock users database with all three roles
 const mockUsers: (User & { password: string })[] = [
+  // Client Users
   {
-    id: "1",
+    id: "client-001",
     name: "احمد محمدی",
     email: "ahmad@company.com",
     phone: "09123456789",
-    department: "it",
+    department: "IT",
     role: "client",
     password: "123456",
   },
   {
-    id: "2",
+    id: "client-002",
+    name: "سارا احمدی",
+    email: "sara@company.com",
+    phone: "09123456788",
+    department: "HR",
+    role: "client",
+    password: "123456",
+  },
+  // Technician/Engineer Users
+  {
+    id: "tech-001",
     name: "علی تکنسین",
     email: "ali@company.com",
-    phone: "09123456788",
-    department: "it",
+    phone: "09123456787",
+    department: "IT",
     role: "engineer",
     password: "123456",
   },
   {
-    id: "3",
+    id: "tech-002",
+    name: "محمد حسینی",
+    email: "mohammad@company.com",
+    phone: "09123456786",
+    department: "IT",
+    role: "engineer",
+    password: "123456",
+  },
+  {
+    id: "tech-003",
+    name: "سارا قاسمی",
+    email: "sara.ghasemi@company.com",
+    phone: "09123456785",
+    department: "IT",
+    role: "engineer",
+    password: "123456",
+  },
+  // Admin Users
+  {
+    id: "admin-001",
     name: "مدیر سیستم",
     email: "admin@company.com",
-    phone: "09123456787",
-    department: "it",
+    phone: "09123456784",
+    department: "IT",
     role: "admin",
     password: "123456",
   },
@@ -83,11 +113,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (foundUser) {
       // If role is specified, check if it matches
-      if (role && role === "technician" && foundUser.role === "client") {
+      if (role && role === "technician" && foundUser.role !== "engineer") {
         setIsLoading(false)
         return false
       }
-      if (role && role === "client" && (foundUser.role === "engineer" || foundUser.role === "admin")) {
+      if (role && role === "client" && foundUser.role !== "client") {
+        setIsLoading(false)
+        return false
+      }
+      if (role && role === "admin" && foundUser.role !== "admin") {
         setIsLoading(false)
         return false
       }
@@ -125,7 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Create new user
     const newUser = {
-      id: (mockUsers.length + 1).toString(),
+      id: `${userData.role}-${mockUsers.length + 1}`.padStart(3, "0"),
       name: userData.name,
       email: userData.email,
       phone: userData.phone,
