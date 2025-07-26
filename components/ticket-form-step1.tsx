@@ -1,278 +1,237 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Controller } from "react-hook-form"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertTriangle, FolderOpen } from "lucide-react"
+import type React from "react"
 
-// Issues and sub-issues data structure
-const issuesData = {
-  hardware: {
-    label: "مشکلات سخت‌افزاری",
-    icon: "💻",
-    subIssues: {
-      "computer-not-working": "رایانه کار نمی‌کند",
-      "printer-issues": "مشکلات چاپگر",
-      "monitor-problems": "مشکلات مانیتور",
-      "keyboard-mouse": "مشکلات کیبورد و ماوس",
-      "network-hardware": "مشکلات سخت‌افزار شبکه",
-      "ups-power": "مشکلات برق و UPS",
-      "other-hardware": "سایر مشکلات سخت‌افزاری",
-    },
-  },
-  software: {
-    label: "مشکلات نرم‌افزاری",
-    icon: "🖥️",
-    subIssues: {
-      "os-issues": "مشکلات سیستم عامل",
-      "application-problems": "مشکلات نرم‌افزارهای کاربردی",
-      "software-installation": "نصب و حذف نرم‌افزار",
-      "license-activation": "مشکلات لایسنس و فعال‌سازی",
-      "updates-patches": "به‌روزرسانی‌ها و وصله‌ها",
-      "performance-issues": "مشکلات عملکرد نرم‌افزار",
-      "other-software": "سایر مشکلات نرم‌افزاری",
-    },
-  },
-  network: {
-    label: "مشکلات شبکه و اینترنت",
-    icon: "🌐",
-    subIssues: {
-      "internet-connection": "مشکل اتصال اینترنت",
-      "wifi-problems": "مشکلات Wi-Fi",
-      "network-speed": "کندی شبکه",
-      "vpn-issues": "مشکلات VPN",
-      "network-sharing": "مشکلات اشتراک‌گذاری شبکه",
-      "firewall-security": "مشکلات فایروال و امنیت",
-      "other-network": "سایر مشکلات شبکه",
-    },
-  },
-  email: {
-    label: "مشکلات ایمیل",
-    icon: "📧",
-    subIssues: {
-      "cannot-send": "نمی‌توانم ایمیل ارسال کنم",
-      "cannot-receive": "ایمیل دریافت نمی‌کنم",
-      "login-problems": "مشکل ورود به ایمیل",
-      "sync-issues": "مشکلات همگام‌سازی",
-      "attachment-problems": "مشکلات پیوست",
-      "spam-issues": "مشکلات اسپم",
-      "other-email": "سایر مشکلات ایمیل",
-    },
-  },
-  security: {
-    label: "مشکلات امنیتی",
-    icon: "🔒",
-    subIssues: {
-      "virus-malware": "ویروس و بدافزار",
-      "suspicious-activity": "فعالیت مشکوک",
-      "data-breach": "نقض امنیت داده‌ها",
-      "phishing-attempt": "تلاش فیشینگ",
-      "unauthorized-access": "دسترسی غیرمجاز",
-      "password-issues": "مشکلات رمز عبور",
-      "other-security": "سایر مشکلات امنیتی",
-    },
-  },
-  access: {
-    label: "درخواست‌های دسترسی",
-    icon: "🔑",
-    subIssues: {
-      "new-account": "ایجاد حساب کاربری جدید",
-      "permission-change": "تغییر مجوزهای دسترسی",
-      "system-access": "دسترسی به سیستم‌ها",
-      "application-access": "دسترسی به نرم‌افزارها",
-      "network-access": "دسترسی شبکه",
-      "file-access": "دسترسی به فایل‌ها",
-      "other-access": "سایر درخواست‌های دسترسی",
-    },
-  },
-  training: {
-    label: "آموزش و راهنمایی",
-    icon: "📚",
-    subIssues: {
-      "software-training": "آموزش نرم‌افزار",
-      "hardware-guidance": "راهنمایی سخت‌افزار",
-      "security-awareness": "آگاهی امنیتی",
-      "best-practices": "بهترین روش‌های کاری",
-      troubleshooting: "آموزش عیب‌یابی",
-      documentation: "درخواست مستندات",
-      "other-training": "سایر آموزش‌ها",
-    },
-  },
-  maintenance: {
-    label: "نگهداری و تعمیرات",
-    icon: "🔧",
-    subIssues: {
-      "preventive-maintenance": "نگهداری پیشگیرانه",
-      "repair-request": "درخواست تعمیر",
-      "replacement-request": "درخواست تعویض",
-      "upgrade-request": "درخواست ارتقاء",
-      "cleaning-service": "خدمات نظافت تجهیزات",
-      calibration: "کالیبراسیون تجهیزات",
-      "other-maintenance": "سایر خدمات نگهداری",
-    },
-  },
-}
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Card, CardContent } from "@/components/ui/card"
+import { ChevronRight, AlertTriangle, Clock, ArrowUp, ArrowDown } from "lucide-react"
 
 interface TicketFormStep1Props {
-  control: any
-  errors: any
-  categories: any
+  initialData: any
+  onSubmit: (data: any) => void
+  categories: any[]
 }
 
-export function TicketFormStep1({ control, errors, categories }: TicketFormStep1Props) {
-  const [selectedMainIssue, setSelectedMainIssue] = useState("")
-  const [availableSubIssues, setAvailableSubIssues] = useState<Record<string, string>>({})
+export function TicketFormStep1({ initialData, onSubmit, categories }: TicketFormStep1Props) {
+  const [formData, setFormData] = useState({
+    category: initialData.category || "",
+    subcategory: initialData.subcategory || "",
+    priority: initialData.priority || "",
+    title: initialData.title || "",
+    description: initialData.description || "",
+  })
 
-  // Update sub-issues when main issue changes
+  const [availableSubcategories, setAvailableSubcategories] = useState<any[]>([])
+
+  // Update subcategories when category changes
   useEffect(() => {
-    if (selectedMainIssue && categories[selectedMainIssue]) {
-      setAvailableSubIssues(categories[selectedMainIssue].subIssues || {})
+    if (formData.category) {
+      const selectedCategory = categories.find((cat) => cat.id === formData.category)
+      setAvailableSubcategories(selectedCategory?.subcategories || [])
+
+      // Reset subcategory if it's not available in the new category
+      if (formData.subcategory) {
+        const isSubcategoryAvailable = selectedCategory?.subcategories?.some(
+          (sub: any) => sub.id === formData.subcategory,
+        )
+        if (!isSubcategoryAvailable) {
+          setFormData((prev) => ({ ...prev, subcategory: "" }))
+        }
+      }
     } else {
-      setAvailableSubIssues({})
+      setAvailableSubcategories([])
+      setFormData((prev) => ({ ...prev, subcategory: "" }))
     }
-  }, [selectedMainIssue, categories])
+  }, [formData.category, categories])
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSubmit(formData)
+  }
+
+  const isFormValid =
+    formData.category && formData.subcategory && formData.priority && formData.title && formData.description
+
+  const getPriorityIcon = (priority: string) => {
+    switch (priority) {
+      case "urgent":
+        return <AlertTriangle className="w-4 h-4 text-red-500" />
+      case "high":
+        return <ArrowUp className="w-4 h-4 text-orange-500" />
+      case "medium":
+        return <Clock className="w-4 h-4 text-yellow-500" />
+      case "low":
+        return <ArrowDown className="w-4 h-4 text-green-500" />
+      default:
+        return null
+    }
+  }
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <form onSubmit={handleSubmit} className="space-y-6" dir="rtl">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Category Selection */}
+        <div className="space-y-2">
+          <Label htmlFor="category" className="text-right">
+            دسته‌بندی *
+          </Label>
+          <Select
+            value={formData.category}
+            onValueChange={(value) => setFormData((prev) => ({ ...prev, category: value }))}
+          >
+            <SelectTrigger className="text-right">
+              <SelectValue placeholder="انتخاب دسته‌بندی" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Subcategory Selection */}
+        <div className="space-y-2">
+          <Label htmlFor="subcategory" className="text-right">
+            زیردسته *
+          </Label>
+          <Select
+            value={formData.subcategory}
+            onValueChange={(value) => setFormData((prev) => ({ ...prev, subcategory: value }))}
+            disabled={!formData.category}
+          >
+            <SelectTrigger className="text-right">
+              <SelectValue placeholder="انتخاب زیردسته" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableSubcategories.map((subcategory) => (
+                <SelectItem key={subcategory.id} value={subcategory.id}>
+                  {subcategory.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       {/* Priority Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-right">
-            <AlertTriangle className="w-5 h-5" />
-            اولویت مشکل
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Label htmlFor="priority" className="text-right">
-              میزان فوریت مشکل شما چقدر است؟ *
-            </Label>
-            <Controller
-              name="priority"
-              control={control}
-              render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                  <SelectTrigger className="text-right">
-                    <SelectValue placeholder="انتخاب اولویت" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">
-                      <div className="flex items-center gap-2 text-right">
-                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                        <span>کم - می‌توانم صبر کنم</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="medium">
-                      <div className="flex items-center gap-2 text-right">
-                        <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                        <span>متوسط - در چند روز آینده</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="high">
-                      <div className="flex items-center gap-2 text-right">
-                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                        <span>بالا - امروز یا فردا</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="urgent">
-                      <div className="flex items-center gap-2 text-right">
-                        <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                        <span>فوری - الان نیاز دارم</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {errors.priority && <p className="text-sm text-red-500 text-right">{errors.priority.message}</p>}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-2">
+        <Label htmlFor="priority" className="text-right">
+          اولویت *
+        </Label>
+        <Select
+          value={formData.priority}
+          onValueChange={(value) => setFormData((prev) => ({ ...prev, priority: value }))}
+        >
+          <SelectTrigger className="text-right">
+            <SelectValue placeholder="انتخاب اولویت" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="urgent">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-red-500" />
+                <span>فوری</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="high">
+              <div className="flex items-center gap-2">
+                <ArrowUp className="w-4 h-4 text-orange-500" />
+                <span>بالا</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="medium">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-yellow-500" />
+                <span>متوسط</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="low">
+              <div className="flex items-center gap-2">
+                <ArrowDown className="w-4 h-4 text-green-500" />
+                <span>پایین</span>
+              </div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-      {/* Issue Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-right">
-            <FolderOpen className="w-5 h-5" />
-            انتخاب نوع مشکل
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Main Issue Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="mainIssue" className="text-right">
-              مشکل شما در کدام دسته قرار می‌گیرد؟ *
-            </Label>
-            <Controller
-              name="mainIssue"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  onValueChange={(value) => {
-                    field.onChange(value)
-                    setSelectedMainIssue(value)
-                  }}
-                  value={field.value}
-                  dir="rtl"
-                >
-                  <SelectTrigger className="text-right">
-                    <SelectValue placeholder="انتخاب دسته اصلی مشکل" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(categories).map(([key, category]: [string, any]) => (
-                      <SelectItem key={key} value={key}>
-                        <div className="flex items-center gap-2 text-right">
-                          <span className="text-lg">{category.icon || "📁"}</span>
-                          <span>{category.label}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {errors.mainIssue && <p className="text-sm text-red-500 text-right">{errors.mainIssue.message}</p>}
-          </div>
+      {/* Title */}
+      <div className="space-y-2">
+        <Label htmlFor="title" className="text-right">
+          عنوان تیکت *
+        </Label>
+        <Input
+          id="title"
+          value={formData.title}
+          onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
+          placeholder="عنوان مختصر و واضح برای مشکل خود وارد کنید"
+          className="text-right"
+        />
+      </div>
 
-          {/* Sub Issue Selection */}
-          {selectedMainIssue && Object.keys(availableSubIssues).length > 0 && (
-            <div className="space-y-2">
-              <Label htmlFor="subIssue" className="text-right">
-                مشکل دقیق شما چیست؟ *
-              </Label>
-              <Controller
-                name="subIssue"
-                control={control}
-                render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                    <SelectTrigger className="text-right">
-                      <SelectValue placeholder="انتخاب مشکل دقیق" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(availableSubIssues).map(([key, subIssue]: [string, any]) => (
-                        <SelectItem key={key} value={key}>
-                          <span className="text-right">{subIssue.label || subIssue}</span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              {errors.subIssue && <p className="text-sm text-red-500 text-right">{errors.subIssue.message}</p>}
+      {/* Description */}
+      <div className="space-y-2">
+        <Label htmlFor="description" className="text-right">
+          توضیحات *
+        </Label>
+        <Textarea
+          id="description"
+          value={formData.description}
+          onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+          placeholder="توضیح کاملی از مشکل، مراحل انجام شده، و اطلاعات مفید دیگر ارائه دهید"
+          className="text-right min-h-[120px]"
+        />
+      </div>
+
+      {/* Preview Card */}
+      {isFormValid && (
+        <Card className="bg-muted/50">
+          <CardContent className="p-4">
+            <h4 className="font-medium mb-2 text-right">پیش‌نمایش تیکت:</h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">دسته‌بندی:</span>
+                <span>{categories.find((cat) => cat.id === formData.category)?.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">زیردسته:</span>
+                <span>{availableSubcategories.find((sub) => sub.id === formData.subcategory)?.name}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">اولویت:</span>
+                <div className="flex items-center gap-1">
+                  {getPriorityIcon(formData.priority)}
+                  <span>
+                    {formData.priority === "urgent" && "فوری"}
+                    {formData.priority === "high" && "بالا"}
+                    {formData.priority === "medium" && "متوسط"}
+                    {formData.priority === "low" && "پایین"}
+                  </span>
+                </div>
+              </div>
+              <div className="pt-2 border-t">
+                <p className="font-medium text-right">{formData.title}</p>
+                <p className="text-muted-foreground text-right mt-1 line-clamp-2">{formData.description}</p>
+              </div>
             </div>
-          )}
+          </CardContent>
+        </Card>
+      )}
 
-          {/* Help Text */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-800 text-right">
-              <strong>راهنما:</strong> ابتدا دسته اصلی مشکل خود را انتخاب کنید، سپس از فهرست دوم مشکل دقیق خود را مشخص
-              کنید. این کار به ما کمک می‌کند تا بهترین راه‌حل را برای شما پیدا کنیم.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+      {/* Submit Button */}
+      <div className="flex justify-end">
+        <Button type="submit" disabled={!isFormValid} className="gap-2">
+          مرحله بعد
+          <ChevronRight className="w-4 h-4" />
+        </Button>
+      </div>
+    </form>
   )
 }
