@@ -24,7 +24,7 @@ import {
   Send,
   Calendar,
   HardDrive,
-  Monitor,
+  Laptop,
   Network,
   Mail,
   Shield,
@@ -61,7 +61,7 @@ const priorityLabels = {
 
 const categoryIcons = {
   hardware: HardDrive,
-  software: Monitor,
+  software: Laptop,
   network: Network,
   email: Mail,
   security: Shield,
