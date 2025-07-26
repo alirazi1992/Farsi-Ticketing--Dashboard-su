@@ -31,6 +31,7 @@ import {
   Star,
   TrendingUp,
   Zap,
+  Calendar,
 } from "lucide-react"
 
 const statusColors = {
@@ -541,6 +542,7 @@ export function AdminTicketManagement({ tickets, onTicketUpdate }: AdminTicketMa
     </div>
   )
 
+  // Add this after the existing handleViewTicket function (around line 300)
   const handleViewTicket = (ticket: any) => {
     setSelectedTicket(ticket)
     setViewDialogOpen(true)
@@ -986,29 +988,136 @@ export function AdminTicketManagement({ tickets, onTicketUpdate }: AdminTicketMa
 
       {/* View Ticket Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-right">مشاهده تیکت {selectedTicket?.id}</DialogTitle>
+            <DialogTitle className="text-right">جزئیات تیکت {selectedTicket?.id}</DialogTitle>
           </DialogHeader>
           {selectedTicket && (
-            <div className="space-y-4">
-              <div className="bg-muted p-4 rounded-lg">
-                <div className="flex justify-between items-start">
-                  <div className="text-right">
-                    <h4 className="font-medium">{selectedTicket.title}</h4>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      دسته‌بندی: {categoryLabels[selectedTicket.category]} | اولویت:{" "}
+            <div className="space-y-6">
+              {/* Ticket Header */}
+              <div className="flex justify-between items-start">
+                <div className="text-right space-y-2">
+                  <h3 className="text-xl font-semibold">{selectedTicket.title}</h3>
+                  <div className="flex gap-2">
+                    <Badge className={statusColors[selectedTicket.status]}>{statusLabels[selectedTicket.status]}</Badge>
+                    <Badge className={priorityColors[selectedTicket.priority]}>
                       {priorityLabels[selectedTicket.priority]}
-                    </p>
+                    </Badge>
                   </div>
-                  <Badge className={priorityColors[selectedTicket.priority]}>
-                    {priorityLabels[selectedTicket.priority]}
-                  </Badge>
                 </div>
-                <Separator className="my-2" />
-                <p className="text-right">{selectedTicket.description}</p>
+                <div className="text-left space-y-1">
+                  <p className="text-sm text-muted-foreground">شماره تیکت</p>
+                  <p className="font-mono text-lg">{selectedTicket.id}</p>
+                </div>
               </div>
-              {/* Add more details here as needed */}
+
+              <Separator />
+
+              {/* Ticket Details */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium mb-2">اطلاعات کلی</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">دسته‌بندی:</span>
+                        <span>{categoryLabels[selectedTicket.category]}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">زیر دسته:</span>
+                        <span>{selectedTicket.subcategory}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">تاریخ ایجاد:</span>
+                        <span>{new Date(selectedTicket.createdAt).toLocaleDateString("fa-IR")}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">آخرین به‌روزرسانی:</span>
+                        <span>{new Date(selectedTicket.updatedAt).toLocaleDateString("fa-IR")}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {selectedTicket.assignedTechnicianName && (
+                    <div>
+                      <h4 className="font-medium mb-2">تکنسین مسئول</h4>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="w-8 h-8">
+                          <AvatarFallback>{selectedTicket.assignedTechnicianName.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <span>{selectedTicket.assignedTechnicianName}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium mb-2">اطلاعات تماس</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">نام:</span>
+                        <span>{selectedTicket.clientName}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">ایمیل:</span>
+                        <span>{selectedTicket.clientEmail}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">تلفن:</span>
+                        <span>{selectedTicket.clientPhone}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">بخش:</span>
+                        <span>{selectedTicket.department}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Description */}
+              <div>
+                <h4 className="font-medium mb-2">شرح مشکل</h4>
+                <div className="bg-muted p-4 rounded-lg text-right">
+                  <p className="whitespace-pre-wrap">{selectedTicket.description}</p>
+                </div>
+              </div>
+
+              {/* Responses */}
+              {selectedTicket.responses && selectedTicket.responses.length > 0 && (
+                <div>
+                  <h4 className="font-medium mb-4">پاسخ‌ها و به‌روزرسانی‌ها</h4>
+                  <div className="space-y-4">
+                    {selectedTicket.responses.map((response: any, index: number) => (
+                      <div key={index} className="border rounded-lg p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex items-center gap-2">
+                            <Avatar className="w-6 h-6">
+                              <AvatarFallback className="text-xs">
+                                {response.technicianName?.charAt(0) || "T"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="font-medium text-sm">{response.technicianName}</span>
+                          </div>
+                          <div className="text-left">
+                            <Badge className={statusColors[response.status]}>{statusLabels[response.status]}</Badge>
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              {new Date(response.timestamp).toLocaleDateString("fa-IR")} -
+                              {new Date(response.timestamp).toLocaleTimeString("fa-IR")}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="bg-muted/50 p-3 rounded text-right">
+                          <p className="whitespace-pre-wrap">{response.message}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

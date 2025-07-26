@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { TwoStepTicketForm } from "@/components/two-step-ticket-form"
+import { toast } from "@/hooks/use-toast"
 import {
   Plus,
   Search,
@@ -28,6 +29,12 @@ import {
   Key,
   MessageSquare,
   Calendar,
+  Download,
+  Printer,
+  RefreshCw,
+  TrendingUp,
+  Users,
+  Activity,
 } from "lucide-react"
 
 const statusColors = {
@@ -88,6 +95,8 @@ export function ClientDashboard({ tickets, onTicketCreate, currentUser }: Client
   const [filterPriority, setFilterPriority] = useState("all")
   const [selectedTicket, setSelectedTicket] = useState<any>(null)
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   // Filter tickets for current user
   const userTickets = tickets.filter((ticket) => ticket.clientEmail === currentUser?.email)
@@ -110,6 +119,140 @@ export function ClientDashboard({ tickets, onTicketCreate, currentUser }: Client
     setViewDialogOpen(true)
   }
 
+  const handleCreateTicket = (ticketData: any) => {
+    onTicketCreate(ticketData)
+    setCreateDialogOpen(false)
+    toast({
+      title: "تیکت ایجاد شد",
+      description: "درخواست شما با موفقیت ثبت شد و به زودی بررسی خواهد شد",
+    })
+  }
+
+  const handleRefresh = () => {
+    setIsRefreshing(true)
+    // Simulate refresh
+    setTimeout(() => {
+      setIsRefreshing(false)
+      toast({
+        title: "به‌روزرسانی انجام شد",
+        description: "اطلاعات تیکت‌ها به‌روزرسانی شد",
+      })
+    }, 1000)
+  }
+
+  const handleExportTickets = () => {
+    const csvContent = [
+      ["شماره تیکت", "عنوان", "وضعیت", "اولویت", "دسته‌بندی", "تاریخ ایجاد", "آخرین به‌روزرسانی"],
+      ...filteredTickets.map((ticket) => [
+        ticket.id,
+        ticket.title,
+        statusLabels[ticket.status],
+        priorityLabels[ticket.priority],
+        categoryLabels[ticket.category],
+        new Date(ticket.createdAt).toLocaleDateString("fa-IR"),
+        new Date(ticket.updatedAt).toLocaleDateString("fa-IR"),
+      ]),
+    ]
+      .map((row) => row.join(","))
+      .join("\n")
+
+    const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" })
+    const link = document.createElement("a")
+    const url = URL.createObjectURL(blob)
+    link.setAttribute("href", url)
+    link.setAttribute("download", `my-tickets-${new Date().toISOString().split("T")[0]}.csv`)
+    link.style.visibility = "hidden"
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    toast({
+      title: "فایل دانلود شد",
+      description: "لیست تیکت‌های شما به صورت CSV دانلود شد",
+    })
+  }
+
+  const handlePrintTickets = () => {
+    const printWindow = window.open("", "_blank")
+    if (printWindow) {
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html dir="rtl">
+        <head>
+          <title>تیکت‌های من</title>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: 'Tahoma', Arial, sans-serif; direction: rtl; margin: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: right; }
+            th { background-color: #f5f5f5; font-weight: bold; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .status-open { background-color: #fee2e2; color: #991b1b; }
+            .status-in-progress { background-color: #fef3c7; color: #92400e; }
+            .status-resolved { background-color: #d1fae5; color: #065f46; }
+            .status-closed { background-color: #f3f4f6; color: #374151; }
+            @media print {
+              body { margin: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>تیکت‌های ${currentUser?.name}</h1>
+            <p>تاریخ تولید گزارش: ${new Date().toLocaleDateString("fa-IR")}</p>
+            <p>تعداد تیکت‌ها: ${filteredTickets.length}</p>
+          </div>
+          
+          <table>
+            <thead>
+              <tr>
+                <th>شماره تیکت</th>
+                <th>عنوان</th>
+                <th>وضعیت</th>
+                <th>اولویت</th>
+                <th>دسته‌بندی</th>
+                <th>تکنسین</th>
+                <th>تاریخ ایجاد</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredTickets
+                .map(
+                  (ticket) => `
+                <tr>
+                  <td>${ticket.id}</td>
+                  <td>${ticket.title}</td>
+                  <td class="status-${ticket.status}">${statusLabels[ticket.status]}</td>
+                  <td>${priorityLabels[ticket.priority]}</td>
+                  <td>${categoryLabels[ticket.category]}</td>
+                  <td>${ticket.assignedTechnicianName || "تعیین نشده"}</td>
+                  <td>${new Date(ticket.createdAt).toLocaleDateString("fa-IR")}</td>
+                </tr>
+              `,
+                )
+                .join("")}
+            </tbody>
+          </table>
+        </body>
+        </html>
+      `)
+      printWindow.document.close()
+      printWindow.print()
+    }
+  }
+
+  // Calculate statistics
+  const stats = {
+    total: userTickets.length,
+    open: userTickets.filter((t) => t.status === "open").length,
+    inProgress: userTickets.filter((t) => t.status === "in-progress").length,
+    resolved: userTickets.filter((t) => t.status === "resolved").length,
+    closed: userTickets.filter((t) => t.status === "closed").length,
+    urgent: userTickets.filter((t) => t.priority === "urgent").length,
+    avgResponseTime: userTickets.length > 0 ? "2.3 ساعت" : "0",
+    satisfactionRate: userTickets.length > 0 ? "4.6" : "0",
+  }
+
   return (
     <div className="space-y-6" dir="rtl">
       <div className="flex justify-between items-center">
@@ -117,23 +260,29 @@ export function ClientDashboard({ tickets, onTicketCreate, currentUser }: Client
           <h2 className="text-2xl font-bold">پنل کاربری</h2>
           <p className="text-muted-foreground">مدیریت درخواست‌های خدمات IT</p>
         </div>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="w-4 h-4" />
-              ایجاد تیکت جدید
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
-            <DialogHeader>
-              <DialogTitle className="text-right">ایجاد درخواست جدید</DialogTitle>
-            </DialogHeader>
-            <TwoStepTicketForm onSubmit={onTicketCreate} />
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleRefresh} disabled={isRefreshing} className="gap-2 bg-transparent">
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
+            به‌روزرسانی
+          </Button>
+          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="w-4 h-4" />
+                ایجاد تیکت جدید
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
+              <DialogHeader>
+                <DialogTitle className="text-right">ایجاد درخواست جدید</DialogTitle>
+              </DialogHeader>
+              <TwoStepTicketForm onSubmit={handleCreateTicket} />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
-      {/* Statistics Cards */}
+      {/* Enhanced Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -141,7 +290,8 @@ export function ClientDashboard({ tickets, onTicketCreate, currentUser }: Client
             <Ticket className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-right">{userTickets.length}</div>
+            <div className="text-2xl font-bold text-right">{stats.total}</div>
+            <p className="text-xs text-muted-foreground text-right">{stats.urgent > 0 && `${stats.urgent} فوری`}</p>
           </CardContent>
         </Card>
         <Card>
@@ -150,7 +300,10 @@ export function ClientDashboard({ tickets, onTicketCreate, currentUser }: Client
             <AlertCircle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-right">{userTickets.filter((t) => t.status === "open").length}</div>
+            <div className="text-2xl font-bold text-right">{stats.open}</div>
+            <p className="text-xs text-muted-foreground text-right">
+              {stats.open > 0 ? "نیاز به پیگیری" : "همه پاسخ داده شده"}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -159,9 +312,8 @@ export function ClientDashboard({ tickets, onTicketCreate, currentUser }: Client
             <Clock className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-right">
-              {userTickets.filter((t) => t.status === "in-progress").length}
-            </div>
+            <div className="text-2xl font-bold text-right">{stats.inProgress}</div>
+            <p className="text-xs text-muted-foreground text-right">میانگین پاسخ: {stats.avgResponseTime}</p>
           </CardContent>
         </Card>
         <Card>
@@ -170,20 +322,58 @@ export function ClientDashboard({ tickets, onTicketCreate, currentUser }: Client
             <CheckCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-right">
-              {userTickets.filter((t) => t.status === "resolved").length}
-            </div>
+            <div className="text-2xl font-bold text-right">{stats.resolved + stats.closed}</div>
+            <p className="text-xs text-muted-foreground text-right">رضایت: {stats.satisfactionRate}/5</p>
           </CardContent>
         </Card>
       </div>
 
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-right">عملیات سریع</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Button variant="outline" className="gap-2 h-auto p-4 flex-col bg-transparent">
+              <TrendingUp className="w-6 h-6 text-blue-500" />
+              <span className="text-sm">گزارش عملکرد</span>
+            </Button>
+            <Button variant="outline" className="gap-2 h-auto p-4 flex-col bg-transparent">
+              <Users className="w-6 h-6 text-green-500" />
+              <span className="text-sm">تیم پشتیبانی</span>
+            </Button>
+            <Button variant="outline" className="gap-2 h-auto p-4 flex-col bg-transparent">
+              <Activity className="w-6 h-6 text-purple-500" />
+              <span className="text-sm">وضعیت سیستم</span>
+            </Button>
+            <Button variant="outline" className="gap-2 h-auto p-4 flex-col bg-transparent">
+              <MessageSquare className="w-6 h-6 text-orange-500" />
+              <span className="text-sm">پیام‌های جدید</span>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Tickets Management */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-right">تیکت‌های من</CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-right">تیکت‌های من</CardTitle>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handlePrintTickets} className="gap-2 bg-transparent">
+                <Printer className="w-4 h-4" />
+                چاپ
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExportTickets} className="gap-2 bg-transparent">
+                <Download className="w-4 h-4" />
+                دانلود
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          {/* Filters */}
+          {/* Enhanced Filters */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div className="relative">
               <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -234,6 +424,16 @@ export function ClientDashboard({ tickets, onTicketCreate, currentUser }: Client
               <Filter className="w-4 h-4" />
               پاک کردن فیلترها
             </Button>
+          </div>
+
+          {/* Results Summary */}
+          <div className="flex justify-between items-center mb-4">
+            <p className="text-sm text-muted-foreground text-right">
+              نمایش {filteredTickets.length} از {userTickets.length} تیکت
+            </p>
+            {filteredTickets.length !== userTickets.length && (
+              <Badge variant="secondary">{filteredTickets.length} فیلتر شده</Badge>
+            )}
           </div>
 
           {/* Tickets Table */}
@@ -308,6 +508,25 @@ export function ClientDashboard({ tickets, onTicketCreate, currentUser }: Client
                       <div className="flex flex-col items-center gap-2">
                         <Search className="w-8 h-8 text-muted-foreground" />
                         <p className="text-muted-foreground">تیکتی یافت نشد</p>
+                        {searchQuery || filterStatus !== "all" || filterPriority !== "all" ? (
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setSearchQuery("")
+                              setFilterStatus("all")
+                              setFilterPriority("all")
+                            }}
+                            className="gap-2"
+                          >
+                            <Filter className="w-4 h-4" />
+                            پاک کردن فیلترها
+                          </Button>
+                        ) : (
+                          <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
+                            <Plus className="w-4 h-4" />
+                            ایجاد اولین تیکت
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
