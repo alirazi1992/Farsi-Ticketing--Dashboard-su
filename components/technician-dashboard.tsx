@@ -16,8 +16,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Progress } from "@/components/ui/progress"
-import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/lib/auth-context"
 import { useTickets } from "@/lib/ticket-context"
 import { toast } from "@/hooks/use-toast"
@@ -28,10 +26,8 @@ import {
   MessageSquare,
   Eye,
   Send,
-  BarChart3,
   Search,
   RefreshCw,
-  Download,
   PlayCircle,
   PauseCircle,
   Timer,
@@ -41,17 +37,17 @@ import {
   Building,
   FileText,
   Settings,
-  TrendingUp,
-  Award,
-  Zap,
   Activity,
-  Ticket,
   Filter,
-  MoreHorizontal,
   Flag,
-  Star,
   BookOpen,
   Wrench,
+  Target,
+  Briefcase,
+  CheckSquare,
+  Save,
+  ArrowRight,
+  LogOut,
 } from "lucide-react"
 
 interface TechnicianDashboardProps {
@@ -69,6 +65,9 @@ export function TechnicianDashboard({ onLogout }: TechnicianDashboardProps) {
   const [activeTimer, setActiveTimer] = useState<string | null>(null)
   const [timeSpent, setTimeSpent] = useState<{ [key: string]: number }>({})
   const [sortBy, setSortBy] = useState("priority")
+  const [resolutionText, setResolutionText] = useState("")
+  const [showResolutionDialog, setShowResolutionDialog] = useState(false)
+  const [ticketToResolve, setTicketToResolve] = useState<any>(null)
 
   // Get technician's tickets
   const technicianTickets = getTicketsByTechnician(user?.id || "tech-001")
@@ -109,6 +108,13 @@ export function TechnicianDashboard({ onLogout }: TechnicianDashboardProps) {
   }
 
   const handleStatusChange = (ticketId: string, newStatus: string) => {
+    if (newStatus === "resolved") {
+      const ticket = technicianTickets.find((t) => t.id === ticketId)
+      setTicketToResolve(ticket)
+      setShowResolutionDialog(true)
+      return
+    }
+
     updateTicket(ticketId, { status: newStatus as any })
     if (newStatus === "resolved") {
       setActiveTimer(null)
@@ -135,12 +141,22 @@ export function TechnicianDashboard({ onLogout }: TechnicianDashboardProps) {
     })
   }
 
-  const handleResolveTicket = (ticketId: string, resolution: string) => {
-    updateTicket(ticketId, {
+  const handleResolveTicket = () => {
+    if (!ticketToResolve || !resolutionText.trim()) return
+
+    updateTicket(ticketToResolve.id, {
       status: "resolved",
-      resolution: resolution,
+      resolution: resolutionText,
     })
-    setActiveTimer(null)
+
+    if (activeTimer === ticketToResolve.id) {
+      setActiveTimer(null)
+    }
+
+    setShowResolutionDialog(false)
+    setResolutionText("")
+    setTicketToResolve(null)
+
     toast({
       title: "تیکت حل شد",
       description: "تیکت با موفقیت حل و بسته شد",
@@ -294,94 +310,141 @@ export function TechnicianDashboard({ onLogout }: TechnicianDashboardProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50" dir="rtl">
-      <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-right flex items-center gap-2">
-              <Wrench className="w-8 h-8 text-blue-600" />
-              پنل تکنسین
-            </h1>
-            <p className="text-muted-foreground text-right">مدیریت حرفه‌ای تیکت‌های پشتیبانی</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" className="gap-2 bg-transparent">
-              <RefreshCw className="w-4 h-4" />
-              به‌روزرسانی
-            </Button>
-            <Button variant="outline" size="sm" className="gap-2 bg-transparent">
-              <Download className="w-4 h-4" />
-              گزارش عملکرد
-            </Button>
-            <Button variant="outline" size="sm" className="gap-2 bg-transparent">
-              <Settings className="w-4 h-4" />
-              تنظیمات
-            </Button>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100" dir="rtl">
+      {/* Top Navigation Bar */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Wrench className="w-8 h-8 text-blue-600" />
+                <div>
+                  <h1 className="text-xl font-bold text-right">پنل تکنسین</h1>
+                  <p className="text-sm text-muted-foreground text-right">خوش آمدید، {user?.name}</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button variant="outline" size="sm" className="gap-2 bg-transparent">
+                <RefreshCw className="w-4 h-4" />
+                به‌روزرسانی
+              </Button>
+              <Button variant="outline" size="sm" className="gap-2 bg-transparent">
+                <Settings className="w-4 h-4" />
+                تنظیمات
+              </Button>
+              <Button variant="outline" size="sm" onClick={onLogout} className="gap-2 bg-transparent">
+                <LogOut className="w-4 h-4" />
+                خروج
+              </Button>
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Performance Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="container mx-auto p-6 space-y-6">
+        {/* Performance Dashboard */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-right">کل تیکت‌ها</CardTitle>
-              <Ticket className="h-5 w-5" />
+              <CardTitle className="text-sm font-medium text-right">تیکت‌های من</CardTitle>
+              <Briefcase className="h-5 w-5" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-right">{stats.total}</div>
-              <p className="text-xs opacity-80 text-right">تیکت‌های واگذار شده</p>
+              <p className="text-xs opacity-80 text-right">کل تیکت‌های واگذار شده</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-orange-500 to-red-500 text-white">
+          <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-right">فوری</CardTitle>
               <AlertTriangle className="h-5 w-5" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-right">{stats.urgent}</div>
-              <p className="text-xs opacity-80 text-right">نیاز به توجه فوری</p>
+              <p className="text-xs opacity-80 text-right">نیاز به اقدام فوری</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-right">در حال کار</CardTitle>
+              <Activity className="h-5 w-5" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-right">{stats.inProgress}</div>
+              <p className="text-xs opacity-80 text-right">تیکت‌های در دست اقدام</p>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-right">نرخ حل</CardTitle>
-              <TrendingUp className="h-5 w-5" />
+              <CardTitle className="text-sm font-medium text-right">حل شده</CardTitle>
+              <CheckCircle className="h-5 w-5" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-right">{stats.resolutionRate}%</div>
-              <p className="text-xs opacity-80 text-right">تیکت‌های حل شده</p>
+              <div className="text-2xl font-bold text-right">{stats.resolved}</div>
+              <p className="text-xs opacity-80 text-right">تیکت‌های تکمیل شده</p>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-right">زمان پاسخ</CardTitle>
-              <Timer className="h-5 w-5" />
+              <CardTitle className="text-sm font-medium text-right">نرخ موفقیت</CardTitle>
+              <Target className="h-5 w-5" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-right">{stats.avgResponseTime}</div>
-              <p className="text-xs opacity-80 text-right">میانگین پاسخ‌دهی</p>
+              <div className="text-2xl font-bold text-right">{stats.resolutionRate}%</div>
+              <p className="text-xs opacity-80 text-right">درصد حل مسائل</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Main Content */}
-        <Tabs defaultValue="tickets" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="tickets" className="gap-2">
-              <Ticket className="w-4 h-4" />
-              تیکت‌های من
+        {/* Active Timer Display */}
+        {activeTimer && (
+          <Card className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <Timer className="w-8 h-8" />
+                  <div>
+                    <h3 className="text-lg font-semibold text-right">در حال کار روی تیکت</h3>
+                    <p className="text-sm opacity-90 text-right">
+                      {filteredTickets.find((t) => t.id === activeTimer)?.title}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-mono font-bold mb-2">{formatTime(timeSpent[activeTimer] || 0)}</div>
+                  <Button
+                    onClick={() => stopTimer(activeTimer)}
+                    variant="outline"
+                    className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+                  >
+                    <PauseCircle className="w-4 h-4 mr-2" />
+                    توقف تایمر
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Main Technician Interface */}
+        <Tabs defaultValue="workqueue" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-4 bg-white">
+            <TabsTrigger value="workqueue" className="gap-2">
+              <Briefcase className="w-4 h-4" />
+              صف کاری
             </TabsTrigger>
             <TabsTrigger value="active" className="gap-2">
-              <Activity className="w-4 h-4" />
-              در حال کار
+              <Timer className="w-4 h-4" />
+              کار فعال
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="gap-2">
-              <BarChart3 className="w-4 h-4" />
-              آمار عملکرد
+            <TabsTrigger value="completed" className="gap-2">
+              <CheckSquare className="w-4 h-4" />
+              تکمیل شده
             </TabsTrigger>
             <TabsTrigger value="knowledge" className="gap-2">
               <BookOpen className="w-4 h-4" />
@@ -389,13 +452,13 @@ export function TechnicianDashboard({ onLogout }: TechnicianDashboardProps) {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="tickets" className="space-y-4">
-            {/* Filters */}
+          <TabsContent value="workqueue" className="space-y-4">
+            {/* Work Queue Filters */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-right flex items-center gap-2">
                   <Filter className="w-5 h-5" />
-                  فیلتر و جستجو
+                  مدیریت صف کاری
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -418,7 +481,6 @@ export function TechnicianDashboard({ onLogout }: TechnicianDashboardProps) {
                       <SelectItem value="all">همه وضعیت‌ها</SelectItem>
                       <SelectItem value="open">باز</SelectItem>
                       <SelectItem value="in-progress">در حال انجام</SelectItem>
-                      <SelectItem value="resolved">حل شده</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select value={priorityFilter} onValueChange={setPriorityFilter}>
@@ -447,227 +509,245 @@ export function TechnicianDashboard({ onLogout }: TechnicianDashboardProps) {
               </CardContent>
             </Card>
 
-            {/* Tickets List */}
+            {/* Technician Work Queue */}
             <div className="space-y-4">
-              {filteredTickets.length === 0 ? (
+              {filteredTickets.filter((t) => t.status !== "resolved").length === 0 ? (
                 <Card>
                   <CardContent className="text-center py-12">
-                    <Ticket className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                    <h3 className="text-lg font-semibold mb-2">هیچ تیکتی یافت نشد</h3>
-                    <p className="text-muted-foreground">
-                      {technicianTickets.length === 0
-                        ? "هیچ تیکتی به شما تخصیص نیافته است"
-                        : "تیکتی با فیلترهای انتخابی یافت نشد"}
-                    </p>
+                    <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-500" />
+                    <h3 className="text-lg font-semibold mb-2">عالی! همه تیکت‌ها حل شده</h3>
+                    <p className="text-muted-foreground">در حال حاضر هیچ تیکت فعالی برای کار ندارید</p>
                   </CardContent>
                 </Card>
               ) : (
-                filteredTickets.map((ticket) => (
-                  <Card
-                    key={ticket.id}
-                    className="hover:shadow-lg transition-all duration-200 border-r-4 border-r-blue-500"
-                  >
-                    <CardContent className="p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2 justify-end">
-                            <div className="flex items-center gap-2">
-                              {getStatusBadge(ticket.status)}
-                              {getPriorityBadge(ticket.priority)}
-                              <Badge variant="outline" className="gap-1">
-                                <FileText className="w-3 h-3" />
-                                {getCategoryLabel(ticket.category)}
-                              </Badge>
+                filteredTickets
+                  .filter((t) => t.status !== "resolved")
+                  .map((ticket) => (
+                    <Card
+                      key={ticket.id}
+                      className={`hover:shadow-lg transition-all duration-200 border-r-4 ${
+                        activeTimer === ticket.id
+                          ? "border-r-green-500 bg-green-50"
+                          : ticket.priority === "urgent"
+                            ? "border-r-red-500"
+                            : "border-r-blue-500"
+                      }`}
+                    >
+                      <CardContent className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-3 justify-end">
+                              <div className="flex items-center gap-2">
+                                {getStatusBadge(ticket.status)}
+                                {getPriorityBadge(ticket.priority)}
+                                <Badge variant="outline" className="gap-1">
+                                  <FileText className="w-3 h-3" />
+                                  {getCategoryLabel(ticket.category)}
+                                </Badge>
+                              </div>
+                              <span className="font-bold text-lg">{ticket.id}</span>
                             </div>
-                            <span className="font-bold text-lg">{ticket.id}</span>
-                          </div>
-                          <h3 className="font-bold text-xl mb-2 text-right">{ticket.title}</h3>
-                          <p className="text-muted-foreground text-right mb-4 line-clamp-2">{ticket.description}</p>
 
-                          {/* Client Info */}
-                          <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                            <h4 className="font-semibold mb-2 text-right flex items-center gap-2">
-                              <User className="w-4 h-4" />
-                              اطلاعات درخواست‌کننده
-                            </h4>
-                            <div className="grid grid-cols-2 gap-3 text-sm">
-                              <div className="flex items-center gap-2 justify-end">
-                                <span>{ticket.clientName}</span>
-                                <User className="w-4 h-4 text-muted-foreground" />
-                              </div>
-                              <div className="flex items-center gap-2 justify-end">
-                                <span>{ticket.clientDepartment}</span>
-                                <Building className="w-4 h-4 text-muted-foreground" />
-                              </div>
-                              <div className="flex items-center gap-2 justify-end">
-                                <span>{ticket.clientEmail}</span>
-                                <Mail className="w-4 h-4 text-muted-foreground" />
-                              </div>
-                              <div className="flex items-center gap-2 justify-end">
-                                <span>{ticket.clientPhone}</span>
-                                <Phone className="w-4 h-4 text-muted-foreground" />
-                              </div>
-                            </div>
-                          </div>
+                            <h3 className="font-bold text-xl mb-2 text-right">{ticket.title}</h3>
+                            <p className="text-muted-foreground text-right mb-4">{ticket.description}</p>
 
-                          {/* Time Tracking */}
-                          <div className="flex items-center gap-4 mb-4 justify-end">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm text-muted-foreground">زمان صرف شده:</span>
-                              <span className="font-mono text-sm">
-                                {activeTimer === ticket.id
-                                  ? formatTime(timeSpent[ticket.id] || 0)
-                                  : ticket.actualTime || "00:00:00"}
-                              </span>
+                            {/* Client Information Panel */}
+                            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                              <h4 className="font-semibold mb-3 text-right flex items-center gap-2">
+                                <User className="w-4 h-4" />
+                                اطلاعات مشتری
+                              </h4>
+                              <div className="grid grid-cols-2 gap-3 text-sm">
+                                <div className="flex items-center gap-2 justify-end">
+                                  <span className="font-medium">{ticket.clientName}</span>
+                                  <User className="w-4 h-4 text-muted-foreground" />
+                                </div>
+                                <div className="flex items-center gap-2 justify-end">
+                                  <span>{ticket.clientDepartment}</span>
+                                  <Building className="w-4 h-4 text-muted-foreground" />
+                                </div>
+                                <div className="flex items-center gap-2 justify-end">
+                                  <span>{ticket.clientEmail}</span>
+                                  <Mail className="w-4 h-4 text-muted-foreground" />
+                                </div>
+                                <div className="flex items-center gap-2 justify-end">
+                                  <span>{ticket.clientPhone}</span>
+                                  <Phone className="w-4 h-4 text-muted-foreground" />
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm text-muted-foreground">تاریخ:</span>
-                              <span className="text-sm">{formatDate(ticket.createdAt)}</span>
-                            </div>
-                          </div>
 
-                          {/* Responses Preview */}
-                          {ticket.responses.length > 0 && (
+                            {/* Time Tracking Display */}
                             <div className="bg-blue-50 rounded-lg p-3 mb-4">
-                              <div className="flex items-center gap-2 mb-2 justify-end">
-                                <span className="text-sm font-medium">آخرین پاسخ:</span>
-                                <MessageSquare className="w-4 h-4 text-blue-600" />
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Timer className="w-4 h-4 text-blue-600" />
+                                  <span className="text-sm font-medium">زمان کار:</span>
+                                </div>
+                                <span className="font-mono text-lg font-bold text-blue-800">
+                                  {activeTimer === ticket.id
+                                    ? formatTime(timeSpent[ticket.id] || 0)
+                                    : ticket.actualTime || "00:00:00"}
+                                </span>
                               </div>
-                              <p className="text-sm text-right line-clamp-2">
-                                {ticket.responses[ticket.responses.length - 1].text}
-                              </p>
                             </div>
-                          )}
-                        </div>
-                      </div>
 
-                      {/* Action Buttons */}
-                      <div className="flex gap-2 justify-end border-t pt-4">
-                        {/* Timer Controls */}
-                        {ticket.status !== "resolved" && (
-                          <>
+                            {/* Recent Activity */}
+                            {ticket.responses.length > 0 && (
+                              <div className="bg-yellow-50 rounded-lg p-3 mb-4">
+                                <div className="flex items-center gap-2 mb-2 justify-end">
+                                  <span className="text-sm font-medium">آخرین فعالیت:</span>
+                                  <MessageSquare className="w-4 h-4 text-yellow-600" />
+                                </div>
+                                <p className="text-sm text-yellow-800 text-right">
+                                  {ticket.responses[ticket.responses.length - 1].text.substring(0, 100)}...
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Technician Action Panel */}
+                        <div className="border-t pt-4">
+                          <div className="flex gap-2 justify-end mb-3">
+                            {/* Timer Controls */}
                             {activeTimer === ticket.id ? (
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => stopTimer(ticket.id)}
-                                className="gap-2"
+                                className="gap-2 bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
                               >
                                 <PauseCircle className="w-4 h-4" />
-                                توقف تایمر
+                                توقف کار
                               </Button>
                             ) : (
-                              <Button size="sm" onClick={() => startTimer(ticket.id)} className="gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => startTimer(ticket.id)}
+                                className="gap-2 bg-green-600 hover:bg-green-700"
+                              >
                                 <PlayCircle className="w-4 h-4" />
                                 شروع کار
                               </Button>
                             )}
-                          </>
-                        )}
 
-                        {/* Status Change */}
-                        <Select value={ticket.status} onValueChange={(value) => handleStatusChange(ticket.id, value)}>
-                          <SelectTrigger className="w-[140px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="open">باز</SelectItem>
-                            <SelectItem value="in-progress">در حال انجام</SelectItem>
-                            <SelectItem value="resolved">حل شده</SelectItem>
-                          </SelectContent>
-                        </Select>
+                            {/* Quick Status Actions */}
+                            {ticket.status === "open" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleStatusChange(ticket.id, "in-progress")}
+                                className="gap-2"
+                              >
+                                <ArrowRight className="w-4 h-4" />
+                                شروع بررسی
+                              </Button>
+                            )}
 
-                        {/* Response Dialog */}
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button size="sm" variant="outline" className="gap-2 bg-transparent">
-                              <MessageSquare className="w-4 h-4" />
-                              پاسخ ({ticket.responses.length})
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" dir="rtl">
-                            <DialogHeader>
-                              <DialogTitle className="text-right flex items-center gap-2">
-                                <MessageSquare className="w-5 h-5" />
-                                مکالمه تیکت {ticket.id}
-                              </DialogTitle>
-                              <DialogDescription className="text-right">{ticket.title}</DialogDescription>
-                            </DialogHeader>
+                            {ticket.status === "in-progress" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleStatusChange(ticket.id, "resolved")}
+                                className="gap-2 bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                                حل مسئله
+                              </Button>
+                            )}
+                          </div>
 
-                            <div className="space-y-4">
-                              {/* Original Ticket */}
-                              <div className="bg-gray-50 rounded-lg p-4">
-                                <div className="flex items-center gap-2 mb-2 justify-end">
-                                  <span className="font-semibold">{ticket.clientName}</span>
-                                  <span className="text-sm text-muted-foreground">{formatDate(ticket.createdAt)}</span>
-                                </div>
-                                <p className="text-right">{ticket.description}</p>
-                              </div>
+                          <div className="flex gap-2 justify-end">
+                            {/* Communication */}
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button size="sm" variant="outline" className="gap-2 bg-transparent">
+                                  <MessageSquare className="w-4 h-4" />
+                                  ارتباط ({ticket.responses.length})
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" dir="rtl">
+                                <DialogHeader>
+                                  <DialogTitle className="text-right flex items-center gap-2">
+                                    <MessageSquare className="w-5 h-5" />
+                                    ارتباط با مشتری - تیکت {ticket.id}
+                                  </DialogTitle>
+                                  <DialogDescription className="text-right">{ticket.title}</DialogDescription>
+                                </DialogHeader>
 
-                              {/* Responses */}
-                              <div className="space-y-3 max-h-60 overflow-y-auto">
-                                {ticket.responses.map((response: any) => (
-                                  <div
-                                    key={response.id}
-                                    className={`rounded-lg p-4 ${
-                                      response.type === "technician"
-                                        ? "bg-blue-50 border-r-4 border-r-blue-500"
-                                        : "bg-green-50 border-r-4 border-r-green-500"
-                                    }`}
-                                  >
+                                <div className="space-y-4">
+                                  {/* Original Request */}
+                                  <div className="bg-gray-100 rounded-lg p-4">
                                     <div className="flex items-center gap-2 mb-2 justify-end">
-                                      <span className="font-semibold">{response.author}</span>
+                                      <span className="font-semibold">{ticket.clientName}</span>
                                       <span className="text-sm text-muted-foreground">
-                                        {formatDate(response.timestamp)}
+                                        {formatDate(ticket.createdAt)}
                                       </span>
                                     </div>
-                                    <p className="text-right">{response.text}</p>
+                                    <p className="text-right font-medium">{ticket.description}</p>
                                   </div>
-                                ))}
-                              </div>
 
-                              {/* New Response */}
-                              <div className="border-t pt-4">
-                                <Textarea
-                                  placeholder="پاسخ خود را اینجا بنویسید..."
-                                  value={responseText}
-                                  onChange={(e) => setResponseText(e.target.value)}
-                                  className="text-right mb-3"
-                                  dir="rtl"
-                                  rows={4}
-                                />
-                                <div className="flex gap-2 justify-end">
-                                  <Button
-                                    onClick={() => {
-                                      setSelectedTicket(ticket)
-                                      handleAddResponse()
-                                    }}
-                                    disabled={!responseText.trim()}
-                                    className="gap-2"
-                                  >
-                                    <Send className="w-4 h-4" />
-                                    ارسال پاسخ
-                                  </Button>
+                                  {/* Conversation History */}
+                                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                                    {ticket.responses.map((response: any) => (
+                                      <div
+                                        key={response.id}
+                                        className={`rounded-lg p-4 ${
+                                          response.type === "technician"
+                                            ? "bg-blue-50 border-r-4 border-r-blue-500 mr-8"
+                                            : "bg-green-50 border-r-4 border-r-green-500 ml-8"
+                                        }`}
+                                      >
+                                        <div className="flex items-center gap-2 mb-2 justify-end">
+                                          <span className="font-semibold">{response.author}</span>
+                                          <span className="text-sm text-muted-foreground">
+                                            {formatDate(response.timestamp)}
+                                          </span>
+                                        </div>
+                                        <p className="text-right">{response.text}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+
+                                  {/* Response Form */}
+                                  <div className="border-t pt-4">
+                                    <Textarea
+                                      placeholder="پاسخ خود را به مشتری بنویسید..."
+                                      value={responseText}
+                                      onChange={(e) => setResponseText(e.target.value)}
+                                      className="text-right mb-3"
+                                      dir="rtl"
+                                      rows={4}
+                                    />
+                                    <div className="flex gap-2 justify-end">
+                                      <Button
+                                        onClick={() => {
+                                          setSelectedTicket(ticket)
+                                          handleAddResponse()
+                                        }}
+                                        disabled={!responseText.trim()}
+                                        className="gap-2"
+                                      >
+                                        <Send className="w-4 h-4" />
+                                        ارسال پاسخ
+                                      </Button>
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
+                              </DialogContent>
+                            </Dialog>
 
-                        {/* View Details */}
-                        <Button size="sm" variant="ghost" className="gap-2">
-                          <Eye className="w-4 h-4" />
-                          جزئیات
-                        </Button>
-
-                        {/* More Actions */}
-                        <Button size="sm" variant="ghost" className="gap-2">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
+                            {/* Ticket Details */}
+                            <Button size="sm" variant="ghost" className="gap-2">
+                              <Eye className="w-4 h-4" />
+                              جزئیات کامل
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
               )}
             </div>
           </TabsContent>
@@ -676,8 +756,8 @@ export function TechnicianDashboard({ onLogout }: TechnicianDashboardProps) {
             <Card>
               <CardHeader>
                 <CardTitle className="text-right flex items-center gap-2">
-                  <Activity className="w-5 h-5" />
-                  تیکت‌های فعال
+                  <Timer className="w-5 h-5" />
+                  تیکت‌های در حال کار
                 </CardTitle>
                 <CardDescription className="text-right">تیکت‌هایی که در حال حاضر روی آن‌ها کار می‌کنید</CardDescription>
               </CardHeader>
@@ -707,68 +787,45 @@ export function TechnicianDashboard({ onLogout }: TechnicianDashboardProps) {
             </Card>
           </TabsContent>
 
-          <TabsContent value="analytics" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-right">عملکرد هفتگی</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">تیکت‌های حل شده</span>
-                      <span className="font-semibold">{stats.resolved}</span>
-                    </div>
-                    <Progress value={(stats.resolved / stats.total) * 100} className="h-2" />
-
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">نرخ پاسخ‌دهی</span>
-                      <span className="font-semibold">95%</span>
-                    </div>
-                    <Progress value={95} className="h-2" />
-
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">رضایت مشتری</span>
-                      <span className="font-semibold">4.8/5</span>
-                    </div>
-                    <Progress value={96} className="h-2" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-right">دستاوردها</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3 justify-end">
-                      <div className="text-right">
-                        <p className="font-semibold">حل‌کننده سریع</p>
-                        <p className="text-sm text-muted-foreground">10 تیکت در یک روز</p>
-                      </div>
-                      <Award className="w-8 h-8 text-yellow-500" />
-                    </div>
-                    <Separator />
-                    <div className="flex items-center gap-3 justify-end">
-                      <div className="text-right">
-                        <p className="font-semibold">متخصص شبکه</p>
-                        <p className="text-sm text-muted-foreground">50 تیکت شبکه حل شده</p>
-                      </div>
-                      <Star className="w-8 h-8 text-blue-500" />
-                    </div>
-                    <Separator />
-                    <div className="flex items-center gap-3 justify-end">
-                      <div className="text-right">
-                        <p className="font-semibold">پاسخ‌دهی عالی</p>
-                        <p className="text-sm text-muted-foreground">زمان پاسخ زیر 30 دقیقه</p>
-                      </div>
-                      <Zap className="w-8 h-8 text-green-500" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+          <TabsContent value="completed" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-right flex items-center gap-2">
+                  <CheckSquare className="w-5 h-5" />
+                  تیکت‌های تکمیل شده
+                </CardTitle>
+                <CardDescription className="text-right">تیکت‌هایی که با موفقیت حل کرده‌اید</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {filteredTickets
+                    .filter((t) => t.status === "resolved")
+                    .map((ticket) => (
+                      <Card key={ticket.id} className="border-r-4 border-r-green-500 bg-green-50">
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2 justify-end">
+                                {getStatusBadge(ticket.status)}
+                                <span className="font-bold">{ticket.id}</span>
+                              </div>
+                              <h3 className="font-semibold mb-1 text-right">{ticket.title}</h3>
+                              <p className="text-sm text-muted-foreground text-right mb-2">{ticket.clientName}</p>
+                              {ticket.resolution && (
+                                <div className="bg-white rounded p-2">
+                                  <p className="text-sm text-right">
+                                    <strong>راه‌حل:</strong> {ticket.resolution}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="knowledge" className="space-y-4">
@@ -818,6 +875,43 @@ export function TechnicianDashboard({ onLogout }: TechnicianDashboardProps) {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Resolution Dialog */}
+      <Dialog open={showResolutionDialog} onOpenChange={setShowResolutionDialog}>
+        <DialogContent className="sm:max-w-[600px]" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              حل تیکت {ticketToResolve?.id}
+            </DialogTitle>
+            <DialogDescription className="text-right">
+              لطفاً راه‌حل نهایی و جزئیات حل مسئله را وارد کنید
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-right block mb-2">شرح راه‌حل:</label>
+              <Textarea
+                placeholder="توضیح دهید که چگونه این مسئله حل شد..."
+                value={resolutionText}
+                onChange={(e) => setResolutionText(e.target.value)}
+                className="text-right"
+                dir="rtl"
+                rows={4}
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setShowResolutionDialog(false)}>
+                انصراف
+              </Button>
+              <Button onClick={handleResolveTicket} disabled={!resolutionText.trim()} className="gap-2">
+                <Save className="w-4 h-4" />
+                ثبت و حل تیکت
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
