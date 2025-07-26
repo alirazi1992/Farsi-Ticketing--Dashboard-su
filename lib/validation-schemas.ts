@@ -6,12 +6,15 @@ const validatePhoneNumber = (phone: string): boolean => {
   return iranianPhoneRegex.test(phone.replace(/\s/g, ""))
 }
 
-// Issue Selection Schema (Step 1)
-export const issueSelectionSchema = yup.object({
+// Issue Selection Schema (Step 1) - Fixed export name
+export const ticketFormStep1Schema = yup.object({
   priority: yup.string().required("انتخاب اولویت الزامی است"),
   mainIssue: yup.string().required("انتخاب دسته اصلی مشکل الزامی است"),
   subIssue: yup.string().required("انتخاب مشکل دقیق الزامی است"),
 })
+
+// Legacy alias for backward compatibility
+export const issueSelectionSchema = ticketFormStep1Schema
 
 // Ticket Details Schema (Step 2)
 export const ticketDetailsSchema = yup.object({
@@ -86,7 +89,7 @@ export const contactInfoSchema = yup.object({
 
 // Update the combined schema to include contact info
 export const getCombinedSchema = (step: number) => {
-  const baseSchema = contactInfoSchema.concat(issueSelectionSchema)
+  const baseSchema = contactInfoSchema.concat(ticketFormStep1Schema)
 
   if (step === 1) {
     return baseSchema
@@ -96,7 +99,7 @@ export const getCombinedSchema = (step: number) => {
 }
 
 // Legacy schemas for backward compatibility
-export const generalInfoSchema = issueSelectionSchema
+export const generalInfoSchema = ticketFormStep1Schema
 
 // Ticket access schema
 export const ticketAccessSchema = yup.object({

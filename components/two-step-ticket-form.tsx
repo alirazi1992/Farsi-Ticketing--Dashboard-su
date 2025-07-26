@@ -1,419 +1,255 @@
 "use client"
 
 import { useState } from "react"
-import { useForm, Controller } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { yupResolver } from "@hookform/resolvers/yup"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { FileUpload } from "@/components/file-upload"
-import { DynamicFormFields } from "@/components/dynamic-form-fields"
-import { ticketFormStep1Schema, ticketFormStep2Schema } from "@/lib/validation-schemas"
-import { toast } from "@/hooks/use-toast"
-import { useAuth } from "@/lib/auth-context"
-import {
-  ChevronRight,
-  ChevronLeft,
-  Send,
-  X,
-  HardDrive,
-  ComputerIcon as Software,
-  Network,
-  Mail,
-  Shield,
-  Key,
-  AlertCircle,
-  Clock,
-  Zap,
-} from "lucide-react"
+import { Progress } from "@/components/ui/progress"
+import { ArrowLeft, ArrowRight, Send } from "lucide-react"
+import { TicketFormStep1 } from "./ticket-form-step1"
+import { TicketFormStep2 } from "./ticket-form-step2"
+import { contactInfoSchema, ticketFormStep1Schema, ticketDetailsSchema } from "@/lib/validation-schemas"
+import { useToast } from "@/hooks/use-toast"
 
-const priorityOptions = [
-  { value: "low", label: "کم", color: "bg-blue-100 text-blue-800", icon: Clock },
-  { value: "medium", label: "متوسط", color: "bg-orange-100 text-orange-800", icon: AlertCircle },
-  { value: "high", label: "بالا", color: "bg-red-100 text-red-800", icon: AlertCircle },
-  { value: "urgent", label: "فوری", color: "bg-purple-100 text-purple-800", icon: Zap },
-]
-
-const categoryIcons = {
-  hardware: HardDrive,
-  software: Software,
-  network: Network,
-  email: Mail,
-  security: Shield,
-  access: Key,
+interface Category {
+  id: string
+  name: string
+  label: string
+  icon: string
+  subcategories: Array<{
+    id: string
+    name: string
+    label: string
+  }>
 }
 
 interface TwoStepTicketFormProps {
+  categories: Category[]
   onSubmit: (data: any) => void
-  onClose: () => void
-  categories: any
+  onCancel: () => void
 }
 
-export function TwoStepTicketForm({ onSubmit, onClose, categories }: TwoStepTicketFormProps) {
-  const { user } = useAuth()
+export function TwoStepTicketForm({ categories, onSubmit, onCancel }: TwoStepTicketFormProps) {
   const [currentStep, setCurrentStep] = useState(1)
-  const [step1Data, setStep1Data] = useState<any>(null)
-  const [attachments, setAttachments] = useState<File[]>([])
-  const [dynamicFields, setDynamicFields] = useState<Record<string, any>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { toast } = useToast()
 
-  // Step 1 form
+  // Combined validation schema
+  const getValidationSchema = () => {
+    const baseSchema = contactInfoSchema.concat(ticketFormStep1Schema)
+    if (currentStep === 2) {
+      return baseSchema.concat(ticketDetailsSchema)
+    }
+    return baseSchema
+  }
+
   const {
-    control: step1Control,
-    handleSubmit: handleStep1Submit,
-    watch: watchStep1,
-    formState: { errors: step1Errors },
+    control,
+    handleSubmit,
+    formState: { errors },
+    trigger,
+    getValues,
+    setValue,
+    watch,
   } = useForm({
-    resolver: yupResolver(ticketFormStep1Schema),
+    resolver: yupResolver(getValidationSchema()),
+    mode: "onChange",
     defaultValues: {
-      category: "",
-      subcategory: "",
+      // Contact info
+      clientName: "",
+      clientEmail: "",
+      clientPhone: "",
+      // Step 1
       priority: "",
-    },
-  })
-
-  // Step 2 form
-  const {
-    control: step2Control,
-    handleSubmit: handleStep2Submit,
-    formState: { errors: step2Errors },
-  } = useForm({
-    resolver: yupResolver(ticketFormStep2Schema),
-    defaultValues: {
+      mainIssue: "",
+      subIssue: "",
+      // Step 2
       title: "",
       description: "",
+      // Dynamic fields will be added as needed
     },
   })
 
-  const selectedCategory = watchStep1("category")
-  const selectedSubcategory = watchStep1("subcategory")
+  const watchedMainIssue = watch("mainIssue")
+  const watchedSubIssue = watch("subIssue")
 
-  // Get subcategories for selected category
-  const getSubcategories = () => {
-    if (!selectedCategory || !categories[selectedCategory]) return []
-    return Object.values(categories[selectedCategory].subIssues || {})
-  }
+  const handleNext = async () => {
+    const fieldsToValidate = ["clientName", "clientEmail", "clientPhone", "priority", "mainIssue", "subIssue"]
+    const isValid = await trigger(fieldsToValidate)
 
-  // Handle step 1 submission
-  const onStep1Submit = (data: any) => {
-    setStep1Data(data)
-    setCurrentStep(2)
-  }
-
-  // Handle step 2 submission
-  const onStep2Submit = (data: any) => {
-    const finalData = {
-      ...step1Data,
-      ...data,
-      clientName: user?.name || "",
-      clientEmail: user?.email || "",
-      clientPhone: user?.phone || "",
-      department: user?.department || "",
-      attachments,
-      dynamicFields,
+    if (isValid) {
+      setCurrentStep(2)
+    } else {
+      toast({
+        title: "خطا در اعتبارسنجی",
+        description: "لطفاً تمام فیلدهای الزامی را تکمیل کنید.",
+        variant: "destructive",
+      })
     }
-
-    onSubmit(finalData)
-    toast({
-      title: "تیکت ایجاد شد",
-      description: "درخواست شما با موفقیت ثبت شد و به تیم پشتیبانی ارسال شد",
-    })
   }
 
-  // Handle file upload
-  const handleFileUpload = (files: File[]) => {
-    setAttachments(files)
+  const handlePrevious = () => {
+    setCurrentStep(1)
   }
 
-  // Handle dynamic fields change
-  const handleDynamicFieldsChange = (fields: Record<string, any>) => {
-    setDynamicFields(fields)
-  }
-
-  // Get category label
-  const getCategoryLabel = (categoryId: string) => {
-    const categoryLabels = {
-      hardware: "سخت‌افزار",
-      software: "نرم‌افزار",
-      network: "شبکه",
-      email: "ایمیل",
-      security: "امنیت",
-      access: "دسترسی",
+  const handleFormSubmit = async (data: any) => {
+    setIsSubmitting(true)
+    try {
+      await onSubmit(data)
+      toast({
+        title: "تیکت ایجاد شد",
+        description: "تیکت شما با موفقیت ثبت شد و به زودی بررسی خواهد شد.",
+      })
+    } catch (error) {
+      toast({
+        title: "خطا در ایجاد تیکت",
+        description: "مشکلی در ثبت تیکت رخ داد. لطفاً دوباره تلاش کنید.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
     }
-    return categoryLabels[categoryId] || categoryId
   }
+
+  const progressValue = (currentStep / 2) * 100
 
   return (
-    <div className="space-y-6 font-iran" dir="rtl">
-      {/* Progress Indicator */}
-      <div className="flex items-center justify-center space-x-4 space-x-reverse">
-        <div className={`flex items-center ${currentStep >= 1 ? "text-primary" : "text-muted-foreground"}`}>
-          <div
-            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-              currentStep >= 1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-            }`}
-          >
-            1
+    <div className="max-w-4xl mx-auto p-6" dir="rtl">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-center text-2xl font-bold">ایجاد تیکت جدید</CardTitle>
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>مرحله {currentStep} از 2</span>
+              <span>{currentStep === 1 ? "اطلاعات اولیه" : "جزئیات تیکت"}</span>
+            </div>
+            <Progress value={progressValue} className="w-full" />
           </div>
-          <span className="mr-2 text-sm font-iran">انتخاب دسته‌بندی</span>
-        </div>
-        <div className={`w-8 h-0.5 ${currentStep >= 2 ? "bg-primary" : "bg-muted"}`} />
-        <div className={`flex items-center ${currentStep >= 2 ? "text-primary" : "text-muted-foreground"}`}>
-          <div
-            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-              currentStep >= 2 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-            }`}
-          >
-            2
-          </div>
-          <span className="mr-2 text-sm font-iran">جزئیات درخواست</span>
-        </div>
-      </div>
+        </CardHeader>
 
-      {/* Step 1: Category Selection */}
-      {currentStep === 1 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-right font-iran">مرحله ۱: انتخاب دسته‌بندی و اولویت</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleStep1Submit(onStep1Submit)} className="space-y-6">
-              {/* Category Selection */}
-              <div className="space-y-2">
-                <Label className="text-right font-iran">دسته‌بندی مشکل *</Label>
-                <Controller
-                  name="category"
-                  control={step1Control}
-                  render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                      <SelectTrigger className="text-right font-iran">
-                        <SelectValue placeholder="انتخاب دسته‌بندی" />
-                      </SelectTrigger>
-                      <SelectContent className="font-iran">
-                        {Object.values(categories).map((category: any) => {
-                          const IconComponent = categoryIcons[category.icon] || HardDrive
-                          return (
-                            <SelectItem key={category.id} value={category.id}>
-                              <div className="flex items-center gap-2">
-                                <IconComponent className="w-4 h-4" />
-                                <span className="font-iran">{category.label}</span>
-                              </div>
-                            </SelectItem>
-                          )
-                        })}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {step1Errors.category && (
-                  <p className="text-sm text-red-500 text-right font-iran">{step1Errors.category.message}</p>
-                )}
-              </div>
+        <CardContent>
+          <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+            {currentStep === 1 && (
+              <>
+                {/* Contact Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-right">اطلاعات تماس</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label htmlFor="clientName" className="text-sm font-medium text-right block">
+                          نام و نام خانوادگی *
+                        </label>
+                        <input
+                          {...control.register?.("clientName")}
+                          type="text"
+                          id="clientName"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-right"
+                          placeholder="نام کامل خود را وارد کنید"
+                        />
+                        {errors.clientName && (
+                          <p className="text-sm text-red-500 text-right">{errors.clientName.message}</p>
+                        )}
+                      </div>
 
-              {/* Subcategory Selection */}
-              {selectedCategory && (
-                <div className="space-y-2">
-                  <Label className="text-right font-iran">نوع مشکل *</Label>
-                  <Controller
-                    name="subcategory"
-                    control={step1Control}
-                    render={({ field }) => (
-                      <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                        <SelectTrigger className="text-right font-iran">
-                          <SelectValue placeholder="انتخاب نوع مشکل" />
-                        </SelectTrigger>
-                        <SelectContent className="font-iran">
-                          {getSubcategories().map((subcategory: any) => (
-                            <SelectItem key={subcategory.id} value={subcategory.label}>
-                              <div className="text-right">
-                                <div className="font-medium font-iran">{subcategory.label}</div>
-                                {subcategory.description && (
-                                  <div className="text-xs text-muted-foreground font-iran">
-                                    {subcategory.description}
-                                  </div>
-                                )}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {step1Errors.subcategory && (
-                    <p className="text-sm text-red-500 text-right font-iran">{step1Errors.subcategory.message}</p>
-                  )}
-                </div>
-              )}
-
-              {/* Priority Selection */}
-              <div className="space-y-2">
-                <Label className="text-right font-iran">اولویت درخواست *</Label>
-                <Controller
-                  name="priority"
-                  control={step1Control}
-                  render={({ field }) => (
-                    <div className="grid grid-cols-2 gap-3">
-                      {priorityOptions.map((option) => {
-                        const IconComponent = option.icon
-                        return (
-                          <div
-                            key={option.value}
-                            className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                              field.value === option.value
-                                ? "border-primary bg-primary/5"
-                                : "border-border hover:border-primary/50"
-                            }`}
-                            onClick={() => field.onChange(option.value)}
-                          >
-                            <div className="flex items-center gap-2">
-                              <IconComponent className="w-4 h-4" />
-                              <span className="font-medium font-iran">{option.label}</span>
-                            </div>
-                            <Badge className={`${option.color} mt-2 font-iran`} variant="outline">
-                              {option.label}
-                            </Badge>
-                          </div>
-                        )
-                      })}
+                      <div className="space-y-2">
+                        <label htmlFor="clientEmail" className="text-sm font-medium text-right block">
+                          ایمیل *
+                        </label>
+                        <input
+                          {...control.register?.("clientEmail")}
+                          type="email"
+                          id="clientEmail"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-right"
+                          placeholder="example@domain.com"
+                        />
+                        {errors.clientEmail && (
+                          <p className="text-sm text-red-500 text-right">{errors.clientEmail.message}</p>
+                        )}
+                      </div>
                     </div>
-                  )}
-                />
-                {step1Errors.priority && (
-                  <p className="text-sm text-red-500 text-right font-iran">{step1Errors.priority.message}</p>
+
+                    <div className="space-y-2">
+                      <label htmlFor="clientPhone" className="text-sm font-medium text-right block">
+                        شماره تماس *
+                      </label>
+                      <input
+                        {...control.register?.("clientPhone")}
+                        type="tel"
+                        id="clientPhone"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-right"
+                        placeholder="09123456789"
+                      />
+                      {errors.clientPhone && (
+                        <p className="text-sm text-red-500 text-right">{errors.clientPhone.message}</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <TicketFormStep1 control={control} errors={errors} categories={categories} />
+              </>
+            )}
+
+            {currentStep === 2 && (
+              <TicketFormStep2
+                control={control}
+                errors={errors}
+                mainIssue={watchedMainIssue}
+                subIssue={watchedSubIssue}
+                setValue={setValue}
+                getValues={getValues}
+              />
+            )}
+
+            {/* Navigation Buttons */}
+            <div className="flex justify-between pt-6">
+              <div className="flex gap-2">
+                {currentStep === 2 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handlePrevious}
+                    className="flex items-center gap-2 bg-transparent"
+                  >
+                    <ArrowRight className="w-4 h-4" />
+                    مرحله قبل
+                  </Button>
                 )}
-              </div>
-
-              {/* Dynamic Fields */}
-              {selectedCategory && selectedSubcategory && (
-                <div className="space-y-4">
-                  <Separator />
-                  <DynamicFormFields
-                    category={selectedCategory}
-                    subcategory={selectedSubcategory}
-                    onChange={handleDynamicFieldsChange}
-                  />
-                </div>
-              )}
-
-              {/* Navigation */}
-              <div className="flex justify-between">
-                <Button type="button" variant="outline" onClick={onClose} className="gap-2 font-iran bg-transparent">
-                  <X className="w-4 h-4" />
+                <Button type="button" variant="outline" onClick={onCancel}>
                   انصراف
                 </Button>
-                <Button type="submit" className="gap-2 font-iran">
-                  مرحله بعد
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
               </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* Step 2: Details */}
-      {currentStep === 2 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-right font-iran">مرحله ۲: جزئیات درخواست</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {/* Summary of Step 1 */}
-            <div className="bg-muted p-4 rounded-lg mb-6">
-              <h4 className="font-medium mb-2 font-iran">خلاصه انتخاب‌های شما:</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div>
-                  <span className="text-muted-foreground font-iran">دسته‌بندی: </span>
-                  <span className="font-medium font-iran">{getCategoryLabel(step1Data?.category)}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground font-iran">نوع مشکل: </span>
-                  <span className="font-medium font-iran">{step1Data?.subcategory}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground font-iran">اولویت: </span>
-                  <Badge
-                    className={`${priorityOptions.find((p) => p.value === step1Data?.priority)?.color} font-iran`}
-                    variant="outline"
-                  >
-                    {priorityOptions.find((p) => p.value === step1Data?.priority)?.label}
-                  </Badge>
-                </div>
+              <div>
+                {currentStep === 1 ? (
+                  <Button type="button" onClick={handleNext} className="flex items-center gap-2">
+                    مرحله بعد
+                    <ArrowLeft className="w-4 h-4" />
+                  </Button>
+                ) : (
+                  <Button type="submit" disabled={isSubmitting} className="flex items-center gap-2">
+                    {isSubmitting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        در حال ارسال...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        ایجاد تیکت
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
             </div>
-
-            <form onSubmit={handleStep2Submit(onStep2Submit)} className="space-y-6">
-              {/* Title */}
-              <div className="space-y-2">
-                <Label className="text-right font-iran">عنوان درخواست *</Label>
-                <Controller
-                  name="title"
-                  control={step2Control}
-                  render={({ field }) => (
-                    <Input
-                      {...field}
-                      placeholder="عنوان کوتاه و واضح برای درخواست خود وارد کنید"
-                      className="text-right font-iran"
-                      dir="rtl"
-                    />
-                  )}
-                />
-                {step2Errors.title && (
-                  <p className="text-sm text-red-500 text-right font-iran">{step2Errors.title.message}</p>
-                )}
-              </div>
-
-              {/* Description */}
-              <div className="space-y-2">
-                <Label className="text-right font-iran">شرح کامل مشکل *</Label>
-                <Controller
-                  name="description"
-                  control={step2Control}
-                  render={({ field }) => (
-                    <Textarea
-                      {...field}
-                      placeholder="لطفاً مشکل خود را به طور کامل و دقیق شرح دهید..."
-                      className="min-h-[120px] text-right font-iran"
-                      dir="rtl"
-                    />
-                  )}
-                />
-                {step2Errors.description && (
-                  <p className="text-sm text-red-500 text-right font-iran">{step2Errors.description.message}</p>
-                )}
-              </div>
-
-              {/* File Upload */}
-              <div className="space-y-2">
-                <Label className="text-right font-iran">فایل‌های پیوست (اختیاری)</Label>
-                <FileUpload onFilesChange={handleFileUpload} />
-              </div>
-
-              {/* Navigation */}
-              <div className="flex justify-between">
-                <Button type="button" variant="outline" onClick={() => setCurrentStep(1)} className="gap-2 font-iran">
-                  <ChevronRight className="w-4 h-4" />
-                  مرحله قبل
-                </Button>
-                <div className="flex gap-2">
-                  <Button type="button" variant="outline" onClick={onClose} className="gap-2 font-iran bg-transparent">
-                    <X className="w-4 h-4" />
-                    انصراف
-                  </Button>
-                  <Button type="submit" className="gap-2 font-iran">
-                    <Send className="w-4 h-4" />
-                    ارسال درخواست
-                  </Button>
-                </div>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }

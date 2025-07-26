@@ -1,495 +1,596 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Separator } from "@/components/ui/separator"
-import { TwoStepTicketForm } from "@/components/two-step-ticket-form"
-import {
-  Plus,
-  Search,
-  Filter,
-  Eye,
-  Clock,
-  AlertCircle,
-  CheckCircle,
-  Ticket,
-  HardDrive,
-  ComputerIcon as Software,
-  Network,
-  Mail,
-  Shield,
-  Key,
-  MessageSquare,
-  Calendar,
-} from "lucide-react"
+import { Label } from "@/components/ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { TwoStepTicketForm } from "./two-step-ticket-form"
+import { Plus, Search, Eye, Clock, CheckCircle, AlertCircle, XCircle, Phone, Mail, Copy } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { yupResolver } from "@hookform/resolvers/yup"
+import { useForm } from "react-hook-form"
+import { ticketAccessSchema } from "@/lib/validation-schemas"
 
-const statusColors = {
-  open: "bg-red-100 text-red-800 border-red-200",
-  "in-progress": "bg-yellow-100 text-yellow-800 border-yellow-200",
-  resolved: "bg-green-100 text-green-800 border-green-200",
-  closed: "bg-gray-100 text-gray-800 border-gray-200",
+interface Ticket {
+  id: string
+  title: string
+  description: string
+  priority: "low" | "medium" | "high" | "urgent"
+  status: "open" | "in-progress" | "resolved" | "closed"
+  category: string
+  subcategory: string
+  clientName: string
+  clientEmail: string
+  clientPhone: string
+  assignedTo?: string
+  createdAt: string
+  updatedAt: string
+  responses: Array<{
+    id: string
+    message: string
+    author: string
+    timestamp: string
+    isInternal: boolean
+  }>
+  attachments: Array<{
+    id: string
+    name: string
+    url: string
+    size: number
+  }>
 }
 
-const statusLabels = {
-  open: "باز",
-  "in-progress": "در حال انجام",
-  resolved: "حل شده",
-  closed: "بسته",
-}
-
-const priorityColors = {
-  low: "bg-blue-100 text-blue-800 border-blue-200",
-  medium: "bg-orange-100 text-orange-800 border-orange-200",
-  high: "bg-red-100 text-red-800 border-red-200",
-  urgent: "bg-purple-100 text-purple-800 border-purple-200",
-}
-
-const priorityLabels = {
-  low: "کم",
-  medium: "متوسط",
-  high: "بالا",
-  urgent: "فوری",
-}
-
-const categoryIcons = {
-  hardware: HardDrive,
-  software: Software,
-  network: Network,
-  email: Mail,
-  security: Shield,
-  access: Key,
-}
-
-const categoryLabels = {
-  hardware: "سخت‌افزار",
-  software: "نرم‌افزار",
-  network: "شبکه",
-  email: "ایمیل",
-  security: "امنیت",
-  access: "دسترسی",
+interface Category {
+  id: string
+  name: string
+  label: string
+  icon: string
+  subcategories: Array<{
+    id: string
+    name: string
+    label: string
+  }>
 }
 
 interface ClientDashboardProps {
-  tickets: any[]
-  onTicketCreate: (ticket: any) => void
-  currentUser: any
-  categories: any
+  tickets: Ticket[]
+  categories: Category[]
+  onTicketCreate: (data: any) => void
+  onTicketUpdate: (ticketId: string, updates: Partial<Ticket>) => void
 }
 
-export function ClientDashboard({ tickets, onTicketCreate, currentUser, categories }: ClientDashboardProps) {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [filterStatus, setFilterStatus] = useState("all")
-  const [filterPriority, setFilterPriority] = useState("all")
-  const [selectedTicket, setSelectedTicket] = useState<any>(null)
+export function ClientDashboard({ tickets, categories, onTicketCreate, onTicketUpdate }: ClientDashboardProps) {
+  const [showCreateForm, setShowCreateForm] = useState(false)
+  const [showAccessForm, setShowAccessForm] = useState(false)
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null)
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
-  const [ticketDialogOpen, setTicketDialogOpen] = useState(false)
+  const [accessedTickets, setAccessedTickets] = useState<Ticket[]>([])
+  const { toast } = useToast()
 
-  // Filter tickets for current user
-  const userTickets = tickets.filter((ticket) => ticket.clientEmail === currentUser?.email)
-
-  // Filter tickets based on search and filters
-  const filteredTickets = userTickets.filter((ticket) => {
-    const matchesSearch =
-      ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ticket.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ticket.id.toLowerCase().includes(searchQuery.toLowerCase())
-
-    const matchesStatus = filterStatus === "all" || ticket.status === filterStatus
-    const matchesPriority = filterPriority === "all" || ticket.priority === filterPriority
-
-    return matchesSearch && matchesStatus && matchesPriority
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm({
+    resolver: yupResolver(ticketAccessSchema),
   })
 
-  const handleViewTicket = (ticket: any) => {
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "low":
+        return "bg-blue-500"
+      case "medium":
+        return "bg-orange-500"
+      case "high":
+        return "bg-red-500"
+      case "urgent":
+        return "bg-purple-500"
+      default:
+        return "bg-gray-500"
+    }
+  }
+
+  const getPriorityLabel = (priority: string) => {
+    switch (priority) {
+      case "low":
+        return "کم"
+      case "medium":
+        return "متوسط"
+      case "high":
+        return "بالا"
+      case "urgent":
+        return "فوری"
+      default:
+        return priority
+    }
+  }
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "open":
+        return <Clock className="w-4 h-4" />
+      case "in-progress":
+        return <AlertCircle className="w-4 h-4" />
+      case "resolved":
+        return <CheckCircle className="w-4 h-4" />
+      case "closed":
+        return <XCircle className="w-4 h-4" />
+      default:
+        return <Clock className="w-4 h-4" />
+    }
+  }
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "open":
+        return "باز"
+      case "in-progress":
+        return "در حال بررسی"
+      case "resolved":
+        return "حل شده"
+      case "closed":
+        return "بسته شده"
+      default:
+        return status
+    }
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "open":
+        return "bg-blue-100 text-blue-800"
+      case "in-progress":
+        return "bg-orange-100 text-orange-800"
+      case "resolved":
+        return "bg-green-100 text-green-800"
+      case "closed":
+        return "bg-gray-100 text-gray-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  const getCategoryLabel = (categoryName: string) => {
+    const category = categories.find((cat) => cat.name === categoryName)
+    return category ? category.label : categoryName
+  }
+
+  const getSubcategoryLabel = (categoryName: string, subcategoryName: string) => {
+    const category = categories.find((cat) => cat.name === categoryName)
+    if (category) {
+      const subcategory = category.subcategories.find((sub) => sub.name === subcategoryName)
+      return subcategory ? subcategory.label : subcategoryName
+    }
+    return subcategoryName
+  }
+
+  const handleTicketAccess = (data: any) => {
+    const ticket = tickets.find(
+      (t) => t.id === data.ticketId && t.clientEmail === data.email && t.clientPhone === data.phone,
+    )
+
+    if (ticket) {
+      setAccessedTickets((prev) => {
+        const exists = prev.find((t) => t.id === ticket.id)
+        if (!exists) {
+          return [...prev, ticket]
+        }
+        return prev
+      })
+      setShowAccessForm(false)
+      reset()
+      toast({
+        title: "تیکت پیدا شد",
+        description: `تیکت ${ticket.id} با موفقیت یافت شد.`,
+      })
+    } else {
+      toast({
+        title: "تیکت یافت نشد",
+        description: "اطلاعات وارد شده صحیح نیست یا تیکت وجود ندارد.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleViewTicket = (ticket: Ticket) => {
     setSelectedTicket(ticket)
     setViewDialogOpen(true)
   }
 
-  const handleTicketCreate = (ticket: any) => {
-    onTicketCreate(ticket)
-    setTicketDialogOpen(false)
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    toast({
+      title: "کپی شد",
+      description: "متن در کلیپ‌بورد کپی شد.",
+    })
   }
 
-  const handleCancelTicketForm = () => {
-    setTicketDialogOpen(false)
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("fa-IR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
   }
 
   return (
-    <div className="space-y-6 font-iran" dir="rtl">
-      <div className="flex justify-between items-center">
-        <div className="text-right">
-          <h2 className="text-2xl font-bold font-iran">پنل کاربری</h2>
-          <p className="text-muted-foreground font-iran">مدیریت درخواست‌های خدمات IT</p>
+    <div className="min-h-screen bg-gray-50 p-6" dir="rtl">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">پنل مشتری</h1>
+          <p className="text-gray-600">مدیریت تیکت‌های پشتیبانی شما</p>
         </div>
-        <Dialog open={ticketDialogOpen} onOpenChange={setTicketDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2 font-iran">
-              <Plus className="w-4 h-4" />
-              ایجاد تیکت جدید
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto font-iran" dir="rtl">
+
+        {/* Action Buttons */}
+        <div className="flex gap-4 mb-6">
+          <Button onClick={() => setShowCreateForm(true)} className="flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            ایجاد تیکت جدید
+          </Button>
+          <Button variant="outline" onClick={() => setShowAccessForm(true)} className="flex items-center gap-2">
+            <Search className="w-4 h-4" />
+            دسترسی به تیکت
+          </Button>
+        </div>
+
+        {/* Tickets Display */}
+        <Tabs defaultValue="accessed" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="accessed">تیکت‌های من ({accessedTickets.length})</TabsTrigger>
+            <TabsTrigger value="all">همه تیکت‌ها ({tickets.length})</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="accessed" className="space-y-4">
+            {accessedTickets.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <p className="text-gray-500">هنوز تیکتی دسترسی پیدا نکرده‌اید.</p>
+                  <p className="text-sm text-gray-400 mt-2">
+                    برای دسترسی به تیکت‌های خود، از دکمه "دسترسی به تیکت" استفاده کنید.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4">
+                {accessedTickets.map((ticket) => (
+                  <Card key={ticket.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="text-lg font-semibold">{ticket.title}</h3>
+                            <Badge variant="outline" className="text-xs">
+                              {ticket.id}
+                            </Badge>
+                          </div>
+                          <p className="text-gray-600 text-sm mb-2">{ticket.description.substring(0, 100)}...</p>
+                          <div className="flex items-center gap-4 text-sm text-gray-500">
+                            <span>{getCategoryLabel(ticket.category)}</span>
+                            <span>•</span>
+                            <span>{getSubcategoryLabel(ticket.category, ticket.subcategory)}</span>
+                            <span>•</span>
+                            <span>{formatDate(ticket.createdAt)}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-3 h-3 rounded-full ${getPriorityColor(ticket.priority)}`}></div>
+                          <Badge className={getStatusColor(ticket.status)}>
+                            {getStatusIcon(ticket.status)}
+                            <span className="mr-1">{getStatusLabel(ticket.status)}</span>
+                          </Badge>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewTicket(ticket)}
+                            className="flex items-center gap-1 hover:bg-blue-50 hover:text-blue-600"
+                          >
+                            <Eye className="w-4 h-4" />
+                            مشاهده
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="all" className="space-y-4">
+            <div className="grid gap-4">
+              {tickets.map((ticket) => (
+                <Card key={ticket.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="text-lg font-semibold">{ticket.title}</h3>
+                          <Badge variant="outline" className="text-xs">
+                            {ticket.id}
+                          </Badge>
+                        </div>
+                        <p className="text-gray-600 text-sm mb-2">{ticket.description.substring(0, 100)}...</p>
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                          <span>{getCategoryLabel(ticket.category)}</span>
+                          <span>•</span>
+                          <span>{getSubcategoryLabel(ticket.category, ticket.subcategory)}</span>
+                          <span>•</span>
+                          <span>{formatDate(ticket.createdAt)}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3 h-3 rounded-full ${getPriorityColor(ticket.priority)}`}></div>
+                        <Badge className={getStatusColor(ticket.status)}>
+                          {getStatusIcon(ticket.status)}
+                          <span className="mr-1">{getStatusLabel(ticket.status)}</span>
+                        </Badge>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewTicket(ticket)}
+                          className="flex items-center gap-1 hover:bg-blue-50 hover:text-blue-600"
+                        >
+                          <Eye className="w-4 h-4" />
+                          مشاهده
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {/* Create Ticket Dialog */}
+        <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <TwoStepTicketForm
+              categories={categories}
+              onSubmit={(data) => {
+                onTicketCreate(data)
+                setShowCreateForm(false)
+              }}
+              onCancel={() => setShowCreateForm(false)}
+            />
+          </DialogContent>
+        </Dialog>
+
+        {/* Access Ticket Dialog */}
+        <Dialog open={showAccessForm} onOpenChange={setShowAccessForm}>
+          <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle className="text-right font-iran">ایجاد درخواست جدید</DialogTitle>
+              <DialogTitle className="text-right">دسترسی به تیکت</DialogTitle>
             </DialogHeader>
-            <TwoStepTicketForm onSubmit={handleTicketCreate} onClose={handleCancelTicketForm} categories={categories} />
+            <form onSubmit={handleSubmit(handleTicketAccess)} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="ticketId" className="text-right">
+                  شماره تیکت
+                </Label>
+                <Input {...register("ticketId")} id="ticketId" placeholder="TK-2024-001" className="text-right" />
+                {errors.ticketId && <p className="text-sm text-red-500 text-right">{errors.ticketId.message}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-right">
+                  ایمیل
+                </Label>
+                <Input
+                  {...register("email")}
+                  id="email"
+                  type="email"
+                  placeholder="example@domain.com"
+                  className="text-right"
+                />
+                {errors.email && <p className="text-sm text-red-500 text-right">{errors.email.message}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone" className="text-right">
+                  شماره تماس
+                </Label>
+                <Input {...register("phone")} id="phone" placeholder="09123456789" className="text-right" />
+                {errors.phone && <p className="text-sm text-red-500 text-right">{errors.phone.message}</p>}
+              </div>
+
+              <div className="flex justify-between pt-4">
+                <Button type="button" variant="outline" onClick={() => setShowAccessForm(false)}>
+                  انصراف
+                </Button>
+                <Button type="submit">دسترسی به تیکت</Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* View Ticket Dialog */}
+        <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            {selectedTicket && (
+              <div className="space-y-6" dir="rtl">
+                <DialogHeader>
+                  <DialogTitle className="text-right text-xl">جزئیات تیکت</DialogTitle>
+                </DialogHeader>
+
+                {/* Ticket Header */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h2 className="text-xl font-bold mb-2">{selectedTicket.title}</h2>
+                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">شماره تیکت:</span>
+                          <Badge
+                            variant="outline"
+                            className="cursor-pointer"
+                            onClick={() => copyToClipboard(selectedTicket.id)}
+                          >
+                            {selectedTicket.id}
+                            <Copy className="w-3 h-3 mr-1" />
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span>وضعیت:</span>
+                          <Badge className={getStatusColor(selectedTicket.status)}>
+                            {getStatusIcon(selectedTicket.status)}
+                            <span className="mr-1">{getStatusLabel(selectedTicket.status)}</span>
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span>اولویت:</span>
+                          <div className={`w-3 h-3 rounded-full ${getPriorityColor(selectedTicket.priority)}`}></div>
+                          <span>{getPriorityLabel(selectedTicket.priority)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ticket Details */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-right">اطلاعات تیکت</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div>
+                        <span className="font-medium text-gray-700">دسته‌بندی:</span>
+                        <p className="text-gray-600">{getCategoryLabel(selectedTicket.category)}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-700">زیر دسته:</span>
+                        <p className="text-gray-600">
+                          {getSubcategoryLabel(selectedTicket.category, selectedTicket.subcategory)}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-700">تاریخ ایجاد:</span>
+                        <p className="text-gray-600">{formatDate(selectedTicket.createdAt)}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-700">آخرین به‌روزرسانی:</span>
+                        <p className="text-gray-600">{formatDate(selectedTicket.updatedAt)}</p>
+                      </div>
+                      {selectedTicket.assignedTo && (
+                        <div>
+                          <span className="font-medium text-gray-700">تکنسین مسئول:</span>
+                          <p className="text-gray-600">{selectedTicket.assignedTo}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-right">اطلاعات تماس</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div>
+                        <span className="font-medium text-gray-700">نام:</span>
+                        <p className="text-gray-600">{selectedTicket.clientName}</p>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-medium text-gray-700">ایمیل:</span>
+                          <p className="text-gray-600">{selectedTicket.clientEmail}</p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(`mailto:${selectedTicket.clientEmail}`)}
+                          className="flex items-center gap-1"
+                        >
+                          <Mail className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-medium text-gray-700">تلفن:</span>
+                          <p className="text-gray-600">{selectedTicket.clientPhone}</p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(`tel:${selectedTicket.clientPhone}`)}
+                          className="flex items-center gap-1"
+                        >
+                          <Phone className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Description */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-right">شرح مشکل</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{selectedTicket.description}</p>
+                  </CardContent>
+                </Card>
+
+                {/* Responses */}
+                {selectedTicket.responses.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-right">پاسخ‌ها و به‌روزرسانی‌ها</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {selectedTicket.responses
+                          .filter((response) => !response.isInternal)
+                          .map((response) => (
+                            <div key={response.id} className="border-r-4 border-blue-500 pr-4 py-2">
+                              <div className="flex justify-between items-start mb-2">
+                                <span className="font-medium text-gray-700">{response.author}</span>
+                                <span className="text-sm text-gray-500">{formatDate(response.timestamp)}</span>
+                              </div>
+                              <p className="text-gray-600 leading-relaxed">{response.message}</p>
+                            </div>
+                          ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Attachments */}
+                {selectedTicket.attachments.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-right">فایل‌های پیوست</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {selectedTicket.attachments.map((attachment) => (
+                          <div key={attachment.id} className="flex items-center justify-between p-2 border rounded">
+                            <span className="text-sm">{attachment.name}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-500">{(attachment.size / 1024).toFixed(1)} KB</span>
+                              <Button variant="outline" size="sm" onClick={() => window.open(attachment.url)}>
+                                دانلود
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>
-
-      {/* Statistics Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-right font-iran">کل تیکت‌ها</CardTitle>
-            <Ticket className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-right font-iran">{userTickets.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-right font-iran">در انتظار پاسخ</CardTitle>
-            <AlertCircle className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-right font-iran">
-              {userTickets.filter((t) => t.status === "open").length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-right font-iran">در حال انجام</CardTitle>
-            <Clock className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-right font-iran">
-              {userTickets.filter((t) => t.status === "in-progress").length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-right font-iran">حل شده</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-right font-iran">
-              {userTickets.filter((t) => t.status === "resolved").length}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tickets Management */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-right font-iran">تیکت‌های من</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="relative">
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="جستجو در تیکت‌ها..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-10 text-right font-iran"
-                dir="rtl"
-              />
-            </div>
-
-            <Select value={filterStatus} onValueChange={setFilterStatus} dir="rtl">
-              <SelectTrigger className="text-right font-iran">
-                <SelectValue placeholder="وضعیت" />
-              </SelectTrigger>
-              <SelectContent className="font-iran">
-                <SelectItem value="all">همه وضعیت‌ها</SelectItem>
-                <SelectItem value="open">باز</SelectItem>
-                <SelectItem value="in-progress">در حال انجام</SelectItem>
-                <SelectItem value="resolved">حل شده</SelectItem>
-                <SelectItem value="closed">بسته</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={filterPriority} onValueChange={setFilterPriority} dir="rtl">
-              <SelectTrigger className="text-right font-iran">
-                <SelectValue placeholder="اولویت" />
-              </SelectTrigger>
-              <SelectContent className="font-iran">
-                <SelectItem value="all">همه اولویت‌ها</SelectItem>
-                <SelectItem value="low">کم</SelectItem>
-                <SelectItem value="medium">متوسط</SelectItem>
-                <SelectItem value="high">بالا</SelectItem>
-                <SelectItem value="urgent">فوری</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSearchQuery("")
-                setFilterStatus("all")
-                setFilterPriority("all")
-              }}
-              className="gap-2 font-iran"
-            >
-              <Filter className="w-4 h-4" />
-              پاک کردن فیلترها
-            </Button>
-          </div>
-
-          {/* Tickets Table */}
-          <div className="border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-right font-iran">شماره تیکت</TableHead>
-                  <TableHead className="text-right font-iran">عنوان</TableHead>
-                  <TableHead className="text-right font-iran">وضعیت</TableHead>
-                  <TableHead className="text-right font-iran">اولویت</TableHead>
-                  <TableHead className="text-right font-iran">دسته‌بندی</TableHead>
-                  <TableHead className="text-right font-iran">تکنسین</TableHead>
-                  <TableHead className="text-right font-iran">تاریخ ایجاد</TableHead>
-                  <TableHead className="text-right font-iran">عملیات</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredTickets.length > 0 ? (
-                  filteredTickets.map((ticket) => {
-                    const CategoryIcon = categoryIcons[ticket.category]
-
-                    return (
-                      <TableRow key={ticket.id}>
-                        <TableCell className="font-mono text-sm font-iran">{ticket.id}</TableCell>
-                        <TableCell className="max-w-xs">
-                          <div className="truncate font-iran" title={ticket.title}>
-                            {ticket.title}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={`${statusColors[ticket.status]} font-iran`}>
-                            {statusLabels[ticket.status]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={`${priorityColors[ticket.priority]} font-iran`}>
-                            {priorityLabels[ticket.priority]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <CategoryIcon className="w-4 h-4" />
-                            <span className="text-sm font-iran">{categoryLabels[ticket.category]}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {ticket.assignedTechnicianName ? (
-                            <div className="flex items-center gap-2">
-                              <Avatar className="w-6 h-6">
-                                <AvatarFallback className="text-xs font-iran">
-                                  {ticket.assignedTechnicianName.charAt(0)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="text-sm font-iran">{ticket.assignedTechnicianName}</span>
-                            </div>
-                          ) : (
-                            <span className="text-sm text-muted-foreground font-iran">تعیین نشده</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm font-iran">
-                          {new Date(ticket.createdAt).toLocaleDateString("fa-IR")}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleViewTicket(ticket)}
-                            className="gap-1 font-iran"
-                          >
-                            <Eye className="w-3 h-3" />
-                            مشاهده
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
-                      <div className="flex flex-col items-center gap-2">
-                        <Search className="w-8 h-8 text-muted-foreground" />
-                        <p className="text-muted-foreground font-iran">تیکتی یافت نشد</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* View Ticket Dialog */}
-      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto font-iran" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="text-right font-iran">جزئیات تیکت {selectedTicket?.id}</DialogTitle>
-          </DialogHeader>
-          {selectedTicket && (
-            <div className="space-y-6">
-              {/* Ticket Header */}
-              <div className="flex justify-between items-start">
-                <div className="text-right space-y-2">
-                  <h3 className="text-xl font-semibold font-iran">{selectedTicket.title}</h3>
-                  <div className="flex gap-2">
-                    <Badge className={`${statusColors[selectedTicket.status]} font-iran`}>
-                      {statusLabels[selectedTicket.status]}
-                    </Badge>
-                    <Badge className={`${priorityColors[selectedTicket.priority]} font-iran`}>
-                      {priorityLabels[selectedTicket.priority]}
-                    </Badge>
-                  </div>
-                </div>
-                <div className="text-left space-y-1">
-                  <p className="text-sm text-muted-foreground font-iran">شماره تیکت</p>
-                  <p className="font-mono text-lg font-iran">{selectedTicket.id}</p>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Ticket Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium mb-2 font-iran">اطلاعات کلی</h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground font-iran">دسته‌بندی:</span>
-                        <span className="font-iran">{categoryLabels[selectedTicket.category]}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground font-iran">زیر دسته:</span>
-                        <span className="font-iran">{selectedTicket.subcategory}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground font-iran">تاریخ ایجاد:</span>
-                        <span className="font-iran">
-                          {new Date(selectedTicket.createdAt).toLocaleDateString("fa-IR")}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground font-iran">آخرین به‌روزرسانی:</span>
-                        <span className="font-iran">
-                          {new Date(selectedTicket.updatedAt).toLocaleDateString("fa-IR")}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {selectedTicket.assignedTechnicianName && (
-                    <div>
-                      <h4 className="font-medium mb-2 font-iran">تکنسین مسئول</h4>
-                      <div className="flex items-center gap-2">
-                        <Avatar className="w-8 h-8">
-                          <AvatarFallback className="font-iran">
-                            {selectedTicket.assignedTechnicianName.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="font-iran">{selectedTicket.assignedTechnicianName}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium mb-2 font-iran">اطلاعات تماس</h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground font-iran">نام:</span>
-                        <span className="font-iran">{selectedTicket.clientName}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground font-iran">ایمیل:</span>
-                        <span className="font-iran">{selectedTicket.clientEmail}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground font-iran">تلفن:</span>
-                        <span className="font-iran">{selectedTicket.clientPhone}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground font-iran">بخش:</span>
-                        <span className="font-iran">{selectedTicket.department}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Description */}
-              <div>
-                <h4 className="font-medium mb-2 font-iran">شرح مشکل</h4>
-                <div className="bg-muted p-4 rounded-lg text-right">
-                  <p className="whitespace-pre-wrap font-iran">{selectedTicket.description}</p>
-                </div>
-              </div>
-
-              {/* Responses */}
-              {selectedTicket.responses && selectedTicket.responses.length > 0 && (
-                <div>
-                  <h4 className="font-medium mb-4 flex items-center gap-2 font-iran">
-                    <MessageSquare className="w-4 h-4" />
-                    پاسخ‌ها و به‌روزرسانی‌ها
-                  </h4>
-                  <div className="space-y-4">
-                    {selectedTicket.responses.map((response: any, index: number) => (
-                      <div key={index} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="flex items-center gap-2">
-                            <Avatar className="w-6 h-6">
-                              <AvatarFallback className="text-xs font-iran">
-                                {response.technicianName?.charAt(0) || "T"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="font-medium text-sm font-iran">{response.technicianName}</span>
-                          </div>
-                          <div className="text-left">
-                            <Badge className={`${statusColors[response.status]} mb-1 font-iran`}>
-                              {statusLabels[response.status]}
-                            </Badge>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1 font-iran">
-                              <Calendar className="w-3 h-3" />
-                              {new Date(response.timestamp).toLocaleDateString("fa-IR")} -
-                              {new Date(response.timestamp).toLocaleTimeString("fa-IR")}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="bg-muted/50 p-3 rounded text-right">
-                          <p className="whitespace-pre-wrap font-iran">{response.message}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
