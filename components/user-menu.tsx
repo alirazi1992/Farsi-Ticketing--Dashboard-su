@@ -10,87 +10,108 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/lib/auth-context"
-import { User, Settings, LogOut, ChevronDown } from "lucide-react"
+import { SettingsDialog } from "./settings-dialog"
+import { User, Settings, LogOut, Shield, Wrench } from "lucide-react"
 
 export function UserMenu() {
   const { user, logout } = useAuth()
-  const [isOpen, setIsOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   if (!user) return null
 
-  const handleLogout = () => {
-    logout()
-    setIsOpen(false)
-  }
-
-  const getUserInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case "admin":
+        return <Shield className="w-3 h-3" />
+      case "engineer":
+        return <Wrench className="w-3 h-3" />
+      default:
+        return <User className="w-3 h-3" />
+    }
   }
 
   const getRoleLabel = (role: string) => {
-    const roleLabels = {
-      admin: "مدیر سیستم",
-      technician: "تکنسین",
-      client: "کاربر",
+    switch (role) {
+      case "admin":
+        return "مدیر سیستم"
+      case "engineer":
+        return "تکنسین"
+      default:
+        return "کاربر"
     }
-    return roleLabels[role as keyof typeof roleLabels] || role
+  }
+
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case "admin":
+        return "bg-purple-100 text-purple-800 border-purple-200"
+      case "engineer":
+        return "bg-blue-100 text-blue-800 border-blue-200"
+      default:
+        return "bg-green-100 text-green-800 border-green-200"
+    }
   }
 
   return (
-    <DropdownMenu open={isOpen} onOpenChange={setIsOpen} dir="rtl">
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="flex items-center gap-2 h-auto p-2 font-iran">
-          <ChevronDown className="h-4 w-4" />
-          <div className="text-right">
-            <div className="text-sm font-medium font-iran">{user.name}</div>
-            <div className="text-xs text-muted-foreground font-iran">{getRoleLabel(user.role)}</div>
-          </div>
-          <Avatar className="h-8 w-8">
-            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xs font-iran">
-              {getUserInitials(user.name)}
-            </AvatarFallback>
-          </Avatar>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56 font-iran" align="end" dir="rtl">
-        <DropdownMenuLabel className="text-right font-iran">حساب کاربری</DropdownMenuLabel>
-        <DropdownMenuSeparator />
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />
+              <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+            </Avatar>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-80" align="end" forceMount dir="rtl">
+          <DropdownMenuLabel className="font-normal">
+            <div className="flex flex-col space-y-2" dir="rtl">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />
+                  <AvatarFallback className="text-sm">{user.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col space-y-1 flex-1 text-right">
+                  <p className="text-sm font-medium leading-none text-right">{user.name}</p>
+                  <p className="text-xs leading-none text-muted-foreground text-right">{user.email}</p>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 justify-end">
+                <Badge className={getRoleBadgeColor(user.role)}>
+                  <div className="flex items-center gap-1">
+                    <span>{getRoleLabel(user.role)}</span>
+                    {getRoleIcon(user.role)}
+                  </div>
+                </Badge>
+                {user.department && <span className="text-xs text-muted-foreground">{user.department}</span>}
+              </div>
+              {user.phone && <p className="text-xs text-muted-foreground text-right">📱 {user.phone}</p>}
+            </div>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setSettingsOpen(true)} className="justify-end" dir="rtl">
+            <div className="flex items-center gap-2">
+              <span>تنظیمات حساب</span>
+              <Settings className="h-4 w-4" />
+            </div>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={logout} className="text-red-600 justify-end" dir="rtl">
+            <div className="flex items-center gap-2">
+              <span>خروج</span>
+              <LogOut className="h-4 w-4" />
+            </div>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-        <div className="px-2 py-1.5 text-sm text-muted-foreground">
-          <div className="font-medium text-foreground font-iran">{user.name}</div>
-          <div className="text-xs font-iran">{user.email}</div>
-          {user.department && <div className="text-xs font-iran">{user.department}</div>}
-        </div>
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem className="text-right font-iran cursor-pointer">
-          <User className="ml-2 h-4 w-4" />
-          پروفایل
-        </DropdownMenuItem>
-
-        <DropdownMenuItem className="text-right font-iran cursor-pointer">
-          <Settings className="ml-2 h-4 w-4" />
-          تنظیمات
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem
-          className="text-right font-iran cursor-pointer text-red-600 focus:text-red-600"
-          onClick={handleLogout}
-        >
-          <LogOut className="ml-2 h-4 w-4" />
-          خروج از سیستم
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+    </>
   )
 }

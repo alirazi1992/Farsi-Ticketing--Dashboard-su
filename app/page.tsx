@@ -1,119 +1,310 @@
 "use client"
 
 import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Separator } from "@/components/ui/separator"
 import { LoginDialog } from "@/components/login-dialog"
+import { UserMenu } from "@/components/user-menu"
 import { ClientDashboard } from "@/components/client-dashboard"
 import { TechnicianDashboard } from "@/components/technician-dashboard"
 import { AdminDashboard } from "@/components/admin-dashboard"
-import { UserMenu } from "@/components/user-menu"
 import { useAuth } from "@/lib/auth-context"
-import { TicketProvider } from "@/lib/ticket-context"
-import { Shield, Wrench, User, Headphones } from "lucide-react"
+import { toast } from "@/hooks/use-toast"
+import { Toaster } from "@/components/ui/toaster"
+import { Ticket, User, Wrench, Shield, LogIn } from "lucide-react"
 
-export default function HomePage() {
+// Sample initial tickets data
+const initialTickets = [
+  {
+    id: "TK-2024-001",
+    title: "مشکل در اتصال به اینترنت",
+    description: "اینترنت در بخش حسابداری قطع شده و کارمندان نمی‌توانند به سیستم‌های آنلاین دسترسی داشته باشند.",
+    category: "network",
+    subcategory: "اتصال اینترنت",
+    priority: "high",
+    status: "open",
+    clientName: "احمد رضایی",
+    clientEmail: "ahmad@company.com",
+    clientPhone: "09123456789",
+    department: "حسابداری",
+    createdAt: "2024-01-15T09:30:00Z",
+    updatedAt: "2024-01-15T09:30:00Z",
+    assignedTo: "tech-001",
+    assignedTechnicianName: "علی احمدی",
+    responses: [
+      {
+        message: "تیکت دریافت شد. در حال بررسی مشکل هستیم.",
+        status: "in-progress",
+        technicianName: "علی احمدی",
+        timestamp: "2024-01-15T10:00:00Z",
+      },
+    ],
+  },
+  {
+    id: "TK-2024-002",
+    title: "نصب نرم‌افزار حسابداری",
+    description: "نیاز به نصب نرم‌افزار حسابداری جدید روی 5 دستگاه در بخش مالی",
+    category: "software",
+    subcategory: "نصب نرم‌افزار",
+    priority: "medium",
+    status: "resolved",
+    clientName: "فاطمه احمدی",
+    clientEmail: "fateme@company.com",
+    clientPhone: "09123456788",
+    department: "مالی",
+    createdAt: "2024-01-14T14:20:00Z",
+    updatedAt: "2024-01-15T16:45:00Z",
+    assignedTo: "tech-002",
+    assignedTechnicianName: "سارا محمدی",
+    responses: [
+      {
+        message: "نرم‌افزار با موفقیت نصب شد. لطفاً تست کنید.",
+        status: "resolved",
+        technicianName: "سارا محمدی",
+        timestamp: "2024-01-15T16:45:00Z",
+      },
+    ],
+  },
+  {
+    id: "TK-2024-003",
+    title: "تعمیر پرینتر",
+    description: "پرینتر اپسون در اتاق 205 کاغذ گیر می‌کند",
+    category: "hardware",
+    subcategory: "پرینتر",
+    priority: "low",
+    status: "in-progress",
+    clientName: "محمد کریمی",
+    clientEmail: "mohammad@company.com",
+    clientPhone: "09123456787",
+    department: "اداری",
+    createdAt: "2024-01-13T11:15:00Z",
+    updatedAt: "2024-01-14T09:20:00Z",
+    assignedTo: "tech-001",
+    assignedTechnicianName: "علی احمدی",
+    responses: [],
+  },
+  {
+    id: "TK-2024-004",
+    title: "مشکل در دسترسی به ایمیل",
+    description: "نمی‌توانم به ایمیل سازمانی خود دسترسی داشته باشم",
+    category: "email",
+    subcategory: "مشکل دسترسی",
+    priority: "urgent",
+    status: "open",
+    clientName: "زهرا نوری",
+    clientEmail: "zahra@company.com",
+    clientPhone: "09123456786",
+    department: "فروش",
+    createdAt: "2024-01-15T08:45:00Z",
+    updatedAt: "2024-01-15T08:45:00Z",
+    assignedTo: null,
+    assignedTechnicianName: null,
+    responses: [],
+  },
+  {
+    id: "TK-2024-005",
+    title: "بروزرسانی آنتی‌ویروس",
+    description: "آنتی‌ویروس روی تمام سیستم‌ها نیاز به بروزرسانی دارد",
+    category: "security",
+    subcategory: "آنتی‌ویروس",
+    priority: "medium",
+    status: "closed",
+    clientName: "علی حسینی",
+    clientEmail: "ali@company.com",
+    clientPhone: "09123456785",
+    department: "IT",
+    createdAt: "2024-01-12T13:30:00Z",
+    updatedAt: "2024-01-13T17:00:00Z",
+    assignedTo: "tech-003",
+    assignedTechnicianName: "حسن رضایی",
+    responses: [
+      {
+        message: "آنتی‌ویروس روی تمام سیستم‌ها بروزرسانی شد.",
+        status: "resolved",
+        technicianName: "حسن رضایی",
+        timestamp: "2024-01-13T16:30:00Z",
+      },
+      {
+        message: "تیکت بسته شد. مشکل حل شده است.",
+        status: "closed",
+        technicianName: "حسن رضایی",
+        timestamp: "2024-01-13T17:00:00Z",
+      },
+    ],
+  },
+]
+
+export default function ITServiceDashboard() {
   const { user, logout } = useAuth()
-  const [showLoginDialog, setShowLoginDialog] = useState(false)
+  const [tickets, setTickets] = useState(initialTickets)
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false)
 
-  const handleLogout = () => {
-    logout()
-    setShowLoginDialog(false)
+  // Handle ticket creation
+  const handleTicketCreate = (newTicket: any) => {
+    const ticketId = `TK-${new Date().getFullYear()}-${String(tickets.length + 1).padStart(3, "0")}`
+    const ticket = {
+      ...newTicket,
+      id: ticketId,
+      status: "open",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      assignedTo: null,
+      assignedTechnicianName: null,
+      responses: [],
+    }
+
+    setTickets((prev) => [ticket, ...prev])
+    toast({
+      title: "تیکت ایجاد شد",
+      description: `تیکت ${ticketId} با موفقیت ثبت شد`,
+    })
   }
 
-  // Show login dialog if user is not authenticated
-  if (!user) {
-    return (
-      <div
-        className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center font-iran"
-        dir="rtl"
-      >
-        <div className="text-center space-y-8">
-          <div className="space-y-4">
-            <div className="flex justify-center mb-6">
-              <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-                <Headphones className="w-10 h-10 text-white" />
-              </div>
-            </div>
-            <h1 className="text-4xl font-bold text-gray-900 font-iran">سیستم مدیریت خدمات IT</h1>
-            <p className="text-xl text-gray-600 font-iran">سامانه مدیریت تیکت‌های پشتیبانی فنی</p>
-            <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 shadow-lg max-w-md mx-auto">
-              <p className="text-gray-700 mb-4 font-iran">برای ورود به سیستم، از اطلاعات زیر استفاده کنید:</p>
-              <div className="text-sm text-gray-600 space-y-2 font-iran">
-                <div className="flex items-center justify-between">
-                  <span>کاربر:</span>
-                  <span>ahmad@company.com</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>تکنسین:</span>
-                  <span>ali@company.com</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>مدیر:</span>
-                  <span>admin@company.com</span>
-                </div>
-                <div className="flex items-center justify-between border-t pt-2 mt-2">
-                  <span>رمز عبور:</span>
-                  <span>123456</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <LoginDialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
-            <button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 font-iran">
-              ورود به سیستم
-            </button>
-          </LoginDialog>
-        </div>
-      </div>
+  // Handle ticket updates
+  const handleTicketUpdate = (ticketId: string, updates: any) => {
+    setTickets((prev) =>
+      prev.map((ticket) =>
+        ticket.id === ticketId
+          ? {
+              ...ticket,
+              ...updates,
+              updatedAt: new Date().toISOString(),
+            }
+          : ticket,
+      ),
     )
   }
 
-  // Show appropriate dashboard based on user role
-  return (
-    <TicketProvider>
-      <div className="min-h-screen bg-gray-50 font-iran" dir="rtl">
-        {/* Top Navigation */}
-        <nav className="bg-white shadow-sm border-b" dir="rtl">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Headphones className="w-8 h-8 text-blue-600" />
-                  <div className="text-right">
-                    <h1 className="text-lg font-bold text-gray-900 font-iran">سیستم مدیریت خدمات IT</h1>
-                    <p className="text-xs text-gray-500 font-iran">
-                      {user?.role === "admin" && "پنل مدیریت"}
-                      {user?.role === "technician" && "پنل تکنسین"}
-                      {user?.role === "client" && "پنل کاربری"}
-                    </p>
+  // Get dashboard content based on user role
+  const getDashboardContent = () => {
+    if (!user) {
+      return (
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Ticket className="w-8 h-8 text-primary" />
+              </div>
+              <CardTitle className="text-right text-xl">سیستم مدیریت خدمات IT</CardTitle>
+              <p className="text-muted-foreground text-right">برای دسترسی به سیستم وارد شوید</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button onClick={() => setLoginDialogOpen(true)} className="w-full gap-2" size="lg">
+                <LogIn className="w-4 h-4" />
+                ورود به سیستم
+              </Button>
+
+              <div className="pt-4 border-t">
+                <p className="text-xs text-muted-foreground text-center mb-3">حساب‌های نمونه برای تست:</p>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between items-center p-2 bg-muted/50 rounded">
+                    <span className="text-right">کاربر: ahmad@company.com / 123456</span>
+                    <User className="w-3 h-3 text-blue-500" />
+                  </div>
+                  <div className="flex justify-between items-center p-2 bg-muted/50 rounded">
+                    <span className="text-right">تکنسین: ali@company.com / 123456</span>
+                    <Wrench className="w-3 h-3 text-green-500" />
+                  </div>
+                  <div className="flex justify-between items-center p-2 bg-muted/50 rounded">
+                    <span className="text-right">مدیر: admin@company.com / 123456</span>
+                    <Shield className="w-3 h-3 text-purple-500" />
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </div>
+      )
+    }
 
-              <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900 font-iran">{user?.name}</p>
-                  <p className="text-xs text-gray-500 flex items-center gap-1 font-iran">
-                    {user?.role === "admin" && <Shield className="w-3 h-3" />}
-                    {user?.role === "technician" && <Wrench className="w-3 h-3" />}
-                    {user?.role === "client" && <User className="w-3 h-3" />}
-                    {user?.role === "admin" && "مدیر سیستم"}
-                    {user?.role === "technician" && "تکنسین"}
-                    {user?.role === "client" && "کاربر"}
-                  </p>
+    switch (user.role) {
+      case "admin":
+        return <AdminDashboard tickets={tickets} onTicketUpdate={handleTicketUpdate} />
+      case "engineer":
+        return <TechnicianDashboard tickets={tickets} onTicketUpdate={handleTicketUpdate} currentUser={user} />
+      default:
+        return <ClientDashboard tickets={tickets} onTicketCreate={handleTicketCreate} currentUser={user} />
+    }
+  }
+
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case "admin":
+        return <Shield className="w-4 h-4" />
+      case "engineer":
+        return <Wrench className="w-4 h-4" />
+      default:
+        return <User className="w-4 h-4" />
+    }
+  }
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case "admin":
+        return "مدیر سیستم"
+      case "engineer":
+        return "تکنسین"
+      default:
+        return "کاربر"
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-background" dir="rtl">
+      {/* Header */}
+      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                  <Ticket className="w-6 h-6 text-primary-foreground" />
                 </div>
-                <UserMenu />
+                <div className="text-right">
+                  <h1 className="text-xl font-bold">سیستم مدیریت خدمات IT</h1>
+                  <p className="text-sm text-muted-foreground">مدیریت درخواست‌های فنی و پشتیبانی</p>
+                </div>
               </div>
             </div>
-          </div>
-        </nav>
 
-        {/* Dashboard Content */}
-        <main dir="rtl">
-          {user?.role === "admin" && <AdminDashboard onLogout={handleLogout} />}
-          {user?.role === "technician" && <TechnicianDashboard onLogout={handleLogout} />}
-          {user?.role === "client" && <ClientDashboard onLogout={handleLogout} />}
-        </main>
-      </div>
-    </TicketProvider>
+            <div className="flex items-center gap-4">
+              {user ? (
+                <>
+                  <div className="flex items-center gap-3 text-right">
+                    <div>
+                      <p className="text-sm font-medium">{user.name}</p>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        {getRoleIcon(user.role)}
+                        <span>{getRoleLabel(user.role)}</span>
+                      </div>
+                    </div>
+                    <Avatar className="w-9 h-9">
+                      <AvatarFallback className="text-sm">{user.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                  </div>
+                  <Separator orientation="vertical" className="h-8" />
+                  <UserMenu user={user} onLogout={logout} />
+                </>
+              ) : (
+                <Button variant="outline" onClick={() => setLoginDialogOpen(true)} className="gap-2">
+                  <LogIn className="w-4 h-4" />
+                  ورود
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-8">{getDashboardContent()}</main>
+
+      {/* Login Dialog */}
+      <LoginDialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen} />
+
+      <Toaster />
+    </div>
   )
 }

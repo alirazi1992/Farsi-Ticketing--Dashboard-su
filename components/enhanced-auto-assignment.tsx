@@ -6,572 +6,953 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Slider } from "@/components/ui/slider"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "@/hooks/use-toast"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import {
-  Brain,
-  Zap,
-  Target,
-  TrendingUp,
-  Users,
-  Clock,
-  Star,
-  AlertTriangle,
-  CheckCircle,
-  BarChart3,
   Settings,
+  Zap,
+  Users,
+  Target,
+  CheckCircle,
+  Info,
+  Brain,
+  Award,
+  TrendingUp,
+  Activity,
+  BarChart3,
+  Lightbulb,
+  AlertTriangle,
+  Play,
 } from "lucide-react"
+
+// Enhanced assignment criteria weights
+interface AssignmentCriteria {
+  expertise: number // 0-100
+  availability: number // 0-100
+  workload: number // 0-100
+  performance: number // 0-100
+  responseTime: number // 0-100
+  priority: number // 0-100
+  experience: number // 0-100
+  customerRating: number // 0-100
+}
+
+interface AssignmentRule {
+  id: string
+  name: string
+  enabled: boolean
+  criteria: AssignmentCriteria
+  conditions: {
+    ticketPriority?: string[]
+    ticketCategory?: string[]
+    timeOfDay?: string[]
+    dayOfWeek?: string[]
+  }
+  description: string
+}
+
+// Mock technicians with enhanced data
+const mockTechnicians = [
+  {
+    id: "tech-001",
+    name: "علی احمدی",
+    email: "ali@company.com",
+    specialties: ["network", "hardware", "security"],
+    primarySpecialty: "network",
+    rating: 4.8,
+    activeTickets: 3,
+    completedTickets: 145,
+    status: "available",
+    avgResponseTime: 1.2, // hours
+    avgResolutionTime: 4.5, // hours
+    customerSatisfaction: 4.9,
+    workingHours: { start: 8, end: 17 },
+    timezone: "Asia/Tehran",
+    certifications: ["CCNA", "CompTIA Network+"],
+    languages: ["فارسی", "انگلیسی"],
+    lastActive: new Date(),
+    performanceScore: 92,
+    efficiency: 88,
+    escalationRate: 5, // percentage
+  },
+  {
+    id: "tech-002",
+    name: "سارا محمدی",
+    email: "sara@company.com",
+    specialties: ["software", "security", "access"],
+    primarySpecialty: "software",
+    rating: 4.9,
+    activeTickets: 2,
+    completedTickets: 198,
+    status: "available",
+    avgResponseTime: 0.8,
+    avgResolutionTime: 3.2,
+    customerSatisfaction: 4.95,
+    workingHours: { start: 9, end: 18 },
+    timezone: "Asia/Tehran",
+    certifications: ["CISSP", "CEH"],
+    languages: ["فارسی", "انگلیسی", "آلمانی"],
+    lastActive: new Date(),
+    performanceScore: 96,
+    efficiency: 94,
+    escalationRate: 2,
+  },
+  {
+    id: "tech-003",
+    name: "حسن رضایی",
+    email: "hassan@company.com",
+    specialties: ["hardware", "email", "network"],
+    primarySpecialty: "hardware",
+    rating: 4.7,
+    activeTickets: 5,
+    completedTickets: 89,
+    status: "busy",
+    avgResponseTime: 2.1,
+    avgResolutionTime: 6.8,
+    customerSatisfaction: 4.6,
+    workingHours: { start: 8, end: 16 },
+    timezone: "Asia/Tehran",
+    certifications: ["CompTIA A+", "ITIL"],
+    languages: ["فارسی"],
+    lastActive: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
+    performanceScore: 78,
+    efficiency: 72,
+    escalationRate: 12,
+  },
+  {
+    id: "tech-004",
+    name: "مریم کریمی",
+    email: "maryam@company.com",
+    specialties: ["software", "access", "email"],
+    primarySpecialty: "access",
+    rating: 4.6,
+    activeTickets: 1,
+    completedTickets: 67,
+    status: "available",
+    avgResponseTime: 1.5,
+    avgResolutionTime: 5.1,
+    customerSatisfaction: 4.7,
+    workingHours: { start: 10, end: 19 },
+    timezone: "Asia/Tehran",
+    certifications: ["Microsoft 365", "Azure AD"],
+    languages: ["فارسی", "انگلیسی"],
+    lastActive: new Date(),
+    performanceScore: 84,
+    efficiency: 81,
+    escalationRate: 8,
+  },
+]
+
+// Default assignment rules
+const defaultRules: AssignmentRule[] = [
+  {
+    id: "urgent-expert",
+    name: "تیکت‌های فوری - متخصص",
+    enabled: true,
+    criteria: {
+      expertise: 90,
+      availability: 80,
+      workload: 70,
+      performance: 85,
+      responseTime: 95,
+      priority: 100,
+      experience: 80,
+      customerRating: 85,
+    },
+    conditions: {
+      ticketPriority: ["urgent"],
+      ticketCategory: ["all"],
+    },
+    description: "برای تیکت‌های فوری، بهترین متخصص با کمترین زمان پاسخ انتخاب می‌شود",
+  },
+  {
+    id: "balanced-assignment",
+    name: "تعادل بار کاری",
+    enabled: true,
+    criteria: {
+      expertise: 70,
+      availability: 90,
+      workload: 95,
+      performance: 75,
+      responseTime: 70,
+      priority: 60,
+      experience: 65,
+      customerRating: 70,
+    },
+    conditions: {
+      ticketPriority: ["medium", "low"],
+      ticketCategory: ["all"],
+    },
+    description: "توزیع متعادل تیکت‌ها بین تکنسین‌ها با در نظر گیری بار کاری",
+  },
+  {
+    id: "specialty-match",
+    name: "تطبیق تخصصی",
+    enabled: true,
+    criteria: {
+      expertise: 100,
+      availability: 60,
+      workload: 50,
+      performance: 80,
+      responseTime: 60,
+      priority: 70,
+      experience: 85,
+      customerRating: 75,
+    },
+    conditions: {
+      ticketCategory: ["hardware", "software", "network", "security"],
+    },
+    description: "اولویت با تطبیق دقیق تخصص تکنسین با نوع مشکل",
+  },
+]
+
+const priorityLabels = {
+  urgent: "فوری",
+  high: "بالا",
+  medium: "متوسط",
+  low: "کم",
+}
+
+const categoryLabels = {
+  hardware: "سخت‌افزار",
+  software: "نرم‌افزار",
+  network: "شبکه",
+  email: "ایمیل",
+  security: "امنیت",
+  access: "دسترسی",
+}
 
 interface EnhancedAutoAssignmentProps {
   tickets: any[]
   onTicketUpdate: (ticketId: string, updates: any) => void
 }
 
-export function EnhancedAutoAssignment({ tickets = [], onTicketUpdate }: EnhancedAutoAssignmentProps) {
-  const [aiEnabled, setAiEnabled] = useState(true)
-  const [learningMode, setLearningMode] = useState("adaptive")
-  const [confidenceThreshold, setConfidenceThreshold] = useState(75)
-  const [predictionDialogOpen, setPredictionDialogOpen] = useState(false)
-  const [predictions, setPredictions] = useState<any[]>([])
+export function EnhancedAutoAssignment({ tickets, onTicketUpdate }: EnhancedAutoAssignmentProps) {
+  const [isEnabled, setIsEnabled] = useState(false)
+  const [rules, setRules] = useState<AssignmentRule[]>(defaultRules)
+  const [selectedRule, setSelectedRule] = useState<AssignmentRule | null>(null)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [simulationDialogOpen, setSimulationDialogOpen] = useState(false)
+  const [simulationResults, setSimulationResults] = useState<any[]>([])
+  const [activeTab, setActiveTab] = useState("rules")
 
-  const safeTickets = Array.isArray(tickets) ? tickets : []
+  // Calculate comprehensive assignment score
+  const calculateAssignmentScore = (technician: any, ticket: any, rule: AssignmentRule) => {
+    const scores = {
+      expertise: calculateExpertiseScore(technician, ticket),
+      availability: calculateAvailabilityScore(technician),
+      workload: calculateWorkloadScore(technician),
+      performance: calculatePerformanceScore(technician),
+      responseTime: calculateResponseTimeScore(technician),
+      priority: calculatePriorityScore(technician, ticket),
+      experience: calculateExperienceScore(technician),
+      customerRating: calculateCustomerRatingScore(technician),
+    }
 
-  // Mock AI predictions and analytics
-  const aiMetrics = {
-    accuracy: 94.2,
-    avgResponseTime: 1.8,
-    successRate: 96.7,
-    learningProgress: 78,
+    // Apply rule weights
+    let totalScore = 0
+    let totalWeight = 0
+
+    Object.entries(rule.criteria).forEach(([criterion, weight]) => {
+      if (weight > 0) {
+        totalScore += (scores[criterion] * weight) / 100
+        totalWeight += weight
+      }
+    })
+
+    const finalScore = totalWeight > 0 ? (totalScore / totalWeight) * 100 : 0
+
+    return {
+      total: Math.round(finalScore * 10) / 10,
+      breakdown: scores,
+      reasons: generateAssignmentReasons(technician, ticket, scores),
+    }
   }
 
-  // Mock technician performance data
-  const technicianPerformance = [
-    {
-      id: "tech-001",
-      name: "علی احمدی",
-      aiScore: 92,
-      specialties: ["hardware", "network"],
-      avgResolutionTime: 2.4,
-      customerSatisfaction: 4.8,
-      predictedLoad: 85,
-    },
-    {
-      id: "tech-002",
-      name: "سارا محمدی",
-      aiScore: 96,
-      specialties: ["software", "email"],
-      avgResolutionTime: 1.9,
-      customerSatisfaction: 4.9,
-      predictedLoad: 70,
-    },
-    {
-      id: "tech-003",
-      name: "محمد رضایی",
-      aiScore: 88,
-      specialties: ["security", "access"],
-      avgResolutionTime: 3.1,
-      customerSatisfaction: 4.7,
-      predictedLoad: 60,
-    },
-  ]
+  const calculateExpertiseScore = (technician: any, ticket: any) => {
+    let score = 0
 
-  const generateAIPredictions = () => {
-    const unassignedTickets = safeTickets.filter((ticket) => !ticket.assignedTo).slice(0, 5)
+    // Primary specialty match
+    if (technician.primarySpecialty === ticket.category) {
+      score += 50
+    }
 
-    const predictions = unassignedTickets.map((ticket) => {
-      const bestTechnician = technicianPerformance
-        .filter((tech) => tech.predictedLoad < 90)
-        .sort((a, b) => b.aiScore - a.aiScore)[0]
+    // Secondary specialty match
+    if (technician.specialties.includes(ticket.category)) {
+      score += 30
+    }
 
+    // Related specialties
+    const relatedSpecialties = getRelatedSpecialties(ticket.category)
+    const matchingRelated = technician.specialties.filter((s) => relatedSpecialties.includes(s))
+    score += matchingRelated.length * 5
+
+    // Certifications bonus
+    score += technician.certifications.length * 2
+
+    return Math.min(100, score)
+  }
+
+  const calculateAvailabilityScore = (technician: any) => {
+    if (technician.status === "available") return 100
+    if (technician.status === "busy") return 30
+    return 0
+  }
+
+  const calculateWorkloadScore = (technician: any) => {
+    const maxTickets = 8
+    const workloadRatio = technician.activeTickets / maxTickets
+    return Math.max(0, (1 - workloadRatio) * 100)
+  }
+
+  const calculatePerformanceScore = (technician: any) => {
+    return technician.performanceScore || 0
+  }
+
+  const calculateResponseTimeScore = (technician: any) => {
+    const maxResponseTime = 4 // hours
+    const score = Math.max(0, (maxResponseTime - technician.avgResponseTime) / maxResponseTime) * 100
+    return Math.min(100, score)
+  }
+
+  const calculatePriorityScore = (technician: any, ticket: any) => {
+    const priorityRequirements = {
+      urgent: { minRating: 4.5, minExperience: 50 },
+      high: { minRating: 4.0, minExperience: 30 },
+      medium: { minRating: 3.5, minExperience: 20 },
+      low: { minRating: 3.0, minExperience: 10 },
+    }
+
+    const requirement = priorityRequirements[ticket.priority] || priorityRequirements.medium
+    let score = 0
+
+    if (technician.rating >= requirement.minRating) {
+      score += 60
+    } else {
+      score += (technician.rating / requirement.minRating) * 60
+    }
+
+    if (technician.completedTickets >= requirement.minExperience) {
+      score += 40
+    } else {
+      score += (technician.completedTickets / requirement.minExperience) * 40
+    }
+
+    return Math.min(100, score)
+  }
+
+  const calculateExperienceScore = (technician: any) => {
+    const maxExperience = 200
+    return Math.min(100, (technician.completedTickets / maxExperience) * 100)
+  }
+
+  const calculateCustomerRatingScore = (technician: any) => {
+    return (technician.customerSatisfaction / 5) * 100
+  }
+
+  const getRelatedSpecialties = (category: string) => {
+    const relations = {
+      hardware: ["network", "email"],
+      software: ["access", "security"],
+      network: ["hardware", "security"],
+      email: ["software", "security"],
+      security: ["network", "access"],
+      access: ["software", "security"],
+    }
+    return relations[category] || []
+  }
+
+  const generateAssignmentReasons = (technician: any, ticket: any, scores: any) => {
+    const reasons = []
+
+    if (scores.expertise > 80) {
+      reasons.push(`متخصص ${categoryLabels[ticket.category]}`)
+    }
+
+    if (scores.availability === 100) {
+      reasons.push("در دسترس")
+    }
+
+    if (scores.workload > 70) {
+      reasons.push("بار کاری مناسب")
+    }
+
+    if (scores.performance > 85) {
+      reasons.push("عملکرد عالی")
+    }
+
+    if (scores.responseTime > 80) {
+      reasons.push("پاسخ‌دهی سریع")
+    }
+
+    if (scores.customerRating > 90) {
+      reasons.push("رضایت بالای مشتری")
+    }
+
+    return reasons
+  }
+
+  // Find best technician based on active rules
+  const findBestTechnician = (ticket: any) => {
+    const applicableRules = rules.filter((rule) => {
+      if (!rule.enabled) return false
+
+      // Check priority condition
+      if (rule.conditions.ticketPriority && !rule.conditions.ticketPriority.includes(ticket.priority)) {
+        return false
+      }
+
+      // Check category condition
+      if (
+        rule.conditions.ticketCategory &&
+        !rule.conditions.ticketCategory.includes("all") &&
+        !rule.conditions.ticketCategory.includes(ticket.category)
+      ) {
+        return false
+      }
+
+      return true
+    })
+
+    if (applicableRules.length === 0) {
+      return null
+    }
+
+    // Use the first applicable rule (rules are ordered by priority)
+    const rule = applicableRules[0]
+
+    const scoredTechnicians = mockTechnicians
+      .map((tech) => ({
+        ...tech,
+        assignmentData: calculateAssignmentScore(tech, ticket, rule),
+        rule: rule.name,
+      }))
+      .sort((a, b) => b.assignmentData.total - a.assignmentData.total)
+
+    return scoredTechnicians[0] || null
+  }
+
+  // Simulate assignment for multiple tickets
+  const runSimulation = () => {
+    const unassignedTickets = tickets.filter((ticket) => !ticket.assignedTo).slice(0, 10) // Limit to 10 for demo
+
+    const results = unassignedTickets.map((ticket) => {
+      const bestTech = findBestTechnician(ticket)
       return {
         ticket,
-        recommendedTechnician: bestTechnician,
-        confidence: Math.floor(Math.random() * 30) + 70,
-        estimatedResolutionTime: Math.floor(Math.random() * 4) + 1,
-        riskFactors: generateRiskFactors(ticket),
+        recommendedTechnician: bestTech,
+        confidence: bestTech ? Math.min(100, bestTech.assignmentData.total) : 0,
       }
     })
 
-    setPredictions(predictions)
-    setPredictionDialogOpen(true)
+    setSimulationResults(results)
+    setSimulationDialogOpen(true)
   }
 
-  const generateRiskFactors = (ticket: any) => {
-    const factors = []
-    if (ticket.priority === "urgent") factors.push("اولویت بالا")
-    if (ticket.category === "security") factors.push("حساسیت امنیتی")
-    if (!ticket.description || ticket.description.length < 20) factors.push("توضیحات ناکافی")
-    return factors
+  // Auto-assign a single ticket
+  const autoAssignTicket = (ticket: any) => {
+    const bestTech = findBestTechnician(ticket)
+
+    if (bestTech) {
+      onTicketUpdate(ticket.id, {
+        assignedTo: bestTech.id,
+        assignedTechnicianName: bestTech.name,
+        status: ticket.status === "open" ? "in-progress" : ticket.status,
+      })
+
+      toast({
+        title: "تکنسین به صورت هوشمند تعیین شد",
+        description: `تیکت ${ticket.id} به ${bestTech.name} واگذار شد (امتیاز: ${bestTech.assignmentData.total}) - قانون: ${bestTech.rule}`,
+      })
+    } else {
+      toast({
+        title: "خطا در تعیین خودکار",
+        description: "تکنسین مناسبی بر اساس قوانین تعریف شده یافت نشد",
+        variant: "destructive",
+      })
+    }
   }
 
-  const handleAIAssignment = () => {
-    const unassignedTickets = safeTickets.filter((ticket) => !ticket.assignedTo)
-    let assignedCount = 0
+  const handleRuleEdit = (rule: AssignmentRule) => {
+    setSelectedRule({ ...rule })
+    setEditDialogOpen(true)
+  }
 
-    unassignedTickets.forEach((ticket) => {
-      const bestTechnician = technicianPerformance
-        .filter((tech) => tech.predictedLoad < 90)
-        .sort((a, b) => b.aiScore - a.aiScore)[0]
+  const handleRuleSave = () => {
+    if (selectedRule) {
+      const updatedRules = rules.map((rule) => (rule.id === selectedRule.id ? selectedRule : rule))
+      setRules(updatedRules)
+      setEditDialogOpen(false)
+      setSelectedRule(null)
 
-      if (bestTechnician) {
-        onTicketUpdate(ticket.id, {
-          assignedTo: bestTechnician.id,
-          assignedTechnicianName: bestTechnician.name,
-          status: "in-progress",
-        })
-        assignedCount++
-      }
-    })
+      toast({
+        title: "قانون به‌روزرسانی شد",
+        description: "تنظیمات تعیین هوشمند ذخیره شد",
+      })
+    }
+  }
 
-    toast({
-      title: "تعیین هوشمند انجام شد",
-      description: `${assignedCount} تیکت با استفاده از هوش مصنوعی واگذار شد`,
-    })
+  const toggleRule = (ruleId: string) => {
+    setRules(rules.map((rule) => (rule.id === ruleId ? { ...rule, enabled: !rule.enabled } : rule)))
   }
 
   return (
     <div className="space-y-6" dir="rtl">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Brain className="w-6 h-6 text-purple-600" />
-            تعیین هوشمند با AI
-          </h2>
-          <p className="text-muted-foreground">سیستم تعیین خودکار مبتنی بر هوش مصنوعی</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={generateAIPredictions}>
-            <Target className="w-4 h-4 ml-2" />
-            پیش‌بینی AI
-          </Button>
-          <Button onClick={handleAIAssignment} disabled={!aiEnabled}>
-            <Zap className="w-4 h-4 ml-2" />
-            اجرای تعیین هوشمند
-          </Button>
-        </div>
-      </div>
-
-      {/* AI Status */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Brain className="w-5 h-5 text-purple-600" />
-            وضعیت سیستم هوش مصنوعی
-          </CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle className="flex items-center gap-2">
+              <Brain className="w-5 h-5" />
+              سیستم تعیین هوشمند تکنسین
+            </CardTitle>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Switch checked={isEnabled} onCheckedChange={setIsEnabled} id="smart-assignment" />
+                <Label htmlFor="smart-assignment" className="text-sm font-medium">
+                  فعال‌سازی سیستم هوشمند
+                </Label>
+              </div>
+              {isEnabled && (
+                <Badge variant="secondary" className="gap-1">
+                  <CheckCircle className="w-3 h-3" />
+                  {rules.filter((r) => r.enabled).length} قانون فعال
+                </Badge>
+              )}
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">{aiMetrics.accuracy}%</div>
-              <div className="text-sm text-green-600">دقت پیش‌بینی</div>
+          {!isEnabled ? (
+            <div className="text-center py-12">
+              <Brain className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-medium text-muted-foreground mb-2">سیستم هوشمند غیرفعال است</h3>
+              <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
+                سیستم تعیین هوشمند تکنسین با استفاده از الگوریتم‌های پیشرفته و معیارهای چندگانه، بهترین تکنسین را برای هر
+                تیکت انتخاب می‌کند
+              </p>
+              <Button onClick={() => setIsEnabled(true)} className="gap-2">
+                <Zap className="w-4 h-4" />
+                فعال‌سازی سیستم هوشمند
+              </Button>
             </div>
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{aiMetrics.avgResponseTime}s</div>
-              <div className="text-sm text-blue-600">زمان پردازش</div>
-            </div>
-            <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <div className="text-2xl font-bold text-purple-600">{aiMetrics.successRate}%</div>
-              <div className="text-sm text-purple-600">نرخ موفقیت</div>
-            </div>
-            <div className="text-center p-4 bg-orange-50 rounded-lg">
-              <div className="text-2xl font-bold text-orange-600">{aiMetrics.learningProgress}%</div>
-              <div className="text-sm text-orange-600">پیشرفت یادگیری</div>
-            </div>
-          </div>
+          ) : (
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="rules">قوانین تعیین</TabsTrigger>
+                <TabsTrigger value="criteria">معیارهای ارزیابی</TabsTrigger>
+                <TabsTrigger value="simulation">شبیه‌سازی</TabsTrigger>
+                <TabsTrigger value="analytics">تحلیل عملکرد</TabsTrigger>
+              </TabsList>
 
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label className="text-base">فعال‌سازی هوش مصنوعی</Label>
-              <p className="text-sm text-muted-foreground">استفاده از الگوریتم‌های یادگیری ماشین</p>
-            </div>
-            <Switch checked={aiEnabled} onCheckedChange={setAiEnabled} />
-          </div>
+              <TabsContent value="rules" className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h4 className="font-medium">قوانین تعیین هوشمند</h4>
+                  <Button onClick={runSimulation} variant="outline" className="gap-2 bg-transparent">
+                    <Play className="w-4 h-4" />
+                    شبیه‌سازی
+                  </Button>
+                </div>
+
+                <div className="space-y-3">
+                  {rules.map((rule, index) => (
+                    <div
+                      key={rule.id}
+                      className={`border rounded-lg p-4 transition-all ${
+                        rule.enabled ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-muted-foreground">#{index + 1}</span>
+                              <Switch checked={rule.enabled} onCheckedChange={() => toggleRule(rule.id)} size="sm" />
+                            </div>
+                            <h5 className="font-medium">{rule.name}</h5>
+                            {rule.enabled && (
+                              <Badge variant="default" className="text-xs">
+                                فعال
+                              </Badge>
+                            )}
+                          </div>
+
+                          <p className="text-sm text-muted-foreground mb-3">{rule.description}</p>
+
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            {Object.entries(rule.criteria)
+                              .filter(([_, weight]) => weight > 0)
+                              .slice(0, 4)
+                              .map(([criterion, weight]) => (
+                                <div key={criterion} className="flex items-center gap-2 text-xs">
+                                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                  <span>
+                                    {criterion === "expertise"
+                                      ? "تخصص"
+                                      : criterion === "availability"
+                                        ? "در دسترس بودن"
+                                        : criterion === "workload"
+                                          ? "بار کاری"
+                                          : criterion === "performance"
+                                            ? "عملکرد"
+                                            : criterion === "responseTime"
+                                              ? "زمان پاسخ"
+                                              : criterion === "priority"
+                                                ? "اولویت"
+                                                : criterion === "experience"
+                                                  ? "تجربه"
+                                                  : "رضایت مشتری"}
+                                    : {weight}%
+                                  </span>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+
+                        <Button variant="ghost" size="sm" onClick={() => handleRuleEdit(rule)} className="gap-1">
+                          <Settings className="w-3 h-3" />
+                          ویرایش
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="criteria" className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Target className="w-5 h-5" />
+                        معیارهای اصلی
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Award className="w-4 h-4 text-blue-600" />
+                            <span className="text-sm font-medium">تخصص و مهارت</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">40%</span>
+                        </div>
+                        <Progress value={40} className="h-2" />
+                        <p className="text-xs text-muted-foreground">
+                          تطبیق تخصص تکنسین با نوع مشکل، گواهینامه‌ها و تجربه در حوزه مربوطه
+                        </p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4 text-green-600" />
+                            <span className="text-sm font-medium">در دسترس بودن</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">25%</span>
+                        </div>
+                        <Progress value={25} className="h-2" />
+                        <p className="text-xs text-muted-foreground">وضعیت فعلی تکنسین و ساعات کاری</p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Activity className="w-4 h-4 text-orange-600" />
+                            <span className="text-sm font-medium">بار کاری</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">20%</span>
+                        </div>
+                        <Progress value={20} className="h-2" />
+                        <p className="text-xs text-muted-foreground">تعداد تیکت‌های فعال و توزیع متعادل کار</p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <TrendingUp className="w-4 h-4 text-purple-600" />
+                            <span className="text-sm font-medium">عملکرد</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">15%</span>
+                        </div>
+                        <Progress value={15} className="h-2" />
+                        <p className="text-xs text-muted-foreground">امتیاز عملکرد کلی و نرخ حل مشکل</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <BarChart3 className="w-5 h-5" />
+                        آمار تکنسین‌ها
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {mockTechnicians.map((tech) => (
+                          <div key={tech.id} className="flex items-center justify-between p-3 border rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <Avatar className="w-8 h-8">
+                                <AvatarFallback className="text-xs">{tech.name.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <div className="font-medium text-sm">{tech.name}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {tech.specialties
+                                    .slice(0, 2)
+                                    .map((s) => categoryLabels[s])
+                                    .join("، ")}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-left">
+                              <div className="text-sm font-medium">{tech.performanceScore}</div>
+                              <div className="text-xs text-muted-foreground">امتیاز کل</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="simulation" className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h4 className="font-medium">شبیه‌سازی تعیین خودکار</h4>
+                  <div className="flex gap-2">
+                    <Button onClick={runSimulation} variant="outline" className="gap-2 bg-transparent">
+                      <Play className="w-4 h-4" />
+                      اجرای شبیه‌سازی
+                    </Button>
+                  </div>
+                </div>
+
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center py-8">
+                      <Lightbulb className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-muted-foreground mb-2">شبیه‌سازی تعیین تکنسین</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        برای مشاهده نحوه عملکرد سیستم هوشمند، شبیه‌سازی را اجرا کنید
+                      </p>
+                      <Button onClick={runSimulation} className="gap-2">
+                        <Play className="w-4 h-4" />
+                        شروع شبیه‌سازی
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="analytics" className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-green-600">94%</div>
+                        <div className="text-sm text-muted-foreground">نرخ موفقیت</div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-blue-600">1.8s</div>
+                        <div className="text-sm text-muted-foreground">زمان تعیین</div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-purple-600">4.7</div>
+                        <div className="text-sm text-muted-foreground">رضایت مشتری</div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
         </CardContent>
       </Card>
 
-      {/* Main Content */}
-      <Tabs defaultValue="performance" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="performance">عملکرد تکنسین‌ها</TabsTrigger>
-          <TabsTrigger value="learning">یادگیری سیستم</TabsTrigger>
-          <TabsTrigger value="analytics">تحلیل‌ها</TabsTrigger>
-          <TabsTrigger value="settings">تنظیمات پیشرفته</TabsTrigger>
-        </TabsList>
+      {/* Edit Rule Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right">ویرایش قانون تعیین هوشمند</DialogTitle>
+          </DialogHeader>
+          {selectedRule && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">نام قانون</Label>
+                  <input
+                    type="text"
+                    value={selectedRule.name}
+                    onChange={(e) => setSelectedRule({ ...selectedRule, name: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-md text-right"
+                    dir="rtl"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">توضیحات</Label>
+                  <input
+                    type="text"
+                    value={selectedRule.description}
+                    onChange={(e) => setSelectedRule({ ...selectedRule, description: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-md text-right"
+                    dir="rtl"
+                  />
+                </div>
+              </div>
 
-        <TabsContent value="performance">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                عملکرد تکنسین‌ها با AI
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {technicianPerformance.map((tech) => (
-                  <Card key={tech.id} className="p-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h4 className="font-medium">{tech.name}</h4>
-                        <div className="flex gap-2 mt-1">
-                          {tech.specialties.map((specialty) => (
-                            <Badge key={specialty} variant="outline" className="text-xs">
-                              {specialty}
+              <div>
+                <h4 className="font-medium mb-4">وزن معیارهای ارزیابی</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {Object.entries(selectedRule.criteria).map(([criterion, weight]) => (
+                    <div key={criterion}>
+                      <Label className="text-sm font-medium mb-3 block">
+                        {criterion === "expertise"
+                          ? "تخصص و مهارت"
+                          : criterion === "availability"
+                            ? "در دسترس بودن"
+                            : criterion === "workload"
+                              ? "بار کاری"
+                              : criterion === "performance"
+                                ? "عملکرد"
+                                : criterion === "responseTime"
+                                  ? "زمان پاسخ"
+                                  : criterion === "priority"
+                                    ? "مدیریت اولویت"
+                                    : criterion === "experience"
+                                      ? "تجربه"
+                                      : "رضایت مشتری"}
+                        : {weight}%
+                      </Label>
+                      <Slider
+                        value={[weight]}
+                        onValueChange={([value]) =>
+                          setSelectedRule({
+                            ...selectedRule,
+                            criteria: { ...selectedRule.criteria, [criterion]: value },
+                          })
+                        }
+                        max={100}
+                        min={0}
+                        step={5}
+                        className="w-full"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+                  انصراف
+                </Button>
+                <Button onClick={handleRuleSave} className="gap-2">
+                  <CheckCircle className="w-4 h-4" />
+                  ذخیره تغییرات
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Simulation Results Dialog */}
+      <Dialog open={simulationDialogOpen} onOpenChange={setSimulationDialogOpen}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right">نتایج شبیه‌سازی تعیین هوشمند</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {simulationResults.length > 0 ? (
+              <div className="space-y-3">
+                {simulationResults.map(({ ticket, recommendedTechnician, confidence }, index) => (
+                  <div
+                    key={ticket.id}
+                    className={`p-4 border rounded-lg ${
+                      confidence > 80
+                        ? "bg-green-50 border-green-200"
+                        : confidence > 60
+                          ? "bg-blue-50 border-blue-200"
+                          : "bg-orange-50 border-orange-200"
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="font-medium">{ticket.title}</span>
+                          <Badge variant="outline">{priorityLabels[ticket.priority]}</Badge>
+                          <Badge variant="outline">{categoryLabels[ticket.category]}</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">درخواست‌کننده: {ticket.clientName}</p>
+                      </div>
+
+                      <div className="text-left">
+                        {recommendedTechnician ? (
+                          <div className="flex items-center gap-3">
+                            <div>
+                              <div className="font-medium text-sm">{recommendedTechnician.name}</div>
+                              <div className="text-xs text-muted-foreground">
+                                امتیاز: {recommendedTechnician.assignmentData.total}
+                              </div>
+                              <div className="text-xs text-muted-foreground">قانون: {recommendedTechnician.rule}</div>
+                            </div>
+                            <div className="text-right">
+                              <div
+                                className={`text-lg font-bold ${confidence > 80 ? "text-green-600" : confidence > 60 ? "text-blue-600" : "text-orange-600"}`}
+                              >
+                                {confidence}%
+                              </div>
+                              <div className="text-xs text-muted-foreground">اطمینان</div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 text-red-600">
+                            <AlertTriangle className="w-4 h-4" />
+                            <span className="text-sm">تکنسین مناسب یافت نشد</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {recommendedTechnician && (
+                      <div className="mt-3 pt-3 border-t">
+                        <div className="flex gap-2 flex-wrap">
+                          {recommendedTechnician.assignmentData.reasons.map((reason, idx) => (
+                            <Badge key={idx} variant="secondary" className="text-xs">
+                              {reason}
                             </Badge>
                           ))}
                         </div>
                       </div>
-                      <div className="text-left">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Brain className="w-4 h-4 text-purple-600" />
-                          <span className="font-bold text-purple-600">{tech.aiScore}</span>
-                        </div>
-                        <div className="text-xs text-muted-foreground">امتیاز AI</div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      <div>
-                        <div className="flex items-center gap-1 mb-1">
-                          <Clock className="w-3 h-3" />
-                          <span>زمان حل مسئله</span>
-                        </div>
-                        <div className="font-medium">{tech.avgResolutionTime} ساعت</div>
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-1 mb-1">
-                          <Star className="w-3 h-3" />
-                          <span>رضایت مشتری</span>
-                        </div>
-                        <div className="font-medium">{tech.customerSatisfaction}/5</div>
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-1 mb-1">
-                          <TrendingUp className="w-3 h-3" />
-                          <span>بار کاری پیش‌بینی شده</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Progress value={tech.predictedLoad} className="flex-1" />
-                          <span className="text-xs">{tech.predictedLoad}%</span>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
+                    )}
+                  </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="learning">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Brain className="w-5 h-5" />
-                یادگیری و بهبود سیستم
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div>
-                <Label>حالت یادگیری</Label>
-                <Select value={learningMode} onValueChange={setLearningMode}>
-                  <SelectTrigger className="mt-2">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="adaptive">تطبیقی (Adaptive)</SelectItem>
-                    <SelectItem value="reinforcement">تقویتی (Reinforcement)</SelectItem>
-                    <SelectItem value="supervised">نظارت شده (Supervised)</SelectItem>
-                    <SelectItem value="hybrid">ترکیبی (Hybrid)</SelectItem>
-                  </SelectContent>
-                </Select>
+            ) : (
+              <div className="text-center py-8">
+                <Info className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">هیچ نتیجه‌ای برای نمایش وجود ندارد</p>
               </div>
+            )}
 
-              <div>
-                <Label>آستانه اطمینان ({confidenceThreshold}%)</Label>
-                <div className="mt-2 px-3">
-                  <input
-                    type="range"
-                    min="50"
-                    max="95"
-                    value={confidenceThreshold}
-                    onChange={(e) => setConfidenceThreshold(Number(e.target.value))}
-                    className="w-full"
-                  />
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  تعیین خودکار فقط زمانی انجام شود که اطمینان سیستم بالاتر از این مقدار باشد
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card className="p-4">
-                  <h4 className="font-medium mb-3">الگوهای شناسایی شده</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>تیکت‌های سخت‌افزاری صبح</span>
-                      <Badge variant="outline">بالا</Badge>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>مشکلات شبکه عصر</span>
-                      <Badge variant="outline">متوسط</Badge>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>درخواست‌های نرم‌افزاری</span>
-                      <Badge variant="outline">بالا</Badge>
-                    </div>
-                  </div>
-                </Card>
-
-                <Card className="p-4">
-                  <h4 className="font-medium mb-3">بهبودهای اخیر</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                      <span>دقت پیش‌بینی +3.2%</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                      <span>زمان پردازش -0.4s</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                      <span>رضایت مشتری +0.3</span>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="analytics">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="w-5 h-5" />
-                تحلیل‌های پیشرفته
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-medium mb-4">روند عملکرد هفتگی</h4>
-                  <div className="space-y-3">
-                    {["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنج‌شنبه", "جمعه"].map((day, index) => (
-                      <div key={day} className="flex items-center justify-between">
-                        <span className="text-sm">{day}</span>
-                        <div className="flex items-center gap-2">
-                          <Progress value={Math.floor(Math.random() * 40) + 60} className="w-24" />
-                          <span className="text-xs text-muted-foreground">{Math.floor(Math.random() * 40) + 60}%</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-medium mb-4">توزیع دسته‌بندی‌ها</h4>
-                  <div className="space-y-3">
-                    {[
-                      { name: "سخت‌افزار", value: 35 },
-                      { name: "نرم‌افزار", value: 28 },
-                      { name: "شبکه", value: 20 },
-                      { name: "ایمیل", value: 10 },
-                      { name: "امنیت", value: 7 },
-                    ].map((category) => (
-                      <div key={category.name} className="flex items-center justify-between">
-                        <span className="text-sm">{category.name}</span>
-                        <div className="flex items-center gap-2">
-                          <Progress value={category.value} className="w-24" />
-                          <span className="text-xs text-muted-foreground">{category.value}%</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="settings">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="w-5 h-5" />
-                تنظیمات پیشرفته AI
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <Label>الگوریتم یادگیری</Label>
-                    <Select defaultValue="neural-network">
-                      <SelectTrigger className="mt-2">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="neural-network">شبکه عصبی</SelectItem>
-                        <SelectItem value="random-forest">جنگل تصادفی</SelectItem>
-                        <SelectItem value="gradient-boosting">تقویت گرادیان</SelectItem>
-                        <SelectItem value="svm">ماشین بردار پشتیبان</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label>فرکانس به‌روزرسانی مدل</Label>
-                    <Select defaultValue="daily">
-                      <SelectTrigger className="mt-2">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="realtime">بلادرنگ</SelectItem>
-                        <SelectItem value="hourly">ساعتی</SelectItem>
-                        <SelectItem value="daily">روزانه</SelectItem>
-                        <SelectItem value="weekly">هفتگی</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <Label>حجم داده‌های آموزشی</Label>
-                    <Select defaultValue="6months">
-                      <SelectTrigger className="mt-2">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1month">1 ماه</SelectItem>
-                        <SelectItem value="3months">3 ماه</SelectItem>
-                        <SelectItem value="6months">6 ماه</SelectItem>
-                        <SelectItem value="1year">1 سال</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label>سطح پیچیدگی مدل</Label>
-                    <Select defaultValue="medium">
-                      <SelectTrigger className="mt-2">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="simple">ساده</SelectItem>
-                        <SelectItem value="medium">متوسط</SelectItem>
-                        <SelectItem value="complex">پیچیده</SelectItem>
-                        <SelectItem value="advanced">پیشرفته</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-center pt-4">
-                <Button
-                  onClick={() =>
-                    toast({ title: "تنظیمات ذخیره شد", description: "تنظیمات AI با موفقیت به‌روزرسانی شد" })
-                  }
-                >
-                  <Settings className="w-4 h-4 ml-2" />
-                  ذخیره تنظیمات
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
-      {/* AI Predictions Dialog */}
-      <Dialog open={predictionDialogOpen} onOpenChange={setPredictionDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Brain className="w-5 h-5 text-purple-600" />
-              پیش‌بینی‌های هوش مصنوعی
-            </DialogTitle>
-            <DialogDescription>تحلیل و پیش‌بینی سیستم AI برای تعیین بهترین تکنسین</DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            {predictions.map((prediction, index) => (
-              <Card key={index} className="p-4">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex-1">
-                    <h4 className="font-medium mb-2">{prediction.ticket.title || "عنوان نامشخص"}</h4>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge variant="outline">{prediction.ticket.category || "نامشخص"}</Badge>
-                      <Badge variant={prediction.ticket.priority === "urgent" ? "destructive" : "secondary"}>
-                        {prediction.ticket.priority === "urgent"
-                          ? "فوری"
-                          : prediction.ticket.priority === "high"
-                            ? "بالا"
-                            : prediction.ticket.priority === "medium"
-                              ? "متوسط"
-                              : "پایین"}
-                      </Badge>
-                    </div>
-                    {prediction.riskFactors.length > 0 && (
-                      <div className="flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 text-orange-500" />
-                        <span className="text-sm text-orange-600">عوامل ریسک: {prediction.riskFactors.join("، ")}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="text-left">
-                    {prediction.recommendedTechnician ? (
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <CheckCircle className="w-5 h-5 text-green-500" />
-                          <span className="font-medium">{prediction.recommendedTechnician.name}</span>
-                        </div>
-                        <div className="space-y-1 text-sm text-muted-foreground">
-                          <div>اطمینان: {prediction.confidence}%</div>
-                          <div>زمان تخمینی: {prediction.estimatedResolutionTime} ساعت</div>
-                          <div>امتیاز AI: {prediction.recommendedTechnician.aiScore}</div>
-                        </div>
-                        <Progress value={prediction.confidence} className="mt-2 w-24" />
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 text-red-600">
-                        <AlertTriangle className="w-5 h-5" />
-                        <span>تکنسین مناسب یافت نشد</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            ))}
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button variant="outline" onClick={() => setSimulationDialogOpen(false)}>
+                بستن
+              </Button>
+            </div>
           </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPredictionDialogOpen(false)}>
-              بستن
-            </Button>
-            <Button
-              onClick={() => {
-                handleAIAssignment()
-                setPredictionDialogOpen(false)
-              }}
-            >
-              اجرای تعیین‌های پیشنهادی
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

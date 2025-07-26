@@ -7,38 +7,51 @@ export interface UploadedFile {
   uploadedAt: string
 }
 
-export function formatFileSize(bytes: number): string {
-  if (bytes === 0) return "0 Bytes"
+export const validateFile = (file: File): string | null => {
+  const maxSize = 10 * 1024 * 1024 // 10MB
+  const allowedTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "application/pdf",
+    "text/plain",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ]
+
+  if (file.size > maxSize) {
+    return "حجم فایل نباید بیشتر از ۱۰ مگابایت باشد"
+  }
+
+  if (!allowedTypes.includes(file.type)) {
+    return "نوع فایل مجاز نیست"
+  }
+
+  return null
+}
+
+export const uploadFile = async (file: File): Promise<UploadedFile> => {
+  // Simulate file upload
+  await new Promise((resolve) => setTimeout(resolve, 1000))
+
+  return {
+    id: Math.random().toString(36).substr(2, 9),
+    name: file.name,
+    size: file.size,
+    type: file.type,
+    url: URL.createObjectURL(file),
+    uploadedAt: new Date().toISOString(),
+  }
+}
+
+export const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return "0 بایت"
 
   const k = 1024
-  const sizes = ["Bytes", "KB", "MB", "GB"]
+  const sizes = ["بایت", "کیلوبایت", "مگابایت", "گیگابایت"]
   const i = Math.floor(Math.log(bytes) / Math.log(k))
 
   return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
-}
-
-export function validateFileType(file: File, allowedTypes: string[]): boolean {
-  return allowedTypes.includes(file.type)
-}
-
-export function validateFileSize(file: File, maxSizeInMB: number): boolean {
-  const maxSizeInBytes = maxSizeInMB * 1024 * 1024
-  return file.size <= maxSizeInBytes
-}
-
-export async function uploadFile(file: File): Promise<UploadedFile> {
-  // Simulate file upload - in real app, this would upload to a server
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const uploadedFile: UploadedFile = {
-        id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        url: URL.createObjectURL(file),
-        uploadedAt: new Date().toISOString(),
-      }
-      resolve(uploadedFile)
-    }, 1000) // Simulate 1 second upload time
-  })
 }
