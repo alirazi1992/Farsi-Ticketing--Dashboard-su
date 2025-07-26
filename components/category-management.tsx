@@ -66,154 +66,12 @@ const availableIcons = [
   { id: "maintenance", label: "نگهداری", icon: Wrench },
 ]
 
-// Initial categories data
-const initialCategoriesData = {
-  hardware: {
-    id: "hardware",
-    label: "مشکلات سخت‌افزاری",
-    description: "مشکلات مربوط به تجهیزات سخت‌افزاری",
-    icon: "hardware",
-    subIssues: {
-      "computer-not-working": {
-        id: "computer-not-working",
-        label: "رایانه کار نمی‌کند",
-        description: "مشکلات روشن نشدن یا خاموش شدن رایانه",
-      },
-      "printer-issues": { id: "printer-issues", label: "مشکلات چاپگر", description: "مشکلات چاپ، کاغذ گیر کردن و..." },
-      "monitor-problems": {
-        id: "monitor-problems",
-        label: "مشکلات مانیتور",
-        description: "مشکلات نمایش، رنگ و روشنایی",
-      },
-      "keyboard-mouse": { id: "keyboard-mouse", label: "مشکلات کیبورد و ماوس", description: "مشکلات ورودی" },
-      "network-hardware": {
-        id: "network-hardware",
-        label: "مشکلات سخت‌افزار شبکه",
-        description: "مشکلات سوئیچ، روتر و کابل",
-      },
-      "ups-power": { id: "ups-power", label: "مشکلات برق و UPS", description: "مشکلات تغذیه و پایداری برق" },
-      "other-hardware": { id: "other-hardware", label: "سایر مشکلات سخت‌افزاری", description: "سایر مشکلات سخت‌افزاری" },
-    },
-  },
-  software: {
-    id: "software",
-    label: "مشکلات نرم‌افزاری",
-    description: "مشکلات مربوط به نرم‌افزارها و سیستم عامل",
-    icon: "software",
-    subIssues: {
-      "os-issues": { id: "os-issues", label: "مشکلات سیستم عامل", description: "مشکلات ویندوز، لینوکس و..." },
-      "application-problems": {
-        id: "application-problems",
-        label: "مشکلات نرم‌افزارهای کاربردی",
-        description: "مشکلات اپلیکیشن‌ها",
-      },
-      "software-installation": {
-        id: "software-installation",
-        label: "نصب و حذف نرم‌افزار",
-        description: "درخواست نصب یا حذف نرم‌افزار",
-      },
-      "license-activation": {
-        id: "license-activation",
-        label: "مشکلات لایسنس و فعال‌سازی",
-        description: "مشکلات مجوز استفاده",
-      },
-      "updates-patches": { id: "updates-patches", label: "به‌روزرسانی‌ها و وصله‌ها", description: "مشکلات آپدیت" },
-      "performance-issues": {
-        id: "performance-issues",
-        label: "مشکلات عملکرد نرم‌افزار",
-        description: "کندی و مشکلات عملکرد",
-      },
-      "other-software": { id: "other-software", label: "سایر مشکلات نرم‌افزاری", description: "سایر مشکلات نرم‌افزاری" },
-    },
-  },
-  network: {
-    id: "network",
-    label: "مشکلات شبکه و اینترنت",
-    description: "مشکلات مربوط به اتصال شبکه و اینترنت",
-    icon: "network",
-    subIssues: {
-      "internet-connection": {
-        id: "internet-connection",
-        label: "مشکل اتصال اینترنت",
-        description: "عدم دسترسی به اینترنت",
-      },
-      "wifi-problems": { id: "wifi-problems", label: "مشکلات Wi-Fi", description: "مشکلات اتصال بی‌سیم" },
-      "network-speed": { id: "network-speed", label: "کندی شبکه", description: "سرعت پایین اینترنت" },
-      "vpn-issues": { id: "vpn-issues", label: "مشکلات VPN", description: "مشکلات اتصال VPN" },
-      "network-sharing": {
-        id: "network-sharing",
-        label: "مشکلات اشتراک‌گذاری شبکه",
-        description: "مشکلات دسترسی به منابع مشترک",
-      },
-      "firewall-security": {
-        id: "firewall-security",
-        label: "مشکلات فایروال و امنیت",
-        description: "مشکلات امنیت شبکه",
-      },
-      "other-network": { id: "other-network", label: "سایر مشکلات شبکه", description: "سایر مشکلات شبکه" },
-    },
-  },
-  email: {
-    id: "email",
-    label: "مشکلات ایمیل",
-    description: "مشکلات مربوط به سیستم ایمیل",
-    icon: "email",
-    subIssues: {
-      "cannot-send": { id: "cannot-send", label: "نمی‌توانم ایمیل ارسال کنم", description: "مشکل در ارسال ایمیل" },
-      "cannot-receive": { id: "cannot-receive", label: "ایمیل دریافت نمی‌کنم", description: "مشکل در دریافت ایمیل" },
-      "login-problems": { id: "login-problems", label: "مشکل ورود به ایمیل", description: "مشکل احراز هویت" },
-      "sync-issues": { id: "sync-issues", label: "مشکلات همگام‌سازی", description: "مشکل همگام‌سازی ایمیل‌ها" },
-      "attachment-problems": {
-        id: "attachment-problems",
-        label: "مشکلات پیوست",
-        description: "مشکل در ارسال یا دریافت پیوست",
-      },
-      "spam-issues": { id: "spam-issues", label: "مشکلات اسپم", description: "مشکلات فیلتر اسپم" },
-      "other-email": { id: "other-email", label: "سایر مشکلات ایمیل", description: "سایر مشکلات ایمیل" },
-    },
-  },
-  security: {
-    id: "security",
-    label: "مشکلات امنیتی",
-    description: "مشکلات مربوط به امنیت سیستم",
-    icon: "security",
-    subIssues: {
-      "virus-malware": { id: "virus-malware", label: "ویروس و بدافزار", description: "آلودگی به ویروس یا بدافزار" },
-      "suspicious-activity": { id: "suspicious-activity", label: "فعالیت مشکوک", description: "مشاهده فعالیت غیرعادی" },
-      "data-breach": { id: "data-breach", label: "نقض امنیت داده‌ها", description: "نشت یا سرقت اطلاعات" },
-      "phishing-attempt": { id: "phishing-attempt", label: "تلاش فیشینگ", description: "دریافت ایمیل یا پیام مشکوک" },
-      "unauthorized-access": {
-        id: "unauthorized-access",
-        label: "دسترسی غیرمجاز",
-        description: "دسترسی غیرمجاز به سیستم",
-      },
-      "password-issues": { id: "password-issues", label: "مشکلات رمز عبور", description: "فراموشی یا تغییر رمز عبور" },
-      "other-security": { id: "other-security", label: "سایر مشکلات امنیتی", description: "سایر مشکلات امنیتی" },
-    },
-  },
-  access: {
-    id: "access",
-    label: "درخواست‌های دسترسی",
-    description: "درخواست‌های دسترسی به سیستم‌ها و منابع",
-    icon: "access",
-    subIssues: {
-      "new-account": { id: "new-account", label: "ایجاد حساب کاربری جدید", description: "درخواست حساب کاربری جدید" },
-      "permission-change": { id: "permission-change", label: "تغییر مجوزهای دسترسی", description: "تغییر سطح دسترسی" },
-      "system-access": { id: "system-access", label: "دسترسی به سیستم‌ها", description: "درخواست دسترسی به سیستم خاص" },
-      "application-access": {
-        id: "application-access",
-        label: "دسترسی به نرم‌افزارها",
-        description: "درخواست دسترسی به اپلیکیشن",
-      },
-      "network-access": { id: "network-access", label: "دسترسی شبکه", description: "درخواست دسترسی شبکه" },
-      "file-access": { id: "file-access", label: "دسترسی به فایل‌ها", description: "درخواست دسترسی به فایل یا پوشه" },
-      "other-access": { id: "other-access", label: "سایر درخواست‌های دسترسی", description: "سایر درخواست‌های دسترسی" },
-    },
-  },
+interface CategoryManagementProps {
+  categories: any
+  onCategoryUpdate: (categories: any) => void
 }
 
-export function CategoryManagement() {
-  const [categories, setCategories] = useState(initialCategoriesData)
+export function CategoryManagement({ categories, onCategoryUpdate }: CategoryManagementProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [editingCategory, setEditingCategory] = useState<any>(null)
   const [editingSubCategory, setEditingSubCategory] = useState<any>(null)
@@ -253,33 +111,32 @@ export function CategoryManagement() {
 
   // Handle category save
   const onCategorySubmit = (data: any) => {
+    const updatedCategories = { ...categories }
+
     if (editingCategory) {
       // Update existing category
-      setCategories((prev) => ({
-        ...prev,
-        [data.id]: {
-          ...prev[data.id],
-          ...data,
-        },
-      }))
+      updatedCategories[data.id] = {
+        ...updatedCategories[data.id],
+        ...data,
+      }
       toast({
         title: "دسته‌بندی به‌روزرسانی شد",
         description: `دسته‌بندی "${data.label}" با موفقیت به‌روزرسانی شد`,
       })
     } else {
       // Add new category
-      setCategories((prev) => ({
-        ...prev,
-        [data.id]: {
-          ...data,
-          subIssues: {},
-        },
-      }))
+      updatedCategories[data.id] = {
+        ...data,
+        subIssues: {},
+      }
       toast({
         title: "دسته‌بندی جدید اضافه شد",
         description: `دسته‌بندی "${data.label}" با موفقیت اضافه شد`,
       })
     }
+
+    // Sync to parent component and all dashboards
+    onCategoryUpdate(updatedCategories)
 
     setCategoryDialogOpen(false)
     setEditingCategory(null)
@@ -290,39 +147,38 @@ export function CategoryManagement() {
   const onSubCategorySubmit = (data: any) => {
     if (!selectedCategory) return
 
+    const updatedCategories = { ...categories }
+
     if (editingSubCategory) {
       // Update existing sub-category
-      setCategories((prev) => ({
-        ...prev,
-        [selectedCategory]: {
-          ...prev[selectedCategory],
-          subIssues: {
-            ...prev[selectedCategory].subIssues,
-            [data.id]: data,
-          },
+      updatedCategories[selectedCategory] = {
+        ...updatedCategories[selectedCategory],
+        subIssues: {
+          ...updatedCategories[selectedCategory].subIssues,
+          [data.id]: data,
         },
-      }))
+      }
       toast({
         title: "زیردسته به‌روزرسانی شد",
         description: `زیردسته "${data.label}" با موفقیت به‌روزرسانی شد`,
       })
     } else {
       // Add new sub-category
-      setCategories((prev) => ({
-        ...prev,
-        [selectedCategory]: {
-          ...prev[selectedCategory],
-          subIssues: {
-            ...prev[selectedCategory].subIssues,
-            [data.id]: data,
-          },
+      updatedCategories[selectedCategory] = {
+        ...updatedCategories[selectedCategory],
+        subIssues: {
+          ...updatedCategories[selectedCategory].subIssues,
+          [data.id]: data,
         },
-      }))
+      }
       toast({
         title: "زیردسته جدید اضافه شد",
         description: `زیردسته "${data.label}" با موفقیت اضافه شد`,
       })
     }
+
+    // Sync to parent component and all dashboards
+    onCategoryUpdate(updatedCategories)
 
     setSubCategoryDialogOpen(false)
     setEditingSubCategory(null)
@@ -331,11 +187,11 @@ export function CategoryManagement() {
 
   // Handle category delete
   const handleDeleteCategory = (categoryId: string) => {
-    setCategories((prev) => {
-      const newCategories = { ...prev }
-      delete newCategories[categoryId]
-      return newCategories
-    })
+    const updatedCategories = { ...categories }
+    delete updatedCategories[categoryId]
+
+    // Sync to parent component and all dashboards
+    onCategoryUpdate(updatedCategories)
 
     toast({
       title: "دسته‌بندی حذف شد",
@@ -349,15 +205,16 @@ export function CategoryManagement() {
 
   // Handle sub-category delete
   const handleDeleteSubCategory = (categoryId: string, subCategoryId: string) => {
-    setCategories((prev) => ({
-      ...prev,
-      [categoryId]: {
-        ...prev[categoryId],
-        subIssues: Object.fromEntries(
-          Object.entries(prev[categoryId].subIssues).filter(([key]) => key !== subCategoryId),
-        ),
-      },
-    }))
+    const updatedCategories = { ...categories }
+    updatedCategories[categoryId] = {
+      ...updatedCategories[categoryId],
+      subIssues: Object.fromEntries(
+        Object.entries(updatedCategories[categoryId].subIssues).filter(([key]) => key !== subCategoryId),
+      ),
+    }
+
+    // Sync to parent component and all dashboards
+    onCategoryUpdate(updatedCategories)
 
     toast({
       title: "زیردسته حذف شد",
@@ -389,15 +246,15 @@ export function CategoryManagement() {
   }
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-6 font-iran" dir="rtl">
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center">
-            <CardTitle className="text-right">مدیریت دسته‌بندی‌ها</CardTitle>
+            <CardTitle className="text-right font-iran">مدیریت دسته‌بندی‌ها</CardTitle>
             <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
               <DialogTrigger asChild>
                 <Button
-                  className="gap-2"
+                  className="gap-2 font-iran"
                   onClick={() => {
                     setEditingCategory(null)
                     resetCategoryForm()
@@ -407,15 +264,15 @@ export function CategoryManagement() {
                   دسته‌بندی جدید
                 </Button>
               </DialogTrigger>
-              <DialogContent dir="rtl">
+              <DialogContent dir="rtl" className="font-iran">
                 <DialogHeader>
-                  <DialogTitle className="text-right">
+                  <DialogTitle className="text-right font-iran">
                     {editingCategory ? "ویرایش دسته‌بندی" : "دسته‌بندی جدید"}
                   </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleCategorySubmit(onCategorySubmit)} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="id" className="text-right">
+                    <Label htmlFor="id" className="text-right font-iran">
                       شناسه دسته *
                     </Label>
                     <Controller
@@ -425,48 +282,53 @@ export function CategoryManagement() {
                         <Input
                           {...field}
                           placeholder="مثال: new-category"
-                          className="text-right"
+                          className="text-right font-iran"
                           dir="rtl"
                           disabled={!!editingCategory}
                         />
                       )}
                     />
                     {categoryErrors.id && (
-                      <p className="text-sm text-red-500 text-right">{categoryErrors.id.message}</p>
+                      <p className="text-sm text-red-500 text-right font-iran">{categoryErrors.id.message}</p>
                     )}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="label" className="text-right">
+                    <Label htmlFor="label" className="text-right font-iran">
                       نام دسته *
                     </Label>
                     <Controller
                       name="label"
                       control={categoryControl}
                       render={({ field }) => (
-                        <Input {...field} placeholder="نام دسته‌بندی" className="text-right" dir="rtl" />
+                        <Input {...field} placeholder="نام دسته‌بندی" className="text-right font-iran" dir="rtl" />
                       )}
                     />
                     {categoryErrors.label && (
-                      <p className="text-sm text-red-500 text-right">{categoryErrors.label.message}</p>
+                      <p className="text-sm text-red-500 text-right font-iran">{categoryErrors.label.message}</p>
                     )}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="description" className="text-right">
+                    <Label htmlFor="description" className="text-right font-iran">
                       توضیحات
                     </Label>
                     <Controller
                       name="description"
                       control={categoryControl}
                       render={({ field }) => (
-                        <Textarea {...field} placeholder="توضیحات دسته‌بندی" className="text-right" dir="rtl" />
+                        <Textarea
+                          {...field}
+                          placeholder="توضیحات دسته‌بندی"
+                          className="text-right font-iran"
+                          dir="rtl"
+                        />
                       )}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="icon" className="text-right">
+                    <Label htmlFor="icon" className="text-right font-iran">
                       آیکون *
                     </Label>
                     <Controller
@@ -474,17 +336,17 @@ export function CategoryManagement() {
                       control={categoryControl}
                       render={({ field }) => (
                         <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                          <SelectTrigger className="text-right">
+                          <SelectTrigger className="text-right font-iran">
                             <SelectValue placeholder="انتخاب آیکون" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="font-iran">
                             {availableIcons.map((icon) => {
                               const IconComponent = icon.icon
                               return (
                                 <SelectItem key={icon.id} value={icon.id}>
                                   <div className="flex items-center gap-2">
                                     <IconComponent className="w-4 h-4" />
-                                    <span>{icon.label}</span>
+                                    <span className="font-iran">{icon.label}</span>
                                   </div>
                                 </SelectItem>
                               )
@@ -494,7 +356,7 @@ export function CategoryManagement() {
                       )}
                     />
                     {categoryErrors.icon && (
-                      <p className="text-sm text-red-500 text-right">{categoryErrors.icon.message}</p>
+                      <p className="text-sm text-red-500 text-right font-iran">{categoryErrors.icon.message}</p>
                     )}
                   </div>
 
@@ -507,10 +369,13 @@ export function CategoryManagement() {
                         setEditingCategory(null)
                         resetCategoryForm()
                       }}
+                      className="font-iran"
                     >
                       انصراف
                     </Button>
-                    <Button type="submit">{editingCategory ? "به‌روزرسانی" : "ایجاد"}</Button>
+                    <Button type="submit" className="font-iran">
+                      {editingCategory ? "به‌روزرسانی" : "ایجاد"}
+                    </Button>
                   </div>
                 </form>
               </DialogContent>
@@ -521,7 +386,7 @@ export function CategoryManagement() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Categories List */}
             <div className="space-y-4">
-              <h3 className="font-semibold text-right">دسته‌بندی‌ها</h3>
+              <h3 className="font-semibold text-right font-iran">دسته‌بندی‌ها</h3>
               <div className="space-y-2">
                 {Object.values(categories).map((category: any) => {
                   const IconComponent = availableIcons.find((icon) => icon.id === category.icon)?.icon || Settings
@@ -536,7 +401,7 @@ export function CategoryManagement() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <IconComponent className="w-4 h-4" />
-                          <span className="font-medium">{category.label}</span>
+                          <span className="font-medium font-iran">{category.label}</span>
                         </div>
                         <div className="flex gap-1">
                           <Button
@@ -560,18 +425,18 @@ export function CategoryManagement() {
                                 <Trash2 className="w-3 h-3" />
                               </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent dir="rtl">
+                            <AlertDialogContent dir="rtl" className="font-iran">
                               <AlertDialogHeader>
-                                <AlertDialogTitle className="text-right">حذف دسته‌بندی</AlertDialogTitle>
-                                <AlertDialogDescription className="text-right">
+                                <AlertDialogTitle className="text-right font-iran">حذف دسته‌بندی</AlertDialogTitle>
+                                <AlertDialogDescription className="text-right font-iran">
                                   آیا از حذف دسته‌بندی "{category.label}" اطمینان دارید؟ این عمل قابل بازگشت نیست.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>انصراف</AlertDialogCancel>
+                                <AlertDialogCancel className="font-iran">انصراف</AlertDialogCancel>
                                 <AlertDialogAction
                                   onClick={() => handleDeleteCategory(category.id)}
-                                  className="bg-red-600 hover:bg-red-700"
+                                  className="bg-red-600 hover:bg-red-700 font-iran"
                                 >
                                   حذف
                                 </AlertDialogAction>
@@ -581,10 +446,12 @@ export function CategoryManagement() {
                         </div>
                       </div>
                       {category.description && (
-                        <p className="text-sm text-muted-foreground mt-1 text-right">{category.description}</p>
+                        <p className="text-sm text-muted-foreground mt-1 text-right font-iran">
+                          {category.description}
+                        </p>
                       )}
                       <div className="flex justify-between items-center mt-2">
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" className="text-xs font-iran">
                           {Object.keys(category.subIssues).length} زیردسته
                         </Badge>
                       </div>
@@ -599,13 +466,15 @@ export function CategoryManagement() {
               {selectedCategory ? (
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <h3 className="font-semibold text-right">زیردسته‌های {categories[selectedCategory]?.label}</h3>
+                    <h3 className="font-semibold text-right font-iran">
+                      زیردسته‌های {categories[selectedCategory]?.label}
+                    </h3>
                     <Dialog open={subCategoryDialogOpen} onOpenChange={setSubCategoryDialogOpen}>
                       <DialogTrigger asChild>
                         <Button
                           variant="outline"
                           size="sm"
-                          className="gap-2 bg-transparent"
+                          className="gap-2 bg-transparent font-iran"
                           onClick={() => {
                             setEditingSubCategory(null)
                             resetSubCategoryForm()
@@ -615,15 +484,15 @@ export function CategoryManagement() {
                           زیردسته جدید
                         </Button>
                       </DialogTrigger>
-                      <DialogContent dir="rtl">
+                      <DialogContent dir="rtl" className="font-iran">
                         <DialogHeader>
-                          <DialogTitle className="text-right">
+                          <DialogTitle className="text-right font-iran">
                             {editingSubCategory ? "ویرایش زیردسته" : "زیردسته جدید"}
                           </DialogTitle>
                         </DialogHeader>
                         <form onSubmit={handleSubCategorySubmit(onSubCategorySubmit)} className="space-y-4">
                           <div className="space-y-2">
-                            <Label htmlFor="id" className="text-right">
+                            <Label htmlFor="id" className="text-right font-iran">
                               شناسه زیردسته *
                             </Label>
                             <Controller
@@ -633,42 +502,56 @@ export function CategoryManagement() {
                                 <Input
                                   {...field}
                                   placeholder="مثال: new-sub-category"
-                                  className="text-right"
+                                  className="text-right font-iran"
                                   dir="rtl"
                                   disabled={!!editingSubCategory}
                                 />
                               )}
                             />
                             {subCategoryErrors.id && (
-                              <p className="text-sm text-red-500 text-right">{subCategoryErrors.id.message}</p>
+                              <p className="text-sm text-red-500 text-right font-iran">
+                                {subCategoryErrors.id.message}
+                              </p>
                             )}
                           </div>
 
                           <div className="space-y-2">
-                            <Label htmlFor="label" className="text-right">
+                            <Label htmlFor="label" className="text-right font-iran">
                               نام زیردسته *
                             </Label>
                             <Controller
                               name="label"
                               control={subCategoryControl}
                               render={({ field }) => (
-                                <Input {...field} placeholder="نام زیردسته" className="text-right" dir="rtl" />
+                                <Input
+                                  {...field}
+                                  placeholder="نام زیردسته"
+                                  className="text-right font-iran"
+                                  dir="rtl"
+                                />
                               )}
                             />
                             {subCategoryErrors.label && (
-                              <p className="text-sm text-red-500 text-right">{subCategoryErrors.label.message}</p>
+                              <p className="text-sm text-red-500 text-right font-iran">
+                                {subCategoryErrors.label.message}
+                              </p>
                             )}
                           </div>
 
                           <div className="space-y-2">
-                            <Label htmlFor="description" className="text-right">
+                            <Label htmlFor="description" className="text-right font-iran">
                               توضیحات
                             </Label>
                             <Controller
                               name="description"
                               control={subCategoryControl}
                               render={({ field }) => (
-                                <Textarea {...field} placeholder="توضیحات زیردسته" className="text-right" dir="rtl" />
+                                <Textarea
+                                  {...field}
+                                  placeholder="توضیحات زیردسته"
+                                  className="text-right font-iran"
+                                  dir="rtl"
+                                />
                               )}
                             />
                           </div>
@@ -682,10 +565,13 @@ export function CategoryManagement() {
                                 setEditingSubCategory(null)
                                 resetSubCategoryForm()
                               }}
+                              className="font-iran"
                             >
                               انصراف
                             </Button>
-                            <Button type="submit">{editingSubCategory ? "به‌روزرسانی" : "ایجاد"}</Button>
+                            <Button type="submit" className="font-iran">
+                              {editingSubCategory ? "به‌روزرسانی" : "ایجاد"}
+                            </Button>
                           </div>
                         </form>
                       </DialogContent>
@@ -697,9 +583,11 @@ export function CategoryManagement() {
                       <div key={subCategory.id} className="p-3 border rounded-lg">
                         <div className="flex items-center justify-between">
                           <div>
-                            <h4 className="font-medium text-right">{subCategory.label}</h4>
+                            <h4 className="font-medium text-right font-iran">{subCategory.label}</h4>
                             {subCategory.description && (
-                              <p className="text-sm text-muted-foreground mt-1 text-right">{subCategory.description}</p>
+                              <p className="text-sm text-muted-foreground mt-1 text-right font-iran">
+                                {subCategory.description}
+                              </p>
                             )}
                           </div>
                           <div className="flex gap-1">
@@ -712,18 +600,18 @@ export function CategoryManagement() {
                                   <Trash2 className="w-3 h-3" />
                                 </Button>
                               </AlertDialogTrigger>
-                              <AlertDialogContent dir="rtl">
+                              <AlertDialogContent dir="rtl" className="font-iran">
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle className="text-right">حذف زیردسته</AlertDialogTitle>
-                                  <AlertDialogDescription className="text-right">
+                                  <AlertDialogTitle className="text-right font-iran">حذف زیردسته</AlertDialogTitle>
+                                  <AlertDialogDescription className="text-right font-iran">
                                     آیا از حذف زیردسته "{subCategory.label}" اطمینان دارید؟ این عمل قابل بازگشت نیست.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                  <AlertDialogCancel>انصراف</AlertDialogCancel>
+                                  <AlertDialogCancel className="font-iran">انصراف</AlertDialogCancel>
                                   <AlertDialogAction
                                     onClick={() => handleDeleteSubCategory(selectedCategory, subCategory.id)}
-                                    className="bg-red-600 hover:bg-red-700"
+                                    className="bg-red-600 hover:bg-red-700 font-iran"
                                   >
                                     حذف
                                   </AlertDialogAction>
@@ -738,8 +626,10 @@ export function CategoryManagement() {
                     {Object.keys(categories[selectedCategory]?.subIssues || {}).length === 0 && (
                       <div className="text-center py-8">
                         <FolderPlus className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-muted-foreground">زیردسته‌ای وجود ندارد</h3>
-                        <p className="text-sm text-muted-foreground mt-1">برای شروع، زیردسته جدیدی اضافه کنید</p>
+                        <h3 className="text-lg font-medium text-muted-foreground font-iran">زیردسته‌ای وجود ندارد</h3>
+                        <p className="text-sm text-muted-foreground mt-1 font-iran">
+                          برای شروع، زیردسته جدیدی اضافه کنید
+                        </p>
                       </div>
                     )}
                   </div>
@@ -747,8 +637,8 @@ export function CategoryManagement() {
               ) : (
                 <div className="text-center py-12">
                   <Settings className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-muted-foreground">دسته‌بندی انتخاب کنید</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <h3 className="text-lg font-medium text-muted-foreground font-iran">دسته‌بندی انتخاب کنید</h3>
+                  <p className="text-sm text-muted-foreground mt-1 font-iran">
                     برای مشاهده و مدیریت زیردسته‌ها، یک دسته‌بندی از فهرست سمت راست انتخاب کنید
                   </p>
                 </div>

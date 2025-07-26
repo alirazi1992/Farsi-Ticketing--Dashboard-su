@@ -80,9 +80,10 @@ interface ClientDashboardProps {
   tickets: any[]
   onTicketCreate: (ticket: any) => void
   currentUser: any
+  categories: any
 }
 
-export function ClientDashboard({ tickets, onTicketCreate, currentUser }: ClientDashboardProps) {
+export function ClientDashboard({ tickets, onTicketCreate, currentUser, categories }: ClientDashboardProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [filterStatus, setFilterStatus] = useState("all")
   const [filterPriority, setFilterPriority] = useState("all")
@@ -138,7 +139,7 @@ export function ClientDashboard({ tickets, onTicketCreate, currentUser }: Client
             <DialogHeader>
               <DialogTitle className="text-right font-iran">ایجاد درخواست جدید</DialogTitle>
             </DialogHeader>
-            <TwoStepTicketForm onSubmit={handleTicketCreate} onClose={handleCancelTicketForm} />
+            <TwoStepTicketForm onSubmit={handleTicketCreate} onClose={handleCancelTicketForm} categories={categories} />
           </DialogContent>
         </Dialog>
       </div>
