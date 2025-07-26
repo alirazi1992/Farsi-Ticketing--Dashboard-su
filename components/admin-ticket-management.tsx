@@ -782,7 +782,7 @@ export function AdminTicketManagement({ tickets, onTicketUpdate }: AdminTicketMa
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Avatar className="w-6 h-6">
-                              <AvatarFallback className="text-xs">{ticket.clientName.charAt(0)}</AvatarFallback>
+                              <AvatarFallback className="text-xs">{ticket.clientName?.charAt(0) || "C"}</AvatarFallback>
                             </Avatar>
                             <div>
                               <div className="text-sm font-medium">{ticket.clientName}</div>
@@ -795,7 +795,7 @@ export function AdminTicketManagement({ tickets, onTicketUpdate }: AdminTicketMa
                             <div className="flex items-center gap-2">
                               <Avatar className="w-6 h-6">
                                 <AvatarFallback className="text-xs">
-                                  {ticket.assignedTechnicianName.charAt(0)}
+                                  {ticket.assignedTechnicianName?.charAt(0) || "T"}
                                 </AvatarFallback>
                               </Avatar>
                               <span className="text-sm">{ticket.assignedTechnicianName}</span>
@@ -890,7 +890,7 @@ export function AdminTicketManagement({ tickets, onTicketUpdate }: AdminTicketMa
                       <div className="flex items-center gap-2">
                         <Avatar className="w-8 h-8">
                           <AvatarFallback className="text-xs">
-                            {selectedTicket.assignedTechnicianName.charAt(0)}
+                            {selectedTicket.assignedTechnicianName?.charAt(0) || "T"}
                           </AvatarFallback>
                         </Avatar>
                         <span>{selectedTicket.assignedTechnicianName}</span>
