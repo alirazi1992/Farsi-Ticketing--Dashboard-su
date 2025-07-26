@@ -1,373 +1,276 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { toast } from "@/hooks/use-toast"
-import { Plus, Edit, Trash2, FolderOpen, Tag } from "lucide-react"
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Plus, Edit, Trash2, FolderOpen, FileText } from "lucide-react"
+import { toast } from "sonner"
 
-interface CategoryManagementProps {
-  categoriesData: any
-  onCategoryUpdate: (updatedCategories: any) => void
+interface Category {
+  id: string
+  label: string
+  description?: string
+  subcategories?: Subcategory[]
 }
 
-export function CategoryManagement({ categoriesData, onCategoryUpdate }: CategoryManagementProps) {
-  const [editingCategory, setEditingCategory] = useState<any>(null)
-  const [editingSubcategory, setEditingSubcategory] = useState<any>(null)
-  const [newCategoryDialog, setNewCategoryDialog] = useState(false)
-  const [newSubcategoryDialog, setNewSubcategoryDialog] = useState(false)
-  const [selectedParentCategory, setSelectedParentCategory] = useState("")
+interface Subcategory {
+  id: string
+  label: string
+  description?: string
+  parentId: string
+}
+
+interface CategoryManagementProps {
+  categoriesData: Category[]
+  onCategoriesUpdate: (categories: Category[]) => void
+}
+
+export function CategoryManagement({ categoriesData, onCategoriesUpdate }: CategoryManagementProps) {
+  const [categories, setCategories] = useState<Category[]>(categoriesData)
+  const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false)
+  const [isEditCategoryOpen, setIsEditCategoryOpen] = useState(false)
+  const [isAddSubcategoryOpen, setIsAddSubcategoryOpen] = useState(false)
+  const [isEditSubcategoryOpen, setIsEditSubcategoryOpen] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const [editingSubcategory, setEditingSubcategory] = useState<Subcategory | null>(null)
+  const [selectedParentId, setSelectedParentId] = useState<string>("")
 
   // Form states
-  const [categoryForm, setCategoryForm] = useState({
+  const [newCategoryForm, setNewCategoryForm] = useState({
     id: "",
     label: "",
     description: "",
   })
 
-  const [subcategoryForm, setSubcategoryForm] = useState({
+  const [newSubcategoryForm, setNewSubcategoryForm] = useState({
     id: "",
     label: "",
     description: "",
-    parentCategory: "",
+    parentId: "",
   })
 
-  const resetCategoryForm = () => {
-    setCategoryForm({
-      id: "",
-      label: "",
-      description: "",
-    })
-  }
+  useEffect(() => {
+    setCategories(categoriesData)
+  }, [categoriesData])
 
-  const resetSubcategoryForm = () => {
-    setSubcategoryForm({
-      id: "",
-      label: "",
-      description: "",
-      parentCategory: "",
-    })
+  const generateId = (label: string) => {
+    return label
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^\w-]/g, "")
   }
 
   const handleAddCategory = () => {
-    if (!categoryForm.id || !categoryForm.label) {
-      toast({
-        title: "خطا",
-        description: "لطفاً تمام فیلدهای الزامی را پر کنید",
-        variant: "destructive",
-      })
+    if (!newCategoryForm.label.trim()) {
+      toast.error("نام دسته‌بندی الزامی است")
       return
     }
 
-    if (categoriesData[categoryForm.id]) {
-      toast({
-        title: "خطا",
-        description: "دسته‌بندی با این شناسه قبلاً وجود دارد",
-        variant: "destructive",
-      })
+    const id = newCategoryForm.id || generateId(newCategoryForm.label)
+
+    if (categories.some((cat) => cat.id === id)) {
+      toast.error("دسته‌بندی با این شناسه قبلاً وجود دارد")
       return
     }
 
-    const newCategory = {
-      id: categoryForm.id,
-      label: categoryForm.label,
-      description: categoryForm.description,
-      subIssues: {},
+    const newCategory: Category = {
+      id,
+      label: newCategoryForm.label,
+      description: newCategoryForm.description,
+      subcategories: [],
     }
 
-    const updatedCategories = {
-      ...categoriesData,
-      [categoryForm.id]: newCategory,
-    }
+    const updatedCategories = [...categories, newCategory]
+    setCategories(updatedCategories)
+    onCategoriesUpdate(updatedCategories)
 
-    onCategoryUpdate(updatedCategories)
-    resetCategoryForm()
-    setNewCategoryDialog(false)
-
-    toast({
-      title: "موفق",
-      description: "دسته‌بندی جدید اضافه شد",
-    })
+    setNewCategoryForm({ id: "", label: "", description: "" })
+    setIsAddCategoryOpen(false)
+    toast.success("دسته‌بندی جدید اضافه شد")
   }
 
-  const handleEditCategory = (categoryId: string) => {
-    const category = categoriesData[categoryId]
-    setCategoryForm({
-      id: category.id,
-      label: category.label,
-      description: category.description,
-    })
-    setEditingCategory(categoryId)
-  }
-
-  const handleUpdateCategory = () => {
-    if (!categoryForm.label) {
-      toast({
-        title: "خطا",
-        description: "لطفاً تمام فیلدهای الزامی را پر کنید",
-        variant: "destructive",
-      })
+  const handleEditCategory = () => {
+    if (!editingCategory || !newCategoryForm.label.trim()) {
+      toast.error("نام دسته‌بندی الزامی است")
       return
     }
 
-    const updatedCategories = {
-      ...categoriesData,
-      [editingCategory]: {
-        ...categoriesData[editingCategory],
-        label: categoryForm.label,
-        description: categoryForm.description,
-      },
-    }
+    const updatedCategories = categories.map((cat) =>
+      cat.id === editingCategory.id
+        ? {
+            ...cat,
+            label: newCategoryForm.label,
+            description: newCategoryForm.description,
+          }
+        : cat,
+    )
 
-    onCategoryUpdate(updatedCategories)
-    resetCategoryForm()
+    setCategories(updatedCategories)
+    onCategoriesUpdate(updatedCategories)
+
     setEditingCategory(null)
-
-    toast({
-      title: "موفق",
-      description: "دسته‌بندی به‌روزرسانی شد",
-    })
+    setNewCategoryForm({ id: "", label: "", description: "" })
+    setIsEditCategoryOpen(false)
+    toast.success("دسته‌بندی ویرایش شد")
   }
 
   const handleDeleteCategory = (categoryId: string) => {
-    const updatedCategories = { ...categoriesData }
-    delete updatedCategories[categoryId]
-
-    onCategoryUpdate(updatedCategories)
-
-    toast({
-      title: "موفق",
-      description: "دسته‌بندی حذف شد",
-    })
+    const updatedCategories = categories.filter((cat) => cat.id !== categoryId)
+    setCategories(updatedCategories)
+    onCategoriesUpdate(updatedCategories)
+    toast.success("دسته‌بندی حذف شد")
   }
 
   const handleAddSubcategory = () => {
-    if (!subcategoryForm.id || !subcategoryForm.label || !subcategoryForm.parentCategory) {
-      toast({
-        title: "خطا",
-        description: "لطفاً تمام فیلدهای الزامی را پر کنید",
-        variant: "destructive",
-      })
+    if (!newSubcategoryForm.label.trim() || !newSubcategoryForm.parentId) {
+      toast.error("نام زیردسته و دسته والد الزامی است")
       return
     }
 
-    const parentCategory = categoriesData[subcategoryForm.parentCategory]
-    if (parentCategory.subIssues[subcategoryForm.id]) {
-      toast({
-        title: "خطا",
-        description: "زیردسته با این شناسه قبلاً وجود دارد",
-        variant: "destructive",
-      })
+    const id = newSubcategoryForm.id || generateId(newSubcategoryForm.label)
+
+    // Check if subcategory ID already exists in any category
+    const subcategoryExists = categories.some((cat) => cat.subcategories?.some((sub) => sub.id === id))
+
+    if (subcategoryExists) {
+      toast.error("زیردسته با این شناسه قبلاً وجود دارد")
       return
     }
 
-    const newSubcategory = {
-      id: subcategoryForm.id,
-      label: subcategoryForm.label,
-      description: subcategoryForm.description,
+    const newSubcategory: Subcategory = {
+      id,
+      label: newSubcategoryForm.label,
+      description: newSubcategoryForm.description,
+      parentId: newSubcategoryForm.parentId,
     }
 
-    const updatedCategories = {
-      ...categoriesData,
-      [subcategoryForm.parentCategory]: {
-        ...parentCategory,
-        subIssues: {
-          ...parentCategory.subIssues,
-          [subcategoryForm.id]: newSubcategory,
-        },
-      },
-    }
+    const updatedCategories = categories.map((cat) =>
+      cat.id === newSubcategoryForm.parentId
+        ? {
+            ...cat,
+            subcategories: [...(cat.subcategories || []), newSubcategory],
+          }
+        : cat,
+    )
 
-    onCategoryUpdate(updatedCategories)
-    resetSubcategoryForm()
-    setNewSubcategoryDialog(false)
+    setCategories(updatedCategories)
+    onCategoriesUpdate(updatedCategories)
 
-    toast({
-      title: "موفق",
-      description: "زیردسته جدید اضافه شد",
-    })
+    setNewSubcategoryForm({ id: "", label: "", description: "", parentId: "" })
+    setIsAddSubcategoryOpen(false)
+    toast.success("زیردسته جدید اضافه شد")
   }
 
-  const handleEditSubcategory = (categoryId: string, subcategoryId: string) => {
-    const subcategory = categoriesData[categoryId].subIssues[subcategoryId]
-    setSubcategoryForm({
+  const handleEditSubcategory = () => {
+    if (!editingSubcategory || !newSubcategoryForm.label.trim()) {
+      toast.error("نام زیردسته الزامی است")
+      return
+    }
+
+    const updatedCategories = categories.map((cat) => ({
+      ...cat,
+      subcategories: cat.subcategories?.map((sub) =>
+        sub.id === editingSubcategory.id
+          ? {
+              ...sub,
+              label: newSubcategoryForm.label,
+              description: newSubcategoryForm.description,
+            }
+          : sub,
+      ),
+    }))
+
+    setCategories(updatedCategories)
+    onCategoriesUpdate(updatedCategories)
+
+    setEditingSubcategory(null)
+    setNewSubcategoryForm({ id: "", label: "", description: "", parentId: "" })
+    setIsEditSubcategoryOpen(false)
+    toast.success("زیردسته ویرایش شد")
+  }
+
+  const handleDeleteSubcategory = (subcategoryId: string, parentId: string) => {
+    const updatedCategories = categories.map((cat) =>
+      cat.id === parentId
+        ? {
+            ...cat,
+            subcategories: cat.subcategories?.filter((sub) => sub.id !== subcategoryId),
+          }
+        : cat,
+    )
+
+    setCategories(updatedCategories)
+    onCategoriesUpdate(updatedCategories)
+    toast.success("زیردسته حذف شد")
+  }
+
+  const openEditCategory = (category: Category) => {
+    setEditingCategory(category)
+    setNewCategoryForm({
+      id: category.id,
+      label: category.label,
+      description: category.description || "",
+    })
+    setIsEditCategoryOpen(true)
+  }
+
+  const openEditSubcategory = (subcategory: Subcategory) => {
+    setEditingSubcategory(subcategory)
+    setNewSubcategoryForm({
       id: subcategory.id,
       label: subcategory.label,
-      description: subcategory.description,
-      parentCategory: categoryId,
+      description: subcategory.description || "",
+      parentId: subcategory.parentId,
     })
-    setEditingSubcategory(`${categoryId}-${subcategoryId}`)
-  }
-
-  const handleUpdateSubcategory = () => {
-    if (!subcategoryForm.label) {
-      toast({
-        title: "خطا",
-        description: "لطفاً تمام فیلدهای الزامی را پر کنید",
-        variant: "destructive",
-      })
-      return
-    }
-
-    const [categoryId, subcategoryId] = editingSubcategory.split("-")
-
-    const updatedCategories = {
-      ...categoriesData,
-      [categoryId]: {
-        ...categoriesData[categoryId],
-        subIssues: {
-          ...categoriesData[categoryId].subIssues,
-          [subcategoryId]: {
-            ...categoriesData[categoryId].subIssues[subcategoryId],
-            label: subcategoryForm.label,
-            description: subcategoryForm.description,
-          },
-        },
-      },
-    }
-
-    onCategoryUpdate(updatedCategories)
-    resetSubcategoryForm()
-    setEditingSubcategory(null)
-
-    toast({
-      title: "موفق",
-      description: "زیردسته به‌روزرسانی شد",
-    })
-  }
-
-  const handleDeleteSubcategory = (categoryId: string, subcategoryId: string) => {
-    const updatedCategories = {
-      ...categoriesData,
-      [categoryId]: {
-        ...categoriesData[categoryId],
-        subIssues: Object.fromEntries(
-          Object.entries(categoriesData[categoryId].subIssues).filter(([key]) => key !== subcategoryId),
-        ),
-      },
-    }
-
-    onCategoryUpdate(updatedCategories)
-
-    toast({
-      title: "موفق",
-      description: "زیردسته حذف شد",
-    })
+    setIsEditSubcategoryOpen(true)
   }
 
   return (
     <div className="space-y-6" dir="rtl">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-right">مدیریت دسته‌بندی‌ها</h2>
-          <p className="text-muted-foreground text-right">مدیریت دسته‌بندی‌ها و زیردسته‌های تیکت‌ها</p>
+          <h2 className="text-2xl font-bold">مدیریت دسته‌بندی‌ها</h2>
+          <p className="text-muted-foreground">مدیریت دسته‌بندی‌ها و زیردسته‌های تیکت‌ها</p>
         </div>
         <div className="flex gap-2">
-          <Dialog open={newCategoryDialog} onOpenChange={setNewCategoryDialog}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="w-4 h-4" />
-                دسته‌بندی جدید
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md" dir="rtl">
-              <DialogHeader>
-                <DialogTitle className="text-right">افزودن دسته‌بندی جدید</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="category-id" className="text-right">
-                    شناسه دسته‌بندی *
-                  </Label>
-                  <Input
-                    id="category-id"
-                    value={categoryForm.id}
-                    onChange={(e) => setCategoryForm({ ...categoryForm, id: e.target.value })}
-                    placeholder="مثال: hardware"
-                    className="text-right"
-                    dir="rtl"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category-label" className="text-right">
-                    نام دسته‌بندی *
-                  </Label>
-                  <Input
-                    id="category-label"
-                    value={categoryForm.label}
-                    onChange={(e) => setCategoryForm({ ...categoryForm, label: e.target.value })}
-                    placeholder="مثال: مشکلات سخت‌افزاری"
-                    className="text-right"
-                    dir="rtl"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category-description" className="text-right">
-                    توضیحات
-                  </Label>
-                  <Textarea
-                    id="category-description"
-                    value={categoryForm.description}
-                    onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
-                    placeholder="توضیح کوتاه از دسته‌بندی"
-                    className="text-right"
-                    dir="rtl"
-                  />
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setNewCategoryDialog(false)}>
-                    انصراف
-                  </Button>
-                  <Button onClick={handleAddCategory}>افزودن</Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          <Dialog open={newSubcategoryDialog} onOpenChange={setNewSubcategoryDialog}>
+          <Dialog open={isAddSubcategoryOpen} onOpenChange={setIsAddSubcategoryOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" className="gap-2 bg-transparent">
                 <Plus className="w-4 h-4" />
-                زیردسته جدید
+                افزودن زیردسته
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md" dir="rtl">
+            <DialogContent dir="rtl">
               <DialogHeader>
-                <DialogTitle className="text-right">افزودن زیردسته جدید</DialogTitle>
+                <DialogTitle>افزودن زیردسته جدید</DialogTitle>
+                <DialogDescription>زیردسته جدید برای دسته‌بندی موجود اضافه کنید</DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="parent-category" className="text-right">
-                    دسته‌بندی والد *
-                  </Label>
+                <div>
+                  <Label htmlFor="parent-select">دسته والد</Label>
                   <Select
-                    value={subcategoryForm.parentCategory}
-                    onValueChange={(value) => setSubcategoryForm({ ...subcategoryForm, parentCategory: value })}
-                    dir="rtl"
+                    value={newSubcategoryForm.parentId}
+                    onValueChange={(value) => setNewSubcategoryForm({ ...newSubcategoryForm, parentId: value })}
                   >
-                    <SelectTrigger className="text-right">
-                      <SelectValue placeholder="انتخاب دسته‌بندی" />
+                    <SelectTrigger>
+                      <SelectValue placeholder="انتخاب دسته والد" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.values(categoriesData).map((category: any) => (
+                      {categories.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
                           {category.label}
                         </SelectItem>
@@ -375,264 +278,236 @@ export function CategoryManagement({ categoriesData, onCategoryUpdate }: Categor
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="subcategory-id" className="text-right">
-                    شناسه زیردسته *
-                  </Label>
+                <div>
+                  <Label htmlFor="subcategory-id">شناسه زیردسته (اختیاری)</Label>
                   <Input
                     id="subcategory-id"
-                    value={subcategoryForm.id}
-                    onChange={(e) => setSubcategoryForm({ ...subcategoryForm, id: e.target.value })}
-                    placeholder="مثال: computer-not-working"
-                    className="text-right"
-                    dir="rtl"
+                    value={newSubcategoryForm.id}
+                    onChange={(e) => setNewSubcategoryForm({ ...newSubcategoryForm, id: e.target.value })}
+                    placeholder="در صورت خالی بودن، خودکار تولید می‌شود"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="subcategory-label" className="text-right">
-                    نام زیردسته *
-                  </Label>
+                <div>
+                  <Label htmlFor="subcategory-name">نام زیردسته</Label>
                   <Input
-                    id="subcategory-label"
-                    value={subcategoryForm.label}
-                    onChange={(e) => setSubcategoryForm({ ...subcategoryForm, label: e.target.value })}
-                    placeholder="مثال: رایانه کار نمی‌کند"
-                    className="text-right"
-                    dir="rtl"
+                    id="subcategory-name"
+                    value={newSubcategoryForm.label}
+                    onChange={(e) => setNewSubcategoryForm({ ...newSubcategoryForm, label: e.target.value })}
+                    placeholder="نام زیردسته را وارد کنید"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="subcategory-description" className="text-right">
-                    توضیحات
-                  </Label>
+                <div>
+                  <Label htmlFor="subcategory-description">توضیحات (اختیاری)</Label>
                   <Textarea
                     id="subcategory-description"
-                    value={subcategoryForm.description}
-                    onChange={(e) => setSubcategoryForm({ ...subcategoryForm, description: e.target.value })}
-                    placeholder="توضیح کوتاه از زیردسته"
-                    className="text-right"
-                    dir="rtl"
+                    value={newSubcategoryForm.description}
+                    onChange={(e) => setNewSubcategoryForm({ ...newSubcategoryForm, description: e.target.value })}
+                    placeholder="توضیحات زیردسته"
                   />
                 </div>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setNewSubcategoryDialog(false)}>
-                    انصراف
-                  </Button>
-                  <Button onClick={handleAddSubcategory}>افزودن</Button>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAddSubcategoryOpen(false)}>
+                  انصراف
+                </Button>
+                <Button onClick={handleAddSubcategory}>افزودن زیردسته</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isAddCategoryOpen} onOpenChange={setIsAddCategoryOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="w-4 h-4" />
+                افزودن دسته‌بندی
+              </Button>
+            </DialogTrigger>
+            <DialogContent dir="rtl">
+              <DialogHeader>
+                <DialogTitle>افزودن دسته‌بندی جدید</DialogTitle>
+                <DialogDescription>دسته‌بندی جدید برای تیکت‌ها اضافه کنید</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="category-id">شناسه دسته‌بندی (اختیاری)</Label>
+                  <Input
+                    id="category-id"
+                    value={newCategoryForm.id}
+                    onChange={(e) => setNewCategoryForm({ ...newCategoryForm, id: e.target.value })}
+                    placeholder="در صورت خالی بودن، خودکار تولید می‌شود"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="category-name">نام دسته‌بندی</Label>
+                  <Input
+                    id="category-name"
+                    value={newCategoryForm.label}
+                    onChange={(e) => setNewCategoryForm({ ...newCategoryForm, label: e.target.value })}
+                    placeholder="نام دسته‌بندی را وارد کنید"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="category-description">توضیحات (اختیاری)</Label>
+                  <Textarea
+                    id="category-description"
+                    value={newCategoryForm.description}
+                    onChange={(e) => setNewCategoryForm({ ...newCategoryForm, description: e.target.value })}
+                    placeholder="توضیحات دسته‌بندی"
+                  />
                 </div>
               </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAddCategoryOpen(false)}>
+                  انصراف
+                </Button>
+                <Button onClick={handleAddCategory}>افزودن دسته‌بندی</Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
       </div>
 
       {/* Categories List */}
-      <div className="grid gap-6">
-        {Object.values(categoriesData).map((category: any) => (
+      <div className="grid gap-4">
+        {categories.map((category) => (
           <Card key={category.id}>
             <CardHeader>
-              <div className="flex justify-between items-start">
-                <div className="text-right">
-                  <CardTitle className="flex items-center gap-2 text-right">
-                    <FolderOpen className="w-5 h-5" />
-                    {category.label}
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground mt-1">{category.description}</p>
-                  <Badge variant="secondary" className="mt-2">
-                    {Object.keys(category.subIssues).length} زیردسته
-                  </Badge>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <FolderOpen className="w-5 h-5 text-primary" />
+                  <div>
+                    <CardTitle className="text-lg">{category.label}</CardTitle>
+                    {category.description && <CardDescription className="mt-1">{category.description}</CardDescription>}
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <Dialog
-                    open={editingCategory === category.id}
-                    onOpenChange={(open) => !open && setEditingCategory(null)}
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">{category.subcategories?.length || 0} زیردسته</Badge>
+                  <Button variant="ghost" size="sm" onClick={() => openEditCategory(category)} className="gap-1">
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteCategory(category.id)}
+                    className="gap-1 text-destructive hover:text-destructive"
                   >
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" onClick={() => handleEditCategory(category.id)}>
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-md" dir="rtl">
-                      <DialogHeader>
-                        <DialogTitle className="text-right">ویرایش دسته‌بندی</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="edit-category-label" className="text-right">
-                            نام دسته‌بندی *
-                          </Label>
-                          <Input
-                            id="edit-category-label"
-                            value={categoryForm.label}
-                            onChange={(e) => setCategoryForm({ ...categoryForm, label: e.target.value })}
-                            className="text-right"
-                            dir="rtl"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="edit-category-description" className="text-right">
-                            توضیحات
-                          </Label>
-                          <Textarea
-                            id="edit-category-description"
-                            value={categoryForm.description}
-                            onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
-                            className="text-right"
-                            dir="rtl"
-                          />
-                        </div>
-                        <div className="flex justify-end gap-2">
-                          <Button variant="outline" onClick={() => setEditingCategory(null)}>
-                            انصراف
-                          </Button>
-                          <Button onClick={handleUpdateCategory}>به‌روزرسانی</Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 bg-transparent">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent dir="rtl">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle className="text-right">حذف دسته‌بندی</AlertDialogTitle>
-                        <AlertDialogDescription className="text-right">
-                          آیا مطمئن هستید که می‌خواهید دسته‌بندی "{category.label}" و تمام زیردسته‌های آن را حذف کنید؟ این
-                          عمل قابل بازگشت نیست.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>انصراف</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => handleDeleteCategory(category.id)}
-                          className="bg-red-600 hover:bg-red-700"
-                        >
-                          حذف
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              <Separator className="mb-4" />
-              <div className="space-y-3">
-                <h4 className="font-medium text-right flex items-center gap-2">
-                  <Tag className="w-4 h-4" />
-                  زیردسته‌ها
-                </h4>
-                {Object.keys(category.subIssues).length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-right">هیچ زیردسته‌ای تعریف نشده است</p>
-                ) : (
-                  <div className="grid gap-2">
-                    {Object.values(category.subIssues).map((subcategory: any) => (
-                      <div
-                        key={subcategory.id}
-                        className="flex justify-between items-center p-3 bg-muted/50 rounded-lg"
-                      >
-                        <div className="text-right">
-                          <p className="font-medium">{subcategory.label}</p>
-                          <p className="text-sm text-muted-foreground">{subcategory.description}</p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Dialog
-                            open={editingSubcategory === `${category.id}-${subcategory.id}`}
-                            onOpenChange={(open) => !open && setEditingSubcategory(null)}
-                          >
-                            <DialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEditSubcategory(category.id, subcategory.id)}
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-md" dir="rtl">
-                              <DialogHeader>
-                                <DialogTitle className="text-right">ویرایش زیردسته</DialogTitle>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                <div className="space-y-2">
-                                  <Label htmlFor="edit-subcategory-label" className="text-right">
-                                    نام زیردسته *
-                                  </Label>
-                                  <Input
-                                    id="edit-subcategory-label"
-                                    value={subcategoryForm.label}
-                                    onChange={(e) => setSubcategoryForm({ ...subcategoryForm, label: e.target.value })}
-                                    className="text-right"
-                                    dir="rtl"
-                                  />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="edit-subcategory-description" className="text-right">
-                                    توضیحات
-                                  </Label>
-                                  <Textarea
-                                    id="edit-subcategory-description"
-                                    value={subcategoryForm.description}
-                                    onChange={(e) =>
-                                      setSubcategoryForm({ ...subcategoryForm, description: e.target.value })
-                                    }
-                                    className="text-right"
-                                    dir="rtl"
-                                  />
-                                </div>
-                                <div className="flex justify-end gap-2">
-                                  <Button variant="outline" onClick={() => setEditingSubcategory(null)}>
-                                    انصراف
-                                  </Button>
-                                  <Button onClick={handleUpdateSubcategory}>به‌روزرسانی</Button>
-                                </div>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="text-red-600 hover:text-red-700 bg-transparent"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent dir="rtl">
-                              <AlertDialogHeader>
-                                <AlertDialogTitle className="text-right">حذف زیردسته</AlertDialogTitle>
-                                <AlertDialogDescription className="text-right">
-                                  آیا مطمئن هستید که می‌خواهید زیردسته "{subcategory.label}" را حذف کنید؟ این عمل قابل
-                                  بازگشت نیست.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>انصراف</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDeleteSubcategory(category.id, subcategory.id)}
-                                  className="bg-red-600 hover:bg-red-700"
-                                >
-                                  حذف
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+            {category.subcategories && category.subcategories.length > 0 && (
+              <CardContent>
+                <div className="space-y-2">
+                  {category.subcategories.map((subcategory) => (
+                    <div key={subcategory.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-4 h-4 text-muted-foreground" />
+                        <div>
+                          <div className="font-medium">{subcategory.label}</div>
+                          {subcategory.description && (
+                            <div className="text-sm text-muted-foreground">{subcategory.description}</div>
+                          )}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </CardContent>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditSubcategory(subcategory)}
+                          className="gap-1"
+                        >
+                          <Edit className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteSubcategory(subcategory.id, category.id)}
+                          className="gap-1 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            )}
           </Card>
         ))}
       </div>
+
+      {/* Edit Category Dialog */}
+      <Dialog open={isEditCategoryOpen} onOpenChange={setIsEditCategoryOpen}>
+        <DialogContent dir="rtl">
+          <DialogHeader>
+            <DialogTitle>ویرایش دسته‌بندی</DialogTitle>
+            <DialogDescription>اطلاعات دسته‌بندی را ویرایش کنید</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-category-name">نام دسته‌بندی</Label>
+              <Input
+                id="edit-category-name"
+                value={newCategoryForm.label}
+                onChange={(e) => setNewCategoryForm({ ...newCategoryForm, label: e.target.value })}
+                placeholder="نام دسته‌بندی را وارد کنید"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-category-description">توضیحات (اختیاری)</Label>
+              <Textarea
+                id="edit-category-description"
+                value={newCategoryForm.description}
+                onChange={(e) => setNewCategoryForm({ ...newCategoryForm, description: e.target.value })}
+                placeholder="توضیحات دسته‌بندی"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditCategoryOpen(false)}>
+              انصراف
+            </Button>
+            <Button onClick={handleEditCategory}>ذخیره تغییرات</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Subcategory Dialog */}
+      <Dialog open={isEditSubcategoryOpen} onOpenChange={setIsEditSubcategoryOpen}>
+        <DialogContent dir="rtl">
+          <DialogHeader>
+            <DialogTitle>ویرایش زیردسته</DialogTitle>
+            <DialogDescription>اطلاعات زیردسته را ویرایش کنید</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-subcategory-name">نام زیردسته</Label>
+              <Input
+                id="edit-subcategory-name"
+                value={newSubcategoryForm.label}
+                onChange={(e) => setNewSubcategoryForm({ ...newSubcategoryForm, label: e.target.value })}
+                placeholder="نام زیردسته را وارد کنید"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-subcategory-description">توضیحات (اختیاری)</Label>
+              <Textarea
+                id="edit-subcategory-description"
+                value={newSubcategoryForm.description}
+                onChange={(e) => setNewSubcategoryForm({ ...newSubcategoryForm, description: e.target.value })}
+                placeholder="توضیحات زیردسته"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditSubcategoryOpen(false)}>
+              انصراف
+            </Button>
+            <Button onClick={handleEditSubcategory}>ذخیره تغییرات</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -2,12 +2,12 @@
 
 import { useState } from "react"
 import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
+import { yupResolver } from "@hookform/resolvers/yup"
 import { TicketFormStep1 } from "./ticket-form-step1"
 import { TicketFormStep2 } from "./ticket-form-step2"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { ticketSchema } from "@/lib/validation-schemas"
+import { getCombinedSchema } from "@/lib/validation-schemas"
 import type { UploadedFile } from "@/lib/file-upload"
 
 interface TwoStepTicketFormProps {
@@ -22,13 +22,16 @@ export function TwoStepTicketForm({ onSubmit, currentUser, categoriesData }: Two
   const [attachedFiles, setAttachedFiles] = useState<UploadedFile[]>([])
 
   const form = useForm({
-    resolver: zodResolver(ticketSchema),
+    resolver: yupResolver(getCombinedSchema(2)),
     defaultValues: {
       title: "",
       description: "",
-      category: "",
-      subcategory: "",
       priority: "medium",
+      mainIssue: "",
+      subIssue: "",
+      clientName: currentUser?.name || "",
+      clientEmail: currentUser?.email || "",
+      clientPhone: currentUser?.phone || "",
       // Dynamic fields
       deviceBrand: "",
       deviceModel: "",
@@ -55,12 +58,14 @@ export function TwoStepTicketForm({ onSubmit, currentUser, categoriesData }: Two
       emailProvider: "",
       emailClient: "",
       errorMessage: "",
+      emailAddress: "",
       incidentTime: "",
       securitySeverity: "",
       affectedData: "",
       requestedSystem: "",
       accessLevel: "",
       accessReason: "",
+      urgencyLevel: "",
       trainingTopic: "",
       currentLevel: "",
       preferredMethod: "",
@@ -77,8 +82,8 @@ export function TwoStepTicketForm({ onSubmit, currentUser, categoriesData }: Two
     watch,
   } = form
 
-  const selectedCategory = watch("category")
-  const selectedSubcategory = watch("subcategory")
+  const selectedCategory = watch("mainIssue")
+  const selectedSubcategory = watch("subIssue")
 
   const handleStep1Complete = (data: any) => {
     setStep1Data(data)
@@ -93,10 +98,10 @@ export function TwoStepTicketForm({ onSubmit, currentUser, categoriesData }: Two
     const completeData = {
       ...step1Data,
       ...data,
-      clientName: currentUser.name,
-      clientEmail: currentUser.email,
-      clientPhone: currentUser.phone || "",
-      department: currentUser.department || "",
+      clientName: currentUser?.name || data.clientName,
+      clientEmail: currentUser?.email || data.clientEmail,
+      clientPhone: currentUser?.phone || data.clientPhone,
+      department: currentUser?.department || "",
       attachedFiles,
     }
     onSubmit(completeData)
