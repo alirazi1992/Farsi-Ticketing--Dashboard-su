@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -19,20 +18,19 @@ import {
   Filter,
   Download,
   Eye,
-  Edit,
   HardDrive,
   ComputerIcon as Software,
   Network,
   Mail,
   Shield,
   Key,
-  Users,
   Clock,
   Star,
   TrendingUp,
-  Zap,
   Calendar,
+  MessageSquare,
 } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
 
 const statusColors = {
   open: "bg-red-100 text-red-800 border-red-200",
@@ -86,7 +84,7 @@ const initialTechnicians = [
     id: "tech-001",
     name: "علی احمدی",
     email: "ali@company.com",
-    specialties: ["hardware", "network"],
+    specialties: ["network", "hardware"],
     activeTickets: 3,
     status: "available",
     rating: 4.8,
@@ -246,8 +244,8 @@ export function AdminTicketManagement({ tickets, onTicketUpdate }: AdminTicketMa
   }
 
   // Handle ticket selection for bulk operations
-  const handleTicketSelect = (ticketId: string) => {
-    setSelectedTickets((prev) => (prev.includes(ticketId) ? prev.filter((id) => id !== ticketId) : [...prev, ticketId]))
+  const handleTicketSelect = (ticketId: string, checked: boolean) => {
+    setSelectedTickets((prev) => (checked ? [...prev, ticketId] : prev.filter((id) => id !== ticketId)))
   }
 
   // Handle select all tickets
@@ -298,6 +296,20 @@ export function AdminTicketManagement({ tickets, onTicketUpdate }: AdminTicketMa
       setSelectedTickets([])
       setBulkAssignDialogOpen(false)
     }
+  }
+
+  // Handle bulk status update
+  const handleBulkStatusUpdate = (newStatus: string) => {
+    selectedTickets.forEach((ticketId) => {
+      onTicketUpdate(ticketId, { status: newStatus })
+    })
+
+    toast({
+      title: "وضعیت تیکت‌ها به‌روزرسانی شد",
+      description: `${selectedTickets.length} تیکت به وضعیت ${statusLabels[newStatus]} تغییر یافت`,
+    })
+
+    setSelectedTickets([])
   }
 
   // Handle print functionality
@@ -388,39 +400,37 @@ export function AdminTicketManagement({ tickets, onTicketUpdate }: AdminTicketMa
     }
   }
 
-  // Handle export to CSV
   const handleExportCSV = () => {
-    const ticketsToExport =
-      selectedTickets.length > 0
-        ? filteredTickets.filter((ticket) => selectedTickets.includes(ticket.id))
-        : filteredTickets
+    const headers = [
+      "شماره تیکت",
+      "عنوان",
+      "وضعیت",
+      "اولویت",
+      "دسته‌بندی",
+      "درخواست‌کننده",
+      "ایمیل",
+      "تکنسین",
+      "تاریخ ایجاد",
+      "آخرین به‌روزرسانی",
+    ]
 
     const csvContent = [
-      [
-        "شماره تیکت",
-        "عنوان",
-        "وضعیت",
-        "اولویت",
-        "دسته‌بندی",
-        "درخواست‌کننده",
-        "تکنسین",
-        "تاریخ ایجاد",
-        "آخرین به‌روزرسانی",
-      ],
-      ...ticketsToExport.map((ticket) => [
-        ticket.id,
-        ticket.title,
-        statusLabels[ticket.status],
-        priorityLabels[ticket.priority],
-        categoryLabels[ticket.category],
-        ticket.clientName,
-        ticket.assignedTechnicianName || "تعیین نشده",
-        new Date(ticket.createdAt).toLocaleDateString("fa-IR"),
-        new Date(ticket.updatedAt).toLocaleDateString("fa-IR"),
-      ]),
-    ]
-      .map((row) => row.join(","))
-      .join("\n")
+      headers.join(","),
+      ...filteredTickets.map((ticket) =>
+        [
+          ticket.id,
+          `"${ticket.title}"`,
+          statusLabels[ticket.status],
+          priorityLabels[ticket.priority],
+          categoryLabels[ticket.category],
+          `"${ticket.clientName}"`,
+          ticket.clientEmail,
+          `"${ticket.assignedTechnicianName || "تعیین نشده"}"`,
+          new Date(ticket.createdAt).toLocaleDateString("fa-IR"),
+          new Date(ticket.updatedAt).toLocaleDateString("fa-IR"),
+        ].join(","),
+      ),
+    ].join("\n")
 
     const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" })
     const link = document.createElement("a")
@@ -431,6 +441,11 @@ export function AdminTicketManagement({ tickets, onTicketUpdate }: AdminTicketMa
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+
+    toast({
+      title: "فایل CSV ایجاد شد",
+      description: "گزارش تیکت‌ها با موفقیت دانلود شد",
+    })
   }
 
   // Automatic assignment logic
@@ -624,7 +639,7 @@ export function AdminTicketManagement({ tickets, onTicketUpdate }: AdminTicketMa
         </CardHeader>
         <CardContent>
           {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
             <div className="relative">
               <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
@@ -655,10 +670,10 @@ export function AdminTicketManagement({ tickets, onTicketUpdate }: AdminTicketMa
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">همه اولویت‌ها</SelectItem>
-                <SelectItem value="low">کم</SelectItem>
-                <SelectItem value="medium">متوسط</SelectItem>
-                <SelectItem value="high">بالا</SelectItem>
                 <SelectItem value="urgent">فوری</SelectItem>
+                <SelectItem value="high">بالا</SelectItem>
+                <SelectItem value="medium">متوسط</SelectItem>
+                <SelectItem value="low">کم</SelectItem>
               </SelectContent>
             </Select>
 
@@ -677,21 +692,6 @@ export function AdminTicketManagement({ tickets, onTicketUpdate }: AdminTicketMa
               </SelectContent>
             </Select>
 
-            <Select value={filterTechnician} onValueChange={setFilterTechnician} dir="rtl">
-              <SelectTrigger className="text-right">
-                <SelectValue placeholder="تکنسین" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">همه تکنسین‌ها</SelectItem>
-                <SelectItem value="unassigned">تعیین نشده</SelectItem>
-                {technicians.map((tech) => (
-                  <SelectItem key={tech.id} value={tech.id}>
-                    {tech.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
             <Button
               variant="outline"
               onClick={() => {
@@ -699,7 +699,6 @@ export function AdminTicketManagement({ tickets, onTicketUpdate }: AdminTicketMa
                 setFilterStatus("all")
                 setFilterPriority("all")
                 setFilterCategory("all")
-                setFilterTechnician("all")
               }}
               className="gap-2"
             >
@@ -708,29 +707,35 @@ export function AdminTicketManagement({ tickets, onTicketUpdate }: AdminTicketMa
             </Button>
           </div>
 
-          {/* Results Summary */}
-          <div className="flex justify-between items-center mb-4">
-            <p className="text-sm text-muted-foreground text-right">
-              نمایش {filteredTickets.length} از {tickets.length} تیکت
-              {selectedTickets.length > 0 && ` - ${selectedTickets.length} انتخاب شده`}
-            </p>
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={selectedTickets.length === filteredTickets.length && filteredTickets.length > 0}
-                onChange={handleSelectAll}
-                className="rounded"
-              />
-              <Label className="text-sm">انتخاب همه</Label>
+          {/* Bulk Actions */}
+          {selectedTickets.length > 0 && (
+            <div className="flex items-center gap-4 mb-4 p-3 bg-muted rounded-lg">
+              <span className="text-sm font-medium">{selectedTickets.length} تیکت انتخاب شده</span>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={() => handleBulkStatusUpdate("in-progress")} variant="outline">
+                  در حال انجام
+                </Button>
+                <Button size="sm" onClick={() => handleBulkStatusUpdate("resolved")} variant="outline">
+                  حل شده
+                </Button>
+                <Button size="sm" onClick={() => handleBulkStatusUpdate("closed")} variant="outline">
+                  بسته
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Tickets Table */}
           <div className="border rounded-lg overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12 text-center">انتخاب</TableHead>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={selectedTickets.length === filteredTickets.length && filteredTickets.length > 0}
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead className="text-right">شماره تیکت</TableHead>
                   <TableHead className="text-right">عنوان</TableHead>
                   <TableHead className="text-right">وضعیت</TableHead>
@@ -746,16 +751,14 @@ export function AdminTicketManagement({ tickets, onTicketUpdate }: AdminTicketMa
                 {filteredTickets.length > 0 ? (
                   filteredTickets.map((ticket) => {
                     const CategoryIcon = categoryIcons[ticket.category]
-                    const assignedTech = technicians.find((tech) => tech.id === ticket.assignedTo)
+                    const isSelected = selectedTickets.includes(ticket.id)
 
                     return (
-                      <TableRow key={ticket.id}>
-                        <TableCell className="text-center">
-                          <input
-                            type="checkbox"
-                            checked={selectedTickets.includes(ticket.id)}
-                            onChange={() => handleTicketSelect(ticket.id)}
-                            className="rounded"
+                      <TableRow key={ticket.id} className={isSelected ? "bg-muted/50" : ""}>
+                        <TableCell>
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={(checked) => handleTicketSelect(ticket.id, checked as boolean)}
                           />
                         </TableCell>
                         <TableCell className="font-mono text-sm">{ticket.id}</TableCell>
@@ -781,7 +784,10 @@ export function AdminTicketManagement({ tickets, onTicketUpdate }: AdminTicketMa
                             <Avatar className="w-6 h-6">
                               <AvatarFallback className="text-xs">{ticket.clientName.charAt(0)}</AvatarFallback>
                             </Avatar>
-                            <span className="text-sm">{ticket.clientName}</span>
+                            <div>
+                              <div className="text-sm font-medium">{ticket.clientName}</div>
+                              <div className="text-xs text-muted-foreground">{ticket.clientEmail}</div>
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -792,77 +798,20 @@ export function AdminTicketManagement({ tickets, onTicketUpdate }: AdminTicketMa
                                   {ticket.assignedTechnicianName.charAt(0)}
                                 </AvatarFallback>
                               </Avatar>
-                              <div>
-                                <span className="text-sm">{ticket.assignedTechnicianName}</span>
-                                {assignedTech && (
-                                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                    <Badge
-                                      variant={assignedTech.status === "available" ? "default" : "secondary"}
-                                      className="text-xs"
-                                    >
-                                      {assignedTech.status === "available" ? "آزاد" : "مشغول"}
-                                    </Badge>
-                                  </div>
-                                )}
-                              </div>
+                              <span className="text-sm">{ticket.assignedTechnicianName}</span>
                             </div>
                           ) : (
-                            <div className="flex gap-1">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedTicketForAssign(ticket)
-                                  setTechnicianFilter("recommended")
-                                  setAssignDialogOpen(true)
-                                }}
-                                className="gap-1"
-                              >
-                                <UserPlus className="w-3 h-3" />
-                                دستی
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleAutoAssign(ticket)}
-                                className="gap-1 text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300"
-                              >
-                                <Zap className="w-3 h-3" />
-                                خودکار
-                              </Button>
-                            </div>
+                            <span className="text-sm text-muted-foreground">تعیین نشده</span>
                           )}
                         </TableCell>
                         <TableCell className="text-sm">
                           {new Date(ticket.createdAt).toLocaleDateString("fa-IR")}
                         </TableCell>
                         <TableCell>
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleViewTicket(ticket)}
-                              className="gap-1"
-                            >
-                              <Eye className="w-3 h-3" />
-                              مشاهده
-                            </Button>
-                            {ticket.assignedTechnicianName && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="gap-1"
-                                onClick={() => {
-                                  setSelectedTicketForAssign(ticket)
-                                  setTechnicianFilter("all")
-                                  setAssignDialogOpen(true)
-                                }}
-                              >
-                                <Edit className="w-3 h-3" />
-                                تغییر
-                              </Button>
-                            )}
-                          </div>
+                          <Button variant="ghost" size="sm" onClick={() => handleViewTicket(ticket)} className="gap-1">
+                            <Eye className="w-3 h-3" />
+                            مشاهده
+                          </Button>
                         </TableCell>
                       </TableRow>
                     )
@@ -882,109 +831,6 @@ export function AdminTicketManagement({ tickets, onTicketUpdate }: AdminTicketMa
           </div>
         </CardContent>
       </Card>
-
-      {/* Individual Assign Technician Dialog */}
-      <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
-        <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="text-right">تعیین تکنسین برای تیکت {selectedTicketForAssign?.id}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            {/* Ticket Info */}
-            <div className="bg-muted p-4 rounded-lg">
-              <div className="flex justify-between items-start">
-                <div className="text-right">
-                  <h4 className="font-medium">{selectedTicketForAssign?.title}</h4>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    دسته‌بندی: {selectedTicketForAssign && categoryLabels[selectedTicketForAssign.category]} | اولویت:{" "}
-                    {selectedTicketForAssign && priorityLabels[selectedTicketForAssign.priority]}
-                  </p>
-                </div>
-                <Badge className={selectedTicketForAssign && priorityColors[selectedTicketForAssign.priority]}>
-                  {selectedTicketForAssign && priorityLabels[selectedTicketForAssign.priority]}
-                </Badge>
-              </div>
-            </div>
-
-            {/* Technician Filter */}
-            <div className="flex gap-2 items-center">
-              <Label className="text-sm font-medium">فیلتر تکنسین‌ها:</Label>
-              <Select value={technicianFilter} onValueChange={setTechnicianFilter} dir="rtl">
-                <SelectTrigger className="w-48 text-right">
-                  <SelectValue placeholder="فیلتر تکنسین‌ها" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="recommended">پیشنهادی</SelectItem>
-                  <SelectItem value="all">همه تکنسین‌ها</SelectItem>
-                  <SelectItem value="available">آزاد</SelectItem>
-                  <SelectItem value="busy">مشغول</SelectItem>
-                  <Separator />
-                  <SelectItem value="hardware">متخصص سخت‌افزار</SelectItem>
-                  <SelectItem value="software">متخصص نرم‌افزار</SelectItem>
-                  <SelectItem value="network">متخصص شبکه</SelectItem>
-                  <SelectItem value="email">متخصص ایمیل</SelectItem>
-                  <SelectItem value="security">متخصص امنیت</SelectItem>
-                  <SelectItem value="access">متخصص دسترسی</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Recommended Technicians */}
-            {technicianFilter === "recommended" && selectedTicketForAssign && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                  <h4 className="font-medium text-right">تکنسین‌های پیشنهادی برای این تیکت</h4>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {getRecommendedTechnicians(selectedTicketForAssign).map((technician, index) => (
-                    <TechnicianCard
-                      key={technician.id}
-                      technician={technician}
-                      ticket={selectedTicketForAssign}
-                      onAssign={(techId) => handleAssignTechnician(selectedTicketForAssign.id, techId)}
-                      showRecommended={index < 2} // Show star for top 2 recommendations
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* All Technicians */}
-            {technicianFilter !== "recommended" && (
-              <div className="space-y-3">
-                <h4 className="font-medium text-right">
-                  {technicianFilter === "all"
-                    ? "همه تکنسین‌ها"
-                    : technicianFilter === "available"
-                      ? "تکنسین‌های آزاد"
-                      : technicianFilter === "busy"
-                        ? "تکنسین‌های مشغول"
-                        : `متخصصان ${categoryLabels[technicianFilter] || technicianFilter}`}
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {getFilteredTechnicians(selectedTicketForAssign).map((technician) => (
-                    <TechnicianCard
-                      key={technician.id}
-                      technician={technician}
-                      ticket={selectedTicketForAssign}
-                      onAssign={(techId) => handleAssignTechnician(selectedTicketForAssign.id, techId)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {getFilteredTechnicians(selectedTicketForAssign).length === 0 && (
-              <div className="text-center py-8">
-                <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-muted-foreground">تکنسینی یافت نشد</h3>
-                <p className="text-sm text-muted-foreground mt-1">فیلتر خود را تغییر دهید یا تکنسین جدیدی اضافه کنید</p>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* View Ticket Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
@@ -1043,81 +889,57 @@ export function AdminTicketManagement({ tickets, onTicketUpdate }: AdminTicketMa
                       <h4 className="font-medium mb-2">تکنسین مسئول</h4>
                       <div className="flex items-center gap-2">
                         <Avatar className="w-8 h-8">
-                          <AvatarFallback>{selectedTicket.assignedTechnicianName.charAt(0)}</AvatarFallback>
+                          <AvatarFallback className="text-xs">
+                            {selectedTicket.assignedTechnicianName.charAt(0)}
+                          </AvatarFallback>
                         </Avatar>
                         <span>{selectedTicket.assignedTechnicianName}</span>
                       </div>
                     </div>
                   )}
                 </div>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium mb-2">اطلاعات تماس</h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">نام:</span>
-                        <span>{selectedTicket.clientName}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">ایمیل:</span>
-                        <span>{selectedTicket.clientEmail}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">تلفن:</span>
-                        <span>{selectedTicket.clientPhone}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">بخش:</span>
-                        <span>{selectedTicket.department}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
-              <Separator />
-
-              {/* Description */}
-              <div>
-                <h4 className="font-medium mb-2">شرح مشکل</h4>
                 <div className="bg-muted p-4 rounded-lg text-right">
+                  <h4 className="font-medium mb-2">شرح مشکل</h4>
                   <p className="whitespace-pre-wrap">{selectedTicket.description}</p>
                 </div>
-              </div>
 
-              {/* Responses */}
-              {selectedTicket.responses && selectedTicket.responses.length > 0 && (
-                <div>
-                  <h4 className="font-medium mb-4">پاسخ‌ها و به‌روزرسانی‌ها</h4>
-                  <div className="space-y-4">
-                    {selectedTicket.responses.map((response: any, index: number) => (
-                      <div key={index} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="flex items-center gap-2">
-                            <Avatar className="w-6 h-6">
-                              <AvatarFallback className="text-xs">
-                                {response.technicianName?.charAt(0) || "T"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="font-medium text-sm">{response.technicianName}</span>
+                {selectedTicket.responses && selectedTicket.responses.length > 0 && (
+                  <div>
+                    <h4 className="font-medium mb-4 flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4" />
+                      پاسخ‌ها و به‌روزرسانی‌ها
+                    </h4>
+                    <div className="space-y-4">
+                      {selectedTicket.responses.map((response: any, index: number) => (
+                        <div key={index} className="border rounded-lg p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex items-center gap-2">
+                              <Avatar className="w-6 h-6">
+                                <AvatarFallback className="text-xs">
+                                  {response.technicianName?.charAt(0) || "T"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="font-medium text-sm">{response.technicianName}</span>
+                            </div>
+                            <div className="text-left">
+                              <Badge className={statusColors[response.status]}>{statusLabels[response.status]}</Badge>
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {new Date(response.timestamp).toLocaleDateString("fa-IR")} -
+                                {new Date(response.timestamp).toLocaleTimeString("fa-IR")}
+                              </p>
+                            </div>
                           </div>
-                          <div className="text-left">
-                            <Badge className={statusColors[response.status]}>{statusLabels[response.status]}</Badge>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Calendar className="w-4 h-4" />
-                              {new Date(response.timestamp).toLocaleDateString("fa-IR")} -
-                              {new Date(response.timestamp).toLocaleTimeString("fa-IR")}
-                            </p>
+                          <div className="bg-muted/50 p-3 rounded text-right">
+                            <p className="whitespace-pre-wrap">{response.message}</p>
                           </div>
                         </div>
-                        <div className="bg-muted/50 p-3 rounded text-right">
-                          <p className="whitespace-pre-wrap">{response.message}</p>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
         </DialogContent>

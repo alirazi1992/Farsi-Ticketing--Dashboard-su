@@ -270,25 +270,25 @@ const defaultAssignmentRules = [
   },
 ]
 
+interface EnhancedAutoAssignmentProps {
+  tickets: any[]
+  onTicketUpdate: (ticketId: string, updates: any) => void
+}
+
 const categoryLabels = {
   hardware: "سخت‌افزار",
-  software: "نرم‌افزار",
   network: "شبکه",
-  email: "ایمیل",
+  software: "نرم‌افزار",
+  email: "پست الکترونیک",
   security: "امنیت",
   access: "دسترسی",
 }
 
 const priorityLabels = {
-  low: "کم",
-  medium: "متوسط",
-  high: "بالا",
   urgent: "فوری",
-}
-
-interface EnhancedAutoAssignmentProps {
-  tickets: any[]
-  onTicketUpdate: (ticketId: string, updates: any) => void
+  high: "بالا",
+  medium: "متوسط",
+  low: "کم",
 }
 
 export function EnhancedAutoAssignment({ tickets, onTicketUpdate }: EnhancedAutoAssignmentProps) {

@@ -15,6 +15,127 @@ import { toast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import { Ticket, User, Wrench, Shield, LogIn } from "lucide-react"
 
+// Sample initial tickets data
+const initialTickets = [
+  {
+    id: "TK-2024-001",
+    title: "مشکل در اتصال به اینترنت",
+    description: "اینترنت در بخش حسابداری قطع شده و کارمندان نمی‌توانند به سیستم‌های آنلاین دسترسی داشته باشند.",
+    category: "network",
+    subcategory: "اتصال اینترنت",
+    priority: "high",
+    status: "open",
+    clientName: "احمد رضایی",
+    clientEmail: "ahmad@company.com",
+    clientPhone: "09123456789",
+    department: "حسابداری",
+    createdAt: "2024-01-15T09:30:00Z",
+    updatedAt: "2024-01-15T09:30:00Z",
+    assignedTo: "tech-001",
+    assignedTechnicianName: "علی احمدی",
+    responses: [
+      {
+        message: "تیکت دریافت شد. در حال بررسی مشکل هستیم.",
+        status: "in-progress",
+        technicianName: "علی احمدی",
+        timestamp: "2024-01-15T10:00:00Z",
+      },
+    ],
+  },
+  {
+    id: "TK-2024-002",
+    title: "نصب نرم‌افزار حسابداری",
+    description: "نیاز به نصب نرم‌افزار حسابداری جدید روی 5 دستگاه در بخش مالی",
+    category: "software",
+    subcategory: "نصب نرم‌افزار",
+    priority: "medium",
+    status: "resolved",
+    clientName: "فاطمه احمدی",
+    clientEmail: "fateme@company.com",
+    clientPhone: "09123456788",
+    department: "مالی",
+    createdAt: "2024-01-14T14:20:00Z",
+    updatedAt: "2024-01-15T16:45:00Z",
+    assignedTo: "tech-002",
+    assignedTechnicianName: "سارا محمدی",
+    responses: [
+      {
+        message: "نرم‌افزار با موفقیت نصب شد. لطفاً تست کنید.",
+        status: "resolved",
+        technicianName: "سارا محمدی",
+        timestamp: "2024-01-15T16:45:00Z",
+      },
+    ],
+  },
+  {
+    id: "TK-2024-003",
+    title: "تعمیر پرینتر",
+    description: "پرینتر اپسون در اتاق 205 کاغذ گیر می‌کند",
+    category: "hardware",
+    subcategory: "پرینتر",
+    priority: "low",
+    status: "in-progress",
+    clientName: "محمد کریمی",
+    clientEmail: "mohammad@company.com",
+    clientPhone: "09123456787",
+    department: "اداری",
+    createdAt: "2024-01-13T11:15:00Z",
+    updatedAt: "2024-01-14T09:20:00Z",
+    assignedTo: "tech-001",
+    assignedTechnicianName: "علی احمدی",
+    responses: [],
+  },
+  {
+    id: "TK-2024-004",
+    title: "مشکل در دسترسی به ایمیل",
+    description: "نمی‌توانم به ایمیل سازمانی خود دسترسی داشته باشم",
+    category: "email",
+    subcategory: "مشکل دسترسی",
+    priority: "urgent",
+    status: "open",
+    clientName: "زهرا نوری",
+    clientEmail: "zahra@company.com",
+    clientPhone: "09123456786",
+    department: "فروش",
+    createdAt: "2024-01-15T08:45:00Z",
+    updatedAt: "2024-01-15T08:45:00Z",
+    assignedTo: null,
+    assignedTechnicianName: null,
+    responses: [],
+  },
+  {
+    id: "TK-2024-005",
+    title: "بروزرسانی آنتی‌ویروس",
+    description: "آنتی‌ویروس روی تمام سیستم‌ها نیاز به بروزرسانی دارد",
+    category: "security",
+    subcategory: "آنتی‌ویروس",
+    priority: "medium",
+    status: "closed",
+    clientName: "علی حسینی",
+    clientEmail: "ali@company.com",
+    clientPhone: "09123456785",
+    department: "IT",
+    createdAt: "2024-01-12T13:30:00Z",
+    updatedAt: "2024-01-13T17:00:00Z",
+    assignedTo: "tech-003",
+    assignedTechnicianName: "حسن رضایی",
+    responses: [
+      {
+        message: "آنتی‌ویروس روی تمام سیستم‌ها بروزرسانی شد.",
+        status: "resolved",
+        technicianName: "حسن رضایی",
+        timestamp: "2024-01-13T16:30:00Z",
+      },
+      {
+        message: "تیکت بسته شد. مشکل حل شده است.",
+        status: "closed",
+        technicianName: "حسن رضایی",
+        timestamp: "2024-01-13T17:00:00Z",
+      },
+    ],
+  },
+]
+
 // Initial categories data
 const initialCategoriesData = {
   hardware: {
@@ -161,127 +282,6 @@ const initialCategoriesData = {
   },
 }
 
-// Sample initial tickets data
-const initialTickets = [
-  {
-    id: "TK-2024-001",
-    title: "مشکل در اتصال به اینترنت",
-    description: "اینترنت در بخش حسابداری قطع شده و کارمندان نمی‌توانند به سیستم‌های آنلاین دسترسی داشته باشند.",
-    category: "network",
-    subcategory: "اتصال اینترنت",
-    priority: "high",
-    status: "open",
-    clientName: "احمد رضایی",
-    clientEmail: "ahmad@company.com",
-    clientPhone: "09123456789",
-    department: "حسابداری",
-    createdAt: "2024-01-15T09:30:00Z",
-    updatedAt: "2024-01-15T09:30:00Z",
-    assignedTo: "tech-001",
-    assignedTechnicianName: "علی احمدی",
-    responses: [
-      {
-        message: "تیکت دریافت شد. در حال بررسی مشکل هستیم.",
-        status: "in-progress",
-        technicianName: "علی احمدی",
-        timestamp: "2024-01-15T10:00:00Z",
-      },
-    ],
-  },
-  {
-    id: "TK-2024-002",
-    title: "نصب نرم‌افزار حسابداری",
-    description: "نیاز به نصب نرم‌افزار حسابداری جدید روی 5 دستگاه در بخش مالی",
-    category: "software",
-    subcategory: "نصب نرم‌افزار",
-    priority: "medium",
-    status: "resolved",
-    clientName: "فاطمه احمدی",
-    clientEmail: "fateme@company.com",
-    clientPhone: "09123456788",
-    department: "مالی",
-    createdAt: "2024-01-14T14:20:00Z",
-    updatedAt: "2024-01-15T16:45:00Z",
-    assignedTo: "tech-002",
-    assignedTechnicianName: "سارا محمدی",
-    responses: [
-      {
-        message: "نرم‌افزار با موفقیت نصب شد. لطفاً تست کنید.",
-        status: "resolved",
-        technicianName: "سارا محمدی",
-        timestamp: "2024-01-15T16:45:00Z",
-      },
-    ],
-  },
-  {
-    id: "TK-2024-003",
-    title: "تعمیر پرینتر",
-    description: "پرینتر اپسون در اتاق 205 کاغذ گیر می‌کند",
-    category: "hardware",
-    subcategory: "پرینتر",
-    priority: "low",
-    status: "in-progress",
-    clientName: "محمد کریمی",
-    clientEmail: "mohammad@company.com",
-    clientPhone: "09123456787",
-    department: "اداری",
-    createdAt: "2024-01-13T11:15:00Z",
-    updatedAt: "2024-01-14T09:20:00Z",
-    assignedTo: "tech-001",
-    assignedTechnicianName: "علی احمدی",
-    responses: [],
-  },
-  {
-    id: "TK-2024-004",
-    title: "مشکل در دسترسی به ایمیل",
-    description: "نمی‌توانم به ایمیل سازمانی خود دسترسی داشته باشم",
-    category: "email",
-    subcategory: "مشکل دسترسی",
-    priority: "urgent",
-    status: "open",
-    clientName: "زهرا نوری",
-    clientEmail: "zahra@company.com",
-    clientPhone: "09123456786",
-    department: "فروش",
-    createdAt: "2024-01-15T08:45:00Z",
-    updatedAt: "2024-01-15T08:45:00Z",
-    assignedTo: null,
-    assignedTechnicianName: null,
-    responses: [],
-  },
-  {
-    id: "TK-2024-005",
-    title: "بروزرسانی آنتی‌ویروس",
-    description: "آنتی‌ویروس روی تمام سیستم‌ها نیاز به بروزرسانی دارد",
-    category: "security",
-    subcategory: "آنتی‌ویروس",
-    priority: "medium",
-    status: "closed",
-    clientName: "علی حسینی",
-    clientEmail: "ali@company.com",
-    clientPhone: "09123456785",
-    department: "IT",
-    createdAt: "2024-01-12T13:30:00Z",
-    updatedAt: "2024-01-13T17:00:00Z",
-    assignedTo: "tech-003",
-    assignedTechnicianName: "حسن رضایی",
-    responses: [
-      {
-        message: "آنتی‌ویروس روی تمام سیستم‌ها بروزرسانی شد.",
-        status: "resolved",
-        technicianName: "حسن رضایی",
-        timestamp: "2024-01-13T16:30:00Z",
-      },
-      {
-        message: "تیکت بسته شد. مشکل حل شده است.",
-        status: "closed",
-        technicianName: "حسن رضایی",
-        timestamp: "2024-01-13T17:00:00Z",
-      },
-    ],
-  },
-]
-
 export default function ITServiceDashboard() {
   const { user, logout } = useAuth()
   const [tickets, setTickets] = useState(initialTickets)
@@ -322,15 +322,6 @@ export default function ITServiceDashboard() {
           : ticket,
       ),
     )
-  }
-
-  // Handle category updates
-  const handleCategoryUpdate = (updatedCategories: any) => {
-    setCategories(updatedCategories)
-    toast({
-      title: "دسته‌بندی‌ها به‌روزرسانی شد",
-      description: "تغییرات در تمام بخش‌های سیستم اعمال شد",
-    })
   }
 
   // Get dashboard content based on user role
@@ -377,32 +368,11 @@ export default function ITServiceDashboard() {
 
     switch (user.role) {
       case "admin":
-        return (
-          <AdminDashboard
-            tickets={tickets}
-            onTicketUpdate={handleTicketUpdate}
-            categories={categories}
-            onCategoryUpdate={handleCategoryUpdate}
-          />
-        )
+        return <AdminDashboard tickets={tickets} onTicketUpdate={handleTicketUpdate} />
       case "engineer":
-        return (
-          <TechnicianDashboard
-            tickets={tickets}
-            onTicketUpdate={handleTicketUpdate}
-            currentUser={user}
-            categories={categories}
-          />
-        )
+        return <TechnicianDashboard tickets={tickets} onTicketUpdate={handleTicketUpdate} currentUser={user} />
       default:
-        return (
-          <ClientDashboard
-            tickets={tickets}
-            onTicketCreate={handleTicketCreate}
-            currentUser={user}
-            categories={categories}
-          />
-        )
+        return <ClientDashboard tickets={tickets} onTicketCreate={handleTicketCreate} currentUser={user} />
     }
   }
 
