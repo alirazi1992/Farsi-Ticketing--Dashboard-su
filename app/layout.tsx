@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/lib/auth-context"
+import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
   title: "سیستم مدیریت خدمات IT",
@@ -23,6 +24,7 @@ export default function RootLayout({
             <div dir="rtl" className="min-h-screen font-iran">
               {children}
             </div>
+            <Toaster />
           </AuthProvider>
         </ThemeProvider>
       </body>
