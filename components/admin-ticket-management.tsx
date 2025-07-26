@@ -160,6 +160,8 @@ export function AdminTicketManagement({ tickets, onTicketUpdate }: AdminTicketMa
   const [bulkAssignDialogOpen, setBulkAssignDialogOpen] = useState(false)
   const [selectedTicketForAssign, setSelectedTicketForAssign] = useState<any>(null)
   const [technicianFilter, setTechnicianFilter] = useState("all") // For filtering technicians in assignment dialog
+  const [viewDialogOpen, setViewDialogOpen] = useState(false)
+  const [selectedTicket, setSelectedTicket] = useState<any>(null)
 
   // Update technician workload when tickets change
   useEffect(() => {
@@ -539,6 +541,11 @@ export function AdminTicketManagement({ tickets, onTicketUpdate }: AdminTicketMa
     </div>
   )
 
+  const handleViewTicket = (ticket: any) => {
+    setSelectedTicket(ticket)
+    setViewDialogOpen(true)
+  }
+
   return (
     <div className="space-y-6" dir="rtl">
       <Card>
@@ -829,7 +836,12 @@ export function AdminTicketManagement({ tickets, onTicketUpdate }: AdminTicketMa
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1">
-                            <Button variant="ghost" size="sm" className="gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleViewTicket(ticket)}
+                              className="gap-1"
+                            >
                               <Eye className="w-3 h-3" />
                               مشاهده
                             </Button>
@@ -969,6 +981,36 @@ export function AdminTicketManagement({ tickets, onTicketUpdate }: AdminTicketMa
               </div>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Ticket Dialog */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right">مشاهده تیکت {selectedTicket?.id}</DialogTitle>
+          </DialogHeader>
+          {selectedTicket && (
+            <div className="space-y-4">
+              <div className="bg-muted p-4 rounded-lg">
+                <div className="flex justify-between items-start">
+                  <div className="text-right">
+                    <h4 className="font-medium">{selectedTicket.title}</h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      دسته‌بندی: {categoryLabels[selectedTicket.category]} | اولویت:{" "}
+                      {priorityLabels[selectedTicket.priority]}
+                    </p>
+                  </div>
+                  <Badge className={priorityColors[selectedTicket.priority]}>
+                    {priorityLabels[selectedTicket.priority]}
+                  </Badge>
+                </div>
+                <Separator className="my-2" />
+                <p className="text-right">{selectedTicket.description}</p>
+              </div>
+              {/* Add more details here as needed */}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
