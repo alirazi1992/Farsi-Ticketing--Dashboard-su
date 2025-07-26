@@ -1,11 +1,8 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/lib/auth-context"
-
-const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "سیستم مدیریت خدمات IT",
@@ -20,9 +17,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fa" dir="rtl">
-      <body className={`${inter.className} text-right`} dir="rtl">
+      <body className="font-iran" dir="rtl">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <div dir="rtl" className="min-h-screen font-iran">
+              {children}
+            </div>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
