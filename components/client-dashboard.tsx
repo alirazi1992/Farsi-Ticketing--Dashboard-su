@@ -10,7 +10,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useAuth } from "@/lib/auth-context"
 import { useTickets } from "@/lib/ticket-context"
 import { TwoStepTicketForm } from "./two-step-ticket-form"
-import { Plus, Search, Clock, CheckCircle, AlertCircle, Ticket, Calendar, User, Eye } from "lucide-react"
+import { toast } from "@/hooks/use-toast"
+import { Plus, Search, Clock, CheckCircle, AlertCircle, Ticket, Calendar, User, Eye, LogOut } from "lucide-react"
+
+interface ClientDashboardProps {
+  onLogout: () => void
+}
 
 const priorityColors = {
   low: "bg-green-100 text-green-800 border-green-200",
@@ -40,9 +45,18 @@ const statusLabels = {
   closed: "بسته",
 }
 
-export function ClientDashboard() {
+const categoryLabels = {
+  hardware: "سخت‌افزار",
+  software: "نرم‌افزار",
+  network: "شبکه",
+  email: "ایمیل",
+  security: "امنیت",
+  access: "دسترسی",
+}
+
+export function ClientDashboard({ onLogout }: ClientDashboardProps) {
   const { user } = useAuth()
-  const { tickets, getTicketsByUser } = useTickets()
+  const { tickets, getTicketsByUser, addTicket } = useTickets()
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [priorityFilter, setPriorityFilter] = useState("all")
@@ -71,6 +85,31 @@ export function ClientDashboard() {
     resolved: userTickets.filter((t) => t.status === "resolved").length,
   }
 
+  const handleCreateTicket = (ticketData: any) => {
+    if (!user) return
+
+    const newTicket = {
+      title: ticketData.title,
+      description: ticketData.description,
+      category: ticketData.category,
+      priority: ticketData.priority,
+      status: "open" as const,
+      clientId: user.id,
+      clientName: user.name,
+      clientEmail: user.email,
+      clientPhone: ticketData.clientPhone || user.phone || "",
+      clientDepartment: user.department || "",
+    }
+
+    addTicket(newTicket)
+    setShowCreateForm(false)
+
+    toast({
+      title: "تیکت با موفقیت ایجاد شد",
+      description: "تیکت شما ثبت شد و به زودی بررسی خواهد شد.",
+    })
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 font-iran" dir="rtl">
       <div className="container mx-auto p-6 space-y-6">
@@ -81,23 +120,30 @@ export function ClientDashboard() {
             <p className="text-gray-600 mt-2 font-iran">مدیریت تیکت‌های پشتیبانی شما</p>
           </div>
 
-          <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
-            <DialogTrigger asChild>
-              <Button
-                size="lg"
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-iran"
-              >
-                <Plus className="ml-2 h-5 w-5" />
-                ایجاد تیکت جدید
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto font-iran" dir="rtl">
-              <DialogHeader>
-                <DialogTitle className="text-right font-iran">ایجاد تیکت جدید</DialogTitle>
-              </DialogHeader>
-              <TwoStepTicketForm onClose={() => setShowCreateForm(false)} />
-            </DialogContent>
-          </Dialog>
+          <div className="flex items-center gap-3">
+            <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
+              <DialogTrigger asChild>
+                <Button
+                  size="lg"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-iran"
+                >
+                  <Plus className="ml-2 h-5 w-5" />
+                  ایجاد تیکت جدید
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto font-iran" dir="rtl">
+                <DialogHeader>
+                  <DialogTitle className="text-right font-iran">ایجاد تیکت جدید</DialogTitle>
+                </DialogHeader>
+                <TwoStepTicketForm onSubmit={handleCreateTicket} onCancel={() => setShowCreateForm(false)} />
+              </DialogContent>
+            </Dialog>
+
+            <Button variant="outline" onClick={onLogout} className="gap-2 font-iran bg-transparent">
+              <LogOut className="w-4 h-4" />
+              خروج
+            </Button>
+          </div>
         </div>
 
         {/* Statistics Cards */}
@@ -231,6 +277,15 @@ export function ClientDashboard() {
                     ? "شما هنوز هیچ تیکتی ایجاد نکرده‌اید"
                     : "هیچ تیکتی با فیلترهای انتخابی یافت نشد"}
                 </p>
+                {userTickets.length === 0 && (
+                  <Button
+                    onClick={() => setShowCreateForm(true)}
+                    className="mt-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-iran"
+                  >
+                    <Plus className="ml-2 h-4 w-4" />
+                    ایجاد اولین تیکت
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="space-y-4">
@@ -239,14 +294,14 @@ export function ClientDashboard() {
                     <CardContent className="p-6">
                       <div className="flex flex-col md:flex-row justify-between items-start gap-4">
                         <div className="flex-1 text-right">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-semibold text-gray-900 font-iran">{ticket.title}</h3>
+                          <div className="flex items-center gap-3 mb-2 justify-end">
                             <Badge className={`${priorityColors[ticket.priority]} font-iran`}>
                               {priorityLabels[ticket.priority]}
                             </Badge>
                             <Badge className={`${statusColors[ticket.status]} font-iran`}>
                               {statusLabels[ticket.status]}
                             </Badge>
+                            <h3 className="text-lg font-semibold text-gray-900 font-iran">{ticket.title}</h3>
                           </div>
 
                           <p className="text-gray-600 mb-3 line-clamp-2 font-iran">{ticket.description}</p>
@@ -261,7 +316,7 @@ export function ClientDashboard() {
 
                             <div className="flex items-center gap-1">
                               <User className="h-4 w-4" />
-                              <span className="font-iran">{ticket.category}</span>
+                              <span className="font-iran">{categoryLabels[ticket.category] || ticket.category}</span>
                             </div>
 
                             {ticket.assignedTechnicianName && (
@@ -306,7 +361,9 @@ export function ClientDashboard() {
                                 <div className="grid grid-cols-2 gap-4">
                                   <div>
                                     <h4 className="font-semibold mb-1 font-iran">دسته‌بندی:</h4>
-                                    <p className="text-gray-700 font-iran">{ticket.category}</p>
+                                    <p className="text-gray-700 font-iran">
+                                      {categoryLabels[ticket.category] || ticket.category}
+                                    </p>
                                   </div>
                                   <div>
                                     <h4 className="font-semibold mb-1 font-iran">تاریخ ایجاد:</h4>
@@ -323,19 +380,26 @@ export function ClientDashboard() {
                                   </div>
                                 )}
 
-                                {ticket.comments && ticket.comments.length > 0 && (
+                                {ticket.resolution && (
                                   <div>
-                                    <h4 className="font-semibold mb-2 font-iran">نظرات:</h4>
+                                    <h4 className="font-semibold mb-1 font-iran">راه‌حل:</h4>
+                                    <p className="text-gray-700 font-iran">{ticket.resolution}</p>
+                                  </div>
+                                )}
+
+                                {ticket.responses && ticket.responses.length > 0 && (
+                                  <div>
+                                    <h4 className="font-semibold mb-2 font-iran">پاسخ‌ها:</h4>
                                     <div className="space-y-3">
-                                      {ticket.comments.map((comment) => (
-                                        <div key={comment.id} className="bg-gray-50 p-3 rounded-lg">
+                                      {ticket.responses.map((response) => (
+                                        <div key={response.id} className="bg-gray-50 p-3 rounded-lg">
                                           <div className="flex justify-between items-center mb-2">
-                                            <span className="font-semibold text-sm font-iran">{comment.userName}</span>
                                             <span className="text-xs text-gray-500 font-iran">
-                                              {new Date(comment.createdAt).toLocaleDateString("fa-IR")}
+                                              {new Date(response.timestamp).toLocaleDateString("fa-IR")}
                                             </span>
+                                            <span className="font-semibold text-sm font-iran">{response.author}</span>
                                           </div>
-                                          <p className="text-gray-700 font-iran">{comment.message}</p>
+                                          <p className="text-gray-700 font-iran">{response.text}</p>
                                         </div>
                                       ))}
                                     </div>

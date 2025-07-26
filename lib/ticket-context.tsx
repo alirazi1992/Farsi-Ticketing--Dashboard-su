@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useState } from "react"
+import { createContext, useContext, useState, useEffect } from "react"
 
 export interface Ticket {
   id: string
@@ -13,38 +13,39 @@ export interface Ticket {
   clientId: string
   clientName: string
   clientEmail: string
-  clientPhone?: string
+  clientPhone: string
+  clientDepartment: string
   assignedTo?: string
   assignedTechnicianName?: string
-  createdAt: Date
-  updatedAt: Date
+  createdAt: string
+  updatedAt: string
+  responses: TicketResponse[]
+  resolution?: string
+  actualTime?: string
+  estimatedTime?: string
   attachments?: string[]
-  comments?: TicketComment[]
-  estimatedTime?: number
-  actualTime?: number
 }
 
-export interface TicketComment {
+export interface TicketResponse {
   id: string
   ticketId: string
-  userId: string
-  userName: string
-  userRole: "client" | "technician" | "admin"
-  message: string
-  createdAt: Date
-  isInternal?: boolean
+  text: string
+  author: string
+  type: "client" | "technician" | "admin"
+  timestamp: string
 }
 
 interface TicketContextType {
   tickets: Ticket[]
-  addTicket: (ticket: Omit<Ticket, "id" | "createdAt" | "updatedAt">) => void
-  updateTicket: (id: string, updates: Partial<Ticket>) => void
-  deleteTicket: (id: string) => void
-  getTicketById: (id: string) => Ticket | undefined
+  addTicket: (ticket: Omit<Ticket, "id" | "createdAt" | "updatedAt" | "responses">) => void
+  updateTicket: (ticketId: string, updates: Partial<Ticket>) => void
+  deleteTicket: (ticketId: string) => void
+  getTicketById: (ticketId: string) => Ticket | undefined
   getTicketsByUser: (userEmail: string) => Ticket[]
   getTicketsByTechnician: (technicianId: string) => Ticket[]
-  addComment: (ticketId: string, comment: Omit<TicketComment, "id" | "createdAt">) => void
+  getTicketsByClient: (clientId: string) => Ticket[]
   assignTicket: (ticketId: string, technicianId: string, technicianName: string) => void
+  addResponse: (ticketId: string, response: Omit<TicketResponse, "id" | "ticketId" | "timestamp">) => void
 }
 
 const TicketContext = createContext<TicketContextType | undefined>(undefined)
@@ -52,92 +53,132 @@ const TicketContext = createContext<TicketContextType | undefined>(undefined)
 // Sample tickets for demonstration
 const sampleTickets: Ticket[] = [
   {
-    id: "1",
+    id: "TKT-001",
     title: "مشکل در اتصال به اینترنت",
-    description: "اینترنت دفتر کار نمی‌کند و نمی‌توانم به سیستم‌های داخلی دسترسی داشته باشم",
-    category: "شبکه",
+    description: "اینترنت دفتر کار نمی‌کند و نمی‌توانم به سایت‌های مورد نیاز دسترسی پیدا کنم.",
+    category: "network",
     priority: "high",
     status: "open",
     clientId: "3",
     clientName: "احمد محمدی",
     clientEmail: "ahmad@company.com",
     clientPhone: "09123456787",
-    createdAt: new Date(2024, 0, 15, 9, 30),
-    updatedAt: new Date(2024, 0, 15, 9, 30),
-    comments: [],
+    clientDepartment: "حسابداری",
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    responses: [],
   },
   {
-    id: "2",
+    id: "TKT-002",
     title: "نصب نرم‌افزار حسابداری",
-    description: "نیاز به نصب نرم‌افزار حسابداری جدید روی سیستم دارم",
-    category: "نرم‌افزار",
+    description: "نیاز به نصب نرم‌افزار حسابداری جدید روی سیستم دارم.",
+    category: "software",
     priority: "medium",
     status: "in-progress",
     clientId: "3",
     clientName: "احمد محمدی",
     clientEmail: "ahmad@company.com",
     clientPhone: "09123456787",
+    clientDepartment: "حسابداری",
     assignedTo: "2",
     assignedTechnicianName: "علی احمدی",
-    createdAt: new Date(2024, 0, 14, 14, 15),
-    updatedAt: new Date(2024, 0, 15, 10, 0),
-    comments: [
+    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+    responses: [
       {
-        id: "c1",
-        ticketId: "2",
-        userId: "2",
-        userName: "علی احمدی",
-        userRole: "technician",
-        message: "در حال بررسی نیازمندی‌های سیستم هستم",
-        createdAt: new Date(2024, 0, 15, 10, 0),
+        id: "RES-001",
+        ticketId: "TKT-002",
+        text: "سلام، نرم‌افزار مورد نظر شما را بررسی کردم. لطفاً زمان مناسب برای نصب را اعلام کنید.",
+        author: "علی احمدی",
+        type: "technician",
+        timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
       },
     ],
   },
   {
-    id: "3",
-    title: "تعمیر پرینتر",
-    description: "پرینتر اداری کاغذ گیر می‌کند و نیاز به تعمیر دارد",
-    category: "سخت‌افزار",
+    id: "TKT-003",
+    title: "مشکل در پرینتر",
+    description: "پرینتر اداری کاغذ گیر می‌کند و کیفیت چاپ مناسب نیست.",
+    category: "hardware",
     priority: "low",
     status: "resolved",
     clientId: "3",
     clientName: "احمد محمدی",
     clientEmail: "ahmad@company.com",
     clientPhone: "09123456787",
+    clientDepartment: "حسابداری",
     assignedTo: "2",
     assignedTechnicianName: "علی احمدی",
-    createdAt: new Date(2024, 0, 12, 11, 0),
-    updatedAt: new Date(2024, 0, 13, 16, 30),
-    comments: [],
+    resolution: "پرینتر تمیز شد و کارتریج جدید نصب گردید. مشکل برطرف شد.",
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    responses: [
+      {
+        id: "RES-002",
+        ticketId: "TKT-003",
+        text: "مشکل پرینتر بررسی و برطرف شد. کارتریج جدید نصب گردید.",
+        author: "علی احمدی",
+        type: "technician",
+        timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+    ],
   },
 ]
 
 export function TicketProvider({ children }: { children: React.ReactNode }) {
-  const [tickets, setTickets] = useState<Ticket[]>(sampleTickets)
+  const [tickets, setTickets] = useState<Ticket[]>([])
 
-  const addTicket = (ticketData: Omit<Ticket, "id" | "createdAt" | "updatedAt">) => {
+  useEffect(() => {
+    // Load tickets from localStorage or use sample data
+    const savedTickets = localStorage.getItem("tickets")
+    if (savedTickets) {
+      try {
+        setTickets(JSON.parse(savedTickets))
+      } catch (error) {
+        setTickets(sampleTickets)
+      }
+    } else {
+      setTickets(sampleTickets)
+    }
+  }, [])
+
+  useEffect(() => {
+    // Save tickets to localStorage whenever tickets change
+    localStorage.setItem("tickets", JSON.stringify(tickets))
+  }, [tickets])
+
+  const addTicket = (ticketData: Omit<Ticket, "id" | "createdAt" | "updatedAt" | "responses">) => {
     const newTicket: Ticket = {
       ...ticketData,
-      id: Date.now().toString(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      comments: [],
+      id: `TKT-${Date.now().toString().slice(-6)}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      responses: [],
     }
+
     setTickets((prev) => [newTicket, ...prev])
   }
 
-  const updateTicket = (id: string, updates: Partial<Ticket>) => {
+  const updateTicket = (ticketId: string, updates: Partial<Ticket>) => {
     setTickets((prev) =>
-      prev.map((ticket) => (ticket.id === id ? { ...ticket, ...updates, updatedAt: new Date() } : ticket)),
+      prev.map((ticket) =>
+        ticket.id === ticketId
+          ? {
+              ...ticket,
+              ...updates,
+              updatedAt: new Date().toISOString(),
+            }
+          : ticket,
+      ),
     )
   }
 
-  const deleteTicket = (id: string) => {
-    setTickets((prev) => prev.filter((ticket) => ticket.id !== id))
+  const deleteTicket = (ticketId: string) => {
+    setTickets((prev) => prev.filter((ticket) => ticket.id !== ticketId))
   }
 
-  const getTicketById = (id: string) => {
-    return tickets.find((ticket) => ticket.id === id)
+  const getTicketById = (ticketId: string) => {
+    return tickets.find((ticket) => ticket.id === ticketId)
   }
 
   const getTicketsByUser = (userEmail: string) => {
@@ -148,24 +189,8 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
     return tickets.filter((ticket) => ticket.assignedTo === technicianId)
   }
 
-  const addComment = (ticketId: string, commentData: Omit<TicketComment, "id" | "createdAt">) => {
-    const newComment: TicketComment = {
-      ...commentData,
-      id: Date.now().toString(),
-      createdAt: new Date(),
-    }
-
-    setTickets((prev) =>
-      prev.map((ticket) =>
-        ticket.id === ticketId
-          ? {
-              ...ticket,
-              comments: [...(ticket.comments || []), newComment],
-              updatedAt: new Date(),
-            }
-          : ticket,
-      ),
-    )
+  const getTicketsByClient = (clientId: string) => {
+    return tickets.filter((ticket) => ticket.clientId === clientId)
   }
 
   const assignTicket = (ticketId: string, technicianId: string, technicianName: string) => {
@@ -176,23 +201,41 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
     })
   }
 
-  return (
-    <TicketContext.Provider
-      value={{
-        tickets,
-        addTicket,
-        updateTicket,
-        deleteTicket,
-        getTicketById,
-        getTicketsByUser,
-        getTicketsByTechnician,
-        addComment,
-        assignTicket,
-      }}
-    >
-      {children}
-    </TicketContext.Provider>
-  )
+  const addResponse = (ticketId: string, responseData: Omit<TicketResponse, "id" | "ticketId" | "timestamp">) => {
+    const newResponse: TicketResponse = {
+      ...responseData,
+      id: `RES-${Date.now()}`,
+      ticketId,
+      timestamp: new Date().toISOString(),
+    }
+
+    setTickets((prev) =>
+      prev.map((ticket) =>
+        ticket.id === ticketId
+          ? {
+              ...ticket,
+              responses: [...ticket.responses, newResponse],
+              updatedAt: new Date().toISOString(),
+            }
+          : ticket,
+      ),
+    )
+  }
+
+  const value: TicketContextType = {
+    tickets,
+    addTicket,
+    updateTicket,
+    deleteTicket,
+    getTicketById,
+    getTicketsByUser,
+    getTicketsByTechnician,
+    getTicketsByClient,
+    assignTicket,
+    addResponse,
+  }
+
+  return <TicketContext.Provider value={value}>{children}</TicketContext.Provider>
 }
 
 export function useTickets() {
