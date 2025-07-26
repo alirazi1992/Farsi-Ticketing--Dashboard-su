@@ -1,10 +1,14 @@
 "use client"
 
 import { useState } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { TicketFormStep1 } from "./ticket-form-step1"
 import { TicketFormStep2 } from "./ticket-form-step2"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ticketSchema } from "@/lib/validation-schemas"
+import type { UploadedFile } from "@/lib/file-upload"
 
 interface TwoStepTicketFormProps {
   onSubmit: (data: any) => void
@@ -15,23 +19,88 @@ interface TwoStepTicketFormProps {
 export function TwoStepTicketForm({ onSubmit, currentUser, categoriesData }: TwoStepTicketFormProps) {
   const [currentStep, setCurrentStep] = useState(1)
   const [step1Data, setStep1Data] = useState<any>(null)
+  const [attachedFiles, setAttachedFiles] = useState<UploadedFile[]>([])
+
+  const form = useForm({
+    resolver: zodResolver(ticketSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      category: "",
+      subcategory: "",
+      priority: "medium",
+      // Dynamic fields
+      deviceBrand: "",
+      deviceModel: "",
+      powerStatus: "",
+      lastWorking: "",
+      printerBrand: "",
+      printerType: "",
+      printerProblem: "",
+      monitorSize: "",
+      connectionType: "",
+      displayIssue: "",
+      operatingSystem: "",
+      osVersion: "",
+      osIssueType: "",
+      softwareName: "",
+      softwareVersion: "",
+      applicationIssue: "",
+      internetProvider: "",
+      connectionIssue: "",
+      wifiNetwork: "",
+      deviceType: "",
+      wifiIssue: "",
+      networkLocation: "",
+      emailProvider: "",
+      emailClient: "",
+      errorMessage: "",
+      incidentTime: "",
+      securitySeverity: "",
+      affectedData: "",
+      requestedSystem: "",
+      accessLevel: "",
+      accessReason: "",
+      trainingTopic: "",
+      currentLevel: "",
+      preferredMethod: "",
+      equipmentType: "",
+      maintenanceType: "",
+      preferredTime: "",
+    },
+  })
+
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+    watch,
+  } = form
+
+  const selectedCategory = watch("category")
+  const selectedSubcategory = watch("subcategory")
 
   const handleStep1Complete = (data: any) => {
     setStep1Data(data)
+    // Update form values with step 1 data
+    Object.keys(data).forEach((key) => {
+      form.setValue(key, data[key])
+    })
     setCurrentStep(2)
   }
 
-  const handleStep2Complete = (step2Data: any) => {
+  const handleStep2Submit = handleSubmit((data) => {
     const completeData = {
       ...step1Data,
-      ...step2Data,
+      ...data,
       clientName: currentUser.name,
       clientEmail: currentUser.email,
       clientPhone: currentUser.phone || "",
       department: currentUser.department || "",
+      attachedFiles,
     }
     onSubmit(completeData)
-  }
+  })
 
   const handleBack = () => {
     setCurrentStep(1)
@@ -70,15 +139,28 @@ export function TwoStepTicketForm({ onSubmit, currentUser, categoriesData }: Two
           <TicketFormStep1 onNext={handleStep1Complete} categoriesData={categoriesData} initialData={step1Data} />
         )}
         {currentStep === 2 && (
-          <div className="space-y-4">
+          <form onSubmit={handleStep2Submit} className="space-y-4">
             <div className="flex justify-between items-center">
-              <Button variant="outline" onClick={handleBack} className="gap-2 bg-transparent">
+              <Button type="button" variant="outline" onClick={handleBack} className="gap-2 bg-transparent">
                 <ChevronRight className="w-4 h-4" />
                 بازگشت
               </Button>
             </div>
-            <TicketFormStep2 onSubmit={handleStep2Complete} step1Data={step1Data} />
-          </div>
+            <TicketFormStep2
+              control={control}
+              errors={errors}
+              selectedIssue={selectedCategory}
+              selectedSubIssue={selectedSubcategory}
+              attachedFiles={attachedFiles}
+              onFilesChange={setAttachedFiles}
+            />
+            <div className="flex justify-end pt-4">
+              <Button type="submit" className="gap-2">
+                ثبت تیکت
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+            </div>
+          </form>
         )}
       </div>
     </div>
