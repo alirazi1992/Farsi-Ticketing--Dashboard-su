@@ -344,13 +344,6 @@ export function ClientDashboard({ onLogout }: ClientDashboardProps) {
                     <Filter className="w-5 h-5" />
                     فیلتر و جستجو
                   </CardTitle>
-                  <Button
-                    onClick={() => setActiveTab("new-ticket")}
-                    className="gap-2 bg-blue-600 hover:bg-blue-700 font-iran"
-                  >
-                    <Plus className="w-4 h-4" />
-                    تیکت جدید
-                  </Button>
                 </div>
               </CardHeader>
               <CardContent>
