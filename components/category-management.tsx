@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import {
   AlertDialog,
@@ -24,28 +23,13 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { toast } from "@/hooks/use-toast"
-import {
-  Plus,
-  Edit,
-  Trash2,
-  FolderPlus,
-  Settings,
-  HardDrive,
-  ComputerIcon as Software,
-  Network,
-  Mail,
-  Shield,
-  Key,
-  BookOpen,
-  Wrench,
-} from "lucide-react"
+import { Plus, Edit, Trash2, FolderPlus, Settings } from "lucide-react"
 
 // Validation schemas
 const categorySchema = yup.object({
   id: yup.string().required("شناسه دسته الزامی است"),
   label: yup.string().required("نام دسته الزامی است"),
   description: yup.string().optional(),
-  icon: yup.string().required("انتخاب آیکون الزامی است"),
 })
 
 const subCategorySchema = yup.object({
@@ -53,18 +37,6 @@ const subCategorySchema = yup.object({
   label: yup.string().required("نام زیردسته الزامی است"),
   description: yup.string().optional(),
 })
-
-// Available icons
-const availableIcons = [
-  { id: "hardware", label: "سخت‌افزار", icon: HardDrive },
-  { id: "software", label: "نرم‌افزار", icon: Software },
-  { id: "network", label: "شبکه", icon: Network },
-  { id: "email", label: "ایمیل", icon: Mail },
-  { id: "security", label: "امنیت", icon: Shield },
-  { id: "access", label: "دسترسی", icon: Key },
-  { id: "training", label: "آموزش", icon: BookOpen },
-  { id: "maintenance", label: "نگهداری", icon: Wrench },
-]
 
 interface CategoryManagementProps {
   categoriesData: any
@@ -90,7 +62,6 @@ export function CategoryManagement({ categoriesData, onCategoryUpdate }: Categor
       id: "",
       label: "",
       description: "",
-      icon: "",
     },
   })
 
@@ -231,7 +202,6 @@ export function CategoryManagement({ categoriesData, onCategoryUpdate }: Categor
       id: category.id,
       label: category.label,
       description: category.description || "",
-      icon: category.icon,
     })
     setCategoryDialogOpen(true)
   }
@@ -324,39 +294,6 @@ export function CategoryManagement({ categoriesData, onCategoryUpdate }: Categor
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="icon" className="text-right">
-                      آیکون *
-                    </Label>
-                    <Controller
-                      name="icon"
-                      control={categoryControl}
-                      render={({ field }) => (
-                        <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                          <SelectTrigger className="text-right">
-                            <SelectValue placeholder="انتخاب آیکون" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableIcons.map((icon) => {
-                              const IconComponent = icon.icon
-                              return (
-                                <SelectItem key={icon.id} value={icon.id}>
-                                  <div className="flex items-center gap-2">
-                                    <IconComponent className="w-4 h-4" />
-                                    <span>{icon.label}</span>
-                                  </div>
-                                </SelectItem>
-                              )
-                            })}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                    {categoryErrors.icon && (
-                      <p className="text-sm text-red-500 text-right">{categoryErrors.icon.message}</p>
-                    )}
-                  </div>
-
                   <div className="flex justify-end gap-2">
                     <Button
                       type="button"
@@ -383,7 +320,6 @@ export function CategoryManagement({ categoriesData, onCategoryUpdate }: Categor
               <h3 className="font-semibold text-right">دسته‌بندی‌ها</h3>
               <div className="space-y-2">
                 {Object.values(categoriesData).map((category: any) => {
-                  const IconComponent = availableIcons.find((icon) => icon.id === category.icon)?.icon || Settings
                   return (
                     <div
                       key={category.id}
@@ -394,7 +330,6 @@ export function CategoryManagement({ categoriesData, onCategoryUpdate }: Categor
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <IconComponent className="w-4 h-4" />
                           <span className="font-medium">{category.label}</span>
                         </div>
                         <div className="flex gap-1">

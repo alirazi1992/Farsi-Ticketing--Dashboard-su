@@ -136,13 +136,12 @@ const initialTickets = [
   },
 ]
 
-// Initial categories data - this will be managed by admin
+// Initial categories data - this will be managed by admin (removed icon field)
 const initialCategoriesData = {
   hardware: {
     id: "hardware",
     label: "مشکلات سخت‌افزاری",
     description: "مشکلات مربوط به تجهیزات سخت‌افزاری",
-    icon: "hardware",
     subIssues: {
       "computer-not-working": {
         id: "computer-not-working",
@@ -169,7 +168,6 @@ const initialCategoriesData = {
     id: "software",
     label: "مشکلات نرم‌افزاری",
     description: "مشکلات مربوط به نرم‌افزارها و سیستم عامل",
-    icon: "software",
     subIssues: {
       "os-issues": { id: "os-issues", label: "مشکلات سیستم عامل", description: "مشکلات ویندوز، لینوکس و..." },
       "application-problems": {
@@ -200,7 +198,6 @@ const initialCategoriesData = {
     id: "network",
     label: "مشکلات شبکه و اینترنت",
     description: "مشکلات مربوط به اتصال شبکه و اینترنت",
-    icon: "network",
     subIssues: {
       "internet-connection": {
         id: "internet-connection",
@@ -227,7 +224,6 @@ const initialCategoriesData = {
     id: "email",
     label: "مشکلات ایمیل",
     description: "مشکلات مربوط به سیستم ایمیل",
-    icon: "email",
     subIssues: {
       "cannot-send": { id: "cannot-send", label: "نمی‌توانم ایمیل ارسال کنم", description: "مشکل در ارسال ایمیل" },
       "cannot-receive": { id: "cannot-receive", label: "ایمیل دریافت نمی‌کنم", description: "مشکل در دریافت ایمیل" },
@@ -246,7 +242,6 @@ const initialCategoriesData = {
     id: "security",
     label: "مشکلات امنیتی",
     description: "مشکلات مربوط به امنیت سیستم",
-    icon: "security",
     subIssues: {
       "virus-malware": { id: "virus-malware", label: "ویروس و بدافزار", description: "آلودگی به ویروس یا بدافزار" },
       "suspicious-activity": { id: "suspicious-activity", label: "فعالیت مشکوک", description: "مشاهده فعالیت غیرعادی" },
@@ -265,7 +260,6 @@ const initialCategoriesData = {
     id: "access",
     label: "درخواست‌های دسترسی",
     description: "درخواست‌های دسترسی به سیستم‌ها و منابع",
-    icon: "access",
     subIssues: {
       "new-account": { id: "new-account", label: "ایجاد حساب کاربری جدید", description: "درخواست حساب کاربری جدید" },
       "permission-change": { id: "permission-change", label: "تغییر مجوزهای دسترسی", description: "تغییر سطح دسترسی" },
