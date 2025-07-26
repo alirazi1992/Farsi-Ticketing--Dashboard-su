@@ -13,410 +13,352 @@ import { AdminDashboard } from "@/components/admin-dashboard"
 import { AuthProvider, useAuth } from "@/lib/auth-context"
 import { toast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
-import { UserIcon, Wrench, Shield, LogIn } from "lucide-react"
+import { Ticket, User, Wrench, Shield, LogIn } from "lucide-react"
 
-// Types
-interface Ticket {
-  id: string
-  title: string
-  description: string
-  priority: "low" | "medium" | "high" | "urgent"
-  status: "open" | "in-progress" | "resolved" | "closed"
-  category: string
-  subcategory: string
-  clientName: string
-  clientEmail: string
-  clientPhone: string
-  assignedTo?: string
-  createdAt: string
-  updatedAt: string
-  responses: Array<{
-    id: string
-    message: string
-    author: string
-    timestamp: string
-    isInternal: boolean
-  }>
-  attachments: Array<{
-    id: string
-    name: string
-    url: string
-    size: number
-  }>
-  dynamicFields?: Record<string, any>
+// Sample initial tickets data
+const initialTickets = [
+  {
+    id: "TK-2024-001",
+    title: "مشکل در اتصال به اینترنت",
+    description: "اینترنت در بخش حسابداری قطع شده و کارمندان نمی‌توانند به سیستم‌های آنلاین دسترسی داشته باشند.",
+    category: "network",
+    subcategory: "اتصال اینترنت",
+    priority: "high",
+    status: "open",
+    clientName: "احمد رضایی",
+    clientEmail: "ahmad@company.com",
+    clientPhone: "09123456789",
+    department: "حسابداری",
+    createdAt: "2024-01-15T09:30:00Z",
+    updatedAt: "2024-01-15T09:30:00Z",
+    assignedTo: "tech-001",
+    assignedTechnicianName: "علی احمدی",
+    responses: [
+      {
+        message: "تیکت دریافت شد. در حال بررسی مشکل هستیم.",
+        status: "in-progress",
+        technicianName: "علی احمدی",
+        timestamp: "2024-01-15T10:00:00Z",
+      },
+    ],
+  },
+  {
+    id: "TK-2024-002",
+    title: "نصب نرم‌افزار حسابداری",
+    description: "نیاز به نصب نرم‌افزار حسابداری جدید روی 5 دستگاه در بخش مالی",
+    category: "software",
+    subcategory: "نصب نرم‌افزار",
+    priority: "medium",
+    status: "resolved",
+    clientName: "فاطمه احمدی",
+    clientEmail: "fateme@company.com",
+    clientPhone: "09123456788",
+    department: "مالی",
+    createdAt: "2024-01-14T14:20:00Z",
+    updatedAt: "2024-01-15T16:45:00Z",
+    assignedTo: "tech-002",
+    assignedTechnicianName: "سارا محمدی",
+    responses: [
+      {
+        message: "نرم‌افزار با موفقیت نصب شد. لطفاً تست کنید.",
+        status: "resolved",
+        technicianName: "سارا محمدی",
+        timestamp: "2024-01-15T16:45:00Z",
+      },
+    ],
+  },
+  {
+    id: "TK-2024-003",
+    title: "تعمیر پرینتر",
+    description: "پرینتر اپسون در اتاق 205 کاغذ گیر می‌کند",
+    category: "hardware",
+    subcategory: "پرینتر",
+    priority: "low",
+    status: "in-progress",
+    clientName: "محمد کریمی",
+    clientEmail: "mohammad@company.com",
+    clientPhone: "09123456787",
+    department: "اداری",
+    createdAt: "2024-01-13T11:15:00Z",
+    updatedAt: "2024-01-14T09:20:00Z",
+    assignedTo: "tech-001",
+    assignedTechnicianName: "علی احمدی",
+    responses: [],
+  },
+  {
+    id: "TK-2024-004",
+    title: "مشکل در دسترسی به ایمیل",
+    description: "نمی‌توانم به ایمیل سازمانی خود دسترسی داشته باشم",
+    category: "email",
+    subcategory: "مشکل دسترسی",
+    priority: "urgent",
+    status: "open",
+    clientName: "زهرا نوری",
+    clientEmail: "zahra@company.com",
+    clientPhone: "09123456786",
+    department: "فروش",
+    createdAt: "2024-01-15T08:45:00Z",
+    updatedAt: "2024-01-15T08:45:00Z",
+    assignedTo: null,
+    assignedTechnicianName: null,
+    responses: [],
+  },
+  {
+    id: "TK-2024-005",
+    title: "بروزرسانی آنتی‌ویروس",
+    description: "آنتی‌ویروس روی تمام سیستم‌ها نیاز به بروزرسانی دارد",
+    category: "security",
+    subcategory: "آنتی‌ویروس",
+    priority: "medium",
+    status: "closed",
+    clientName: "علی حسینی",
+    clientEmail: "ali@company.com",
+    clientPhone: "09123456785",
+    department: "IT",
+    createdAt: "2024-01-12T13:30:00Z",
+    updatedAt: "2024-01-13T17:00:00Z",
+    assignedTo: "tech-003",
+    assignedTechnicianName: "حسن رضایی",
+    responses: [
+      {
+        message: "آنتی‌ویروس روی تمام سیستم‌ها بروزرسانی شد.",
+        status: "resolved",
+        technicianName: "حسن رضایی",
+        timestamp: "2024-01-13T16:30:00Z",
+      },
+      {
+        message: "تیکت بسته شد. مشکل حل شده است.",
+        status: "closed",
+        technicianName: "حسن رضایی",
+        timestamp: "2024-01-13T17:00:00Z",
+      },
+    ],
+  },
+]
+
+// Initial categories data - moved from category-management component for global access
+const initialCategoriesData = {
+  hardware: {
+    id: "hardware",
+    label: "مشکلات سخت‌افزاری",
+    description: "مشکلات مربوط به تجهیزات سخت‌افزاری",
+    icon: "hardware",
+    subIssues: {
+      "computer-not-working": {
+        id: "computer-not-working",
+        label: "رایانه کار نمی‌کند",
+        description: "مشکلات روشن نشدن یا خاموش شدن رایانه",
+      },
+      "printer-issues": { id: "printer-issues", label: "مشکلات چاپگر", description: "مشکلات چاپ، کاغذ گیر کردن و..." },
+      "monitor-problems": {
+        id: "monitor-problems",
+        label: "مشکلات مانیتور",
+        description: "مشکلات نمایش، رنگ و روشنایی",
+      },
+      "keyboard-mouse": { id: "keyboard-mouse", label: "مشکلات کیبورد و ماوس", description: "مشکلات ورودی" },
+      "network-hardware": {
+        id: "network-hardware",
+        label: "مشکلات سخت‌افزار شبکه",
+        description: "مشکلات سوئیچ، روتر و کابل",
+      },
+      "ups-power": { id: "ups-power", label: "مشکلات برق و UPS", description: "مشکلات تغذیه و پایداری برق" },
+      "other-hardware": { id: "other-hardware", label: "سایر مشکلات سخت‌افزاری", description: "سایر مشکلات سخت‌افزاری" },
+    },
+  },
+  software: {
+    id: "software",
+    label: "مشکلات نرم‌افزاری",
+    description: "مشکلات مربوط به نرم‌افزارها و سیستم عامل",
+    icon: "software",
+    subIssues: {
+      "os-issues": { id: "os-issues", label: "مشکلات سیستم عامل", description: "مشکلات ویندوز، لینوکس و..." },
+      "application-problems": {
+        id: "application-problems",
+        label: "مشکلات نرم‌افزارهای کاربردی",
+        description: "مشکلات اپلیکیشن‌ها",
+      },
+      "software-installation": {
+        id: "software-installation",
+        label: "نصب و حذف نرم‌افزار",
+        description: "درخواست نصب یا حذف نرم‌افزار",
+      },
+      "license-activation": {
+        id: "license-activation",
+        label: "مشکلات لایسنس و فعال‌سازی",
+        description: "مشکلات مجوز استفاده",
+      },
+      "updates-patches": { id: "updates-patches", label: "به‌روزرسانی‌ها و وصله‌ها", description: "مشکلات آپدیت" },
+      "performance-issues": {
+        id: "performance-issues",
+        label: "مشکلات عملکرد نرم‌افزار",
+        description: "کندی و مشکلات عملکرد",
+      },
+      "other-software": { id: "other-software", label: "سایر مشکلات نرم‌افزاری", description: "سایر مشکلات نرم‌افزاری" },
+    },
+  },
+  network: {
+    id: "network",
+    label: "مشکلات شبکه و اینترنت",
+    description: "مشکلات مربوط به اتصال شبکه و اینترنت",
+    icon: "network",
+    subIssues: {
+      "internet-connection": {
+        id: "internet-connection",
+        label: "مشکل اتصال اینترنت",
+        description: "عدم دسترسی به اینترنت",
+      },
+      "wifi-problems": { id: "wifi-problems", label: "مشکلات Wi-Fi", description: "مشکلات اتصال بی‌سیم" },
+      "network-speed": { id: "network-speed", label: "کندی شبکه", description: "سرعت پایین اینترنت" },
+      "vpn-issues": { id: "vpn-issues", label: "مشکلات VPN", description: "مشکلات اتصال VPN" },
+      "network-sharing": {
+        id: "network-sharing",
+        label: "مشکلات اشتراک‌گذاری شبکه",
+        description: "مشکلات دسترسی به منابع مشترک",
+      },
+      "firewall-security": {
+        id: "firewall-security",
+        label: "مشکلات فایروال و امنیت",
+        description: "مشکلات امنیت شبکه",
+      },
+      "other-network": { id: "other-network", label: "سایر مشکلات شبکه", description: "سایر مشکلات شبکه" },
+    },
+  },
+  email: {
+    id: "email",
+    label: "مشکلات ایمیل",
+    description: "مشکلات مربوط به سیستم ایمیل",
+    icon: "email",
+    subIssues: {
+      "cannot-send": { id: "cannot-send", label: "نمی‌توانم ایمیل ارسال کنم", description: "مشکل در ارسال ایمیل" },
+      "cannot-receive": { id: "cannot-receive", label: "ایمیل دریافت نمی‌کنم", description: "مشکل در دریافت ایمیل" },
+      "login-problems": { id: "login-problems", label: "مشکل ورود به ایمیل", description: "مشکل احراز هویت" },
+      "sync-issues": { id: "sync-issues", label: "مشکلات همگام‌سازی", description: "مشکل همگام‌سازی ایمیل‌ها" },
+      "attachment-problems": {
+        id: "attachment-problems",
+        label: "مشکلات پیوست",
+        description: "مشکل در ارسال یا دریافت پیوست",
+      },
+      "spam-issues": { id: "spam-issues", label: "مشکلات اسپم", description: "مشکلات فیلتر اسپم" },
+      "other-email": { id: "other-email", label: "سایر مشکلات ایمیل", description: "سایر مشکلات ایمیل" },
+    },
+  },
+  security: {
+    id: "security",
+    label: "مشکلات امنیتی",
+    description: "مشکلات مربوط به امنیت سیستم",
+    icon: "security",
+    subIssues: {
+      "virus-malware": { id: "virus-malware", label: "ویروس و بدافزار", description: "آلودگی به ویروس یا بدافزار" },
+      "suspicious-activity": { id: "suspicious-activity", label: "فعالیت مشکوک", description: "مشاهده فعالیت غیرعادی" },
+      "data-breach": { id: "data-breach", label: "نقض امنیت داده‌ها", description: "نشت یا سرقت اطلاعات" },
+      "phishing-attempt": { id: "phishing-attempt", label: "تلاش فیشینگ", description: "دریافت ایمیل یا پیام مشکوک" },
+      "unauthorized-access": {
+        id: "unauthorized-access",
+        label: "دسترسی غیرمجاز",
+        description: "دسترسی غیرمجاز به سیستم",
+      },
+      "password-issues": { id: "password-issues", label: "مشکلات رمز عبور", description: "فراموشی یا تغییر رمز عبور" },
+      "other-security": { id: "other-security", label: "سایر مشکلات امنیتی", description: "سایر مشکلات امنیتی" },
+    },
+  },
+  access: {
+    id: "access",
+    label: "درخواست‌های دسترسی",
+    description: "درخواست‌های دسترسی به سیستم‌ها و منابع",
+    icon: "access",
+    subIssues: {
+      "new-account": { id: "new-account", label: "ایجاد حساب کاربری جدید", description: "درخواست حساب کاربری جدید" },
+      "permission-change": { id: "permission-change", label: "تغییر مجوزهای دسترسی", description: "تغییر سطح دسترسی" },
+      "system-access": { id: "system-access", label: "دسترسی به سیستم‌ها", description: "درخواست دسترسی به سیستم خاص" },
+      "application-access": {
+        id: "application-access",
+        label: "دسترسی به نرم‌افزارها",
+        description: "درخواست دسترسی به اپلیکیشن",
+      },
+      "network-access": { id: "network-access", label: "دسترسی شبکه", description: "درخواست دسترسی شبکه" },
+      "file-access": { id: "file-access", label: "دسترسی به فایل‌ها", description: "درخواست دسترسی به فایل یا پوشه" },
+      "other-access": { id: "other-access", label: "سایر درخواست‌های دسترسی", description: "سایر درخواست‌های دسترسی" },
+    },
+  },
 }
 
-interface Category {
-  id: string
-  name: string
-  label: string
-  icon: string
-  subcategories: Array<{
-    id: string
-    name: string
-    label: string
-  }>
-  dynamicFields?: Array<{
-    id: string
-    name: string
-    label: string
-    type: string
-    required: boolean
-    options?: string[]
-  }>
-}
-
-interface Technician {
-  id: string
-  name: string
-  email: string
-  specialties: string[]
-  workload: number
-  isAvailable: boolean
-}
-
-export default function ITServiceDashboard() {
+function ITServiceDashboardContent() {
   const { user, logout } = useAuth()
-  const [tickets, setTickets] = useState<Ticket[]>([])
-  const [categories, setCategories] = useState<Category[]>([
-    {
-      id: "hardware",
-      name: "hardware",
-      label: "مشکلات سخت‌افزاری",
-      icon: "💻",
-      subcategories: [
-        { id: "computer-not-working", name: "computer-not-working", label: "رایانه کار نمی‌کند" },
-        { id: "printer-issues", name: "printer-issues", label: "مشکلات چاپگر" },
-        { id: "monitor-problems", name: "monitor-problems", label: "مشکلات مانیتور" },
-        { id: "keyboard-mouse", name: "keyboard-mouse", label: "مشکلات کیبورد و ماوس" },
-        { id: "network-hardware", name: "network-hardware", label: "مشکلات سخت‌افزار شبکه" },
-        { id: "ups-power", name: "ups-power", label: "مشکلات برق و UPS" },
-        { id: "other-hardware", name: "other-hardware", label: "سایر مشکلات سخت‌افزاری" },
-      ],
-    },
-    {
-      id: "software",
-      name: "software",
-      label: "مشکلات نرم‌افزاری",
-      icon: "🖥️",
-      subcategories: [
-        { id: "os-issues", name: "os-issues", label: "مشکلات سیستم عامل" },
-        { id: "application-problems", name: "application-problems", label: "مشکلات نرم‌افزارهای کاربردی" },
-        { id: "software-installation", name: "software-installation", label: "نصب و حذف نرم‌افزار" },
-        { id: "license-activation", name: "license-activation", label: "مشکلات لایسنس و فعال‌سازی" },
-        { id: "updates-patches", name: "updates-patches", label: "به‌روزرسانی‌ها و وصله‌ها" },
-        { id: "performance-issues", name: "performance-issues", label: "مشکلات عملکرد نرم‌افزار" },
-        { id: "other-software", name: "other-software", label: "سایر مشکلات نرم‌افزاری" },
-      ],
-    },
-    {
-      id: "network",
-      name: "network",
-      label: "مشکلات شبکه و اینترنت",
-      icon: "🌐",
-      subcategories: [
-        { id: "internet-connection", name: "internet-connection", label: "مشکل اتصال اینترنت" },
-        { id: "wifi-problems", name: "wifi-problems", label: "مشکلات Wi-Fi" },
-        { id: "network-speed", name: "network-speed", label: "کندی شبکه" },
-        { id: "vpn-issues", name: "vpn-issues", label: "مشکلات VPN" },
-        { id: "network-sharing", name: "network-sharing", label: "مشکلات اشتراک‌گذاری شبکه" },
-        { id: "firewall-security", name: "firewall-security", label: "مشکلات فایروال و امنیت" },
-        { id: "other-network", name: "other-network", label: "سایر مشکلات شبکه" },
-      ],
-    },
-    {
-      id: "email",
-      name: "email",
-      label: "مشکلات ایمیل",
-      icon: "📧",
-      subcategories: [
-        { id: "cannot-send", name: "cannot-send", label: "نمی‌توانم ایمیل ارسال کنم" },
-        { id: "cannot-receive", name: "cannot-receive", label: "ایمیل دریافت نمی‌کنم" },
-        { id: "login-problems", name: "login-problems", label: "مشکل ورود به ایمیل" },
-        { id: "sync-issues", name: "sync-issues", label: "مشکلات همگام‌سازی" },
-        { id: "attachment-problems", name: "attachment-problems", label: "مشکلات پیوست" },
-        { id: "spam-issues", name: "spam-issues", label: "مشکلات اسپم" },
-        { id: "other-email", name: "other-email", label: "سایر مشکلات ایمیل" },
-      ],
-    },
-    {
-      id: "security",
-      name: "security",
-      label: "مشکلات امنیتی",
-      icon: "🔒",
-      subcategories: [
-        { id: "virus-malware", name: "virus-malware", label: "ویروس و بدافزار" },
-        { id: "suspicious-activity", name: "suspicious-activity", label: "فعالیت مشکوک" },
-        { id: "data-breach", name: "data-breach", label: "نقض امنیت داده‌ها" },
-        { id: "phishing-attempt", name: "phishing-attempt", label: "تلاش فیشینگ" },
-        { id: "unauthorized-access", name: "unauthorized-access", label: "دسترسی غیرمجاز" },
-        { id: "password-issues", name: "password-issues", label: "مشکلات رمز عبور" },
-        { id: "other-security", name: "other-security", label: "سایر مشکلات امنیتی" },
-      ],
-    },
-    {
-      id: "access",
-      name: "access",
-      label: "درخواست‌های دسترسی",
-      icon: "🔑",
-      subcategories: [
-        { id: "new-account", name: "new-account", label: "ایجاد حساب کاربری جدید" },
-        { id: "permission-change", name: "permission-change", label: "تغییر مجوزهای دسترسی" },
-        { id: "system-access", name: "system-access", label: "دسترسی به سیستم‌ها" },
-        { id: "application-access", name: "application-access", label: "دسترسی به نرم‌افزارها" },
-        { id: "network-access", name: "network-access", label: "دسترسی شبکه" },
-        { id: "file-access", name: "file-access", label: "دسترسی به فایل‌ها" },
-        { id: "other-access", name: "other-access", label: "سایر درخواست‌های دسترسی" },
-      ],
-    },
-    {
-      id: "training",
-      name: "training",
-      label: "آموزش و راهنمایی",
-      icon: "📚",
-      subcategories: [
-        { id: "software-training", name: "software-training", label: "آموزش نرم‌افزار" },
-        { id: "hardware-guidance", name: "hardware-guidance", label: "راهنمایی سخت‌افزار" },
-        { id: "security-awareness", name: "security-awareness", label: "آگاهی امنیتی" },
-        { id: "best-practices", name: "best-practices", label: "بهترین روش‌های کاری" },
-        { id: "troubleshooting", name: "troubleshooting", label: "آموزش عیب‌یابی" },
-        { id: "documentation", name: "documentation", label: "درخواست مستندات" },
-        { id: "other-training", name: "other-training", label: "سایر آموزش‌ها" },
-      ],
-    },
-    {
-      id: "maintenance",
-      name: "maintenance",
-      label: "نگهداری و تعمیرات",
-      icon: "🔧",
-      subcategories: [
-        { id: "preventive-maintenance", name: "preventive-maintenance", label: "نگهداری پیشگیرانه" },
-        { id: "repair-request", name: "repair-request", label: "درخواست تعمیر" },
-        { id: "replacement-request", name: "replacement-request", label: "درخواست تعویض" },
-        { id: "upgrade-request", name: "upgrade-request", label: "درخواست ارتقاء" },
-        { id: "cleaning-service", name: "cleaning-service", label: "خدمات نظافت تجهیزات" },
-        { id: "calibration", name: "calibration", label: "کالیبراسیون تجهیزات" },
-        { id: "other-maintenance", name: "other-maintenance", label: "سایر خدمات نگهداری" },
-      ],
-    },
-  ])
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false)
 
-  const [technicians, setTechnicians] = useState<Technician[]>([
-    {
-      id: "tech1",
-      name: "احمد محمدی",
-      email: "ahmad@company.com",
-      specialties: ["hardware", "network"],
-      workload: 3,
-      isAvailable: true,
-    },
-    {
-      id: "tech2",
-      name: "فاطمه احمدی",
-      email: "fateme@company.com",
-      specialties: ["software", "email"],
-      workload: 2,
-      isAvailable: true,
-    },
-    {
-      id: "tech3",
-      name: "علی رضایی",
-      email: "ali@company.com",
-      specialties: ["security", "access"],
-      workload: 1,
-      isAvailable: true,
-    },
-  ])
+  // ✅ CENTRALIZED STATE MANAGEMENT FOR DATA SYNC
+  const [tickets, setTickets] = useState(initialTickets)
+  const [categories, setCategories] = useState(initialCategoriesData)
 
-  // Generate unique ticket ID
-  const generateTicketId = (): string => {
-    const year = new Date().getFullYear()
-    const ticketNumber = (tickets.length + 1).toString().padStart(3, "0")
-    return `TK-${year}-${ticketNumber}`
-  }
-
-  // Handle ticket creation (Client Dashboard → Admin Dashboard sync)
-  const handleTicketCreate = (ticketData: any) => {
-    const newTicket: Ticket = {
-      id: generateTicketId(),
-      title: ticketData.title,
-      description: ticketData.description,
-      priority: ticketData.priority,
+  // ✅ SYNC FUNCTION 1: Client creates ticket → appears in Admin Dashboard
+  const handleTicketCreate = (newTicket: any) => {
+    const ticketId = `TK-${new Date().getFullYear()}-${String(tickets.length + 1).padStart(3, "0")}`
+    const ticket = {
+      ...newTicket,
+      id: ticketId,
       status: "open",
-      category: ticketData.mainIssue,
-      subcategory: ticketData.subIssue,
-      clientName: ticketData.clientName,
-      clientEmail: ticketData.clientEmail,
-      clientPhone: ticketData.clientPhone,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      assignedTo: null,
+      assignedTechnicianName: null,
       responses: [],
-      attachments: ticketData.attachments || [],
-      dynamicFields: ticketData.dynamicFields || {},
     }
 
-    // Add ticket to state (syncs to Admin Dashboard)
-    setTickets((prev) => [...prev, newTicket])
+    // Update centralized state - this syncs to Admin Dashboard immediately
+    setTickets((prev) => [ticket, ...prev])
 
     toast({
       title: "تیکت ایجاد شد",
-      description: `تیکت شما با شماره ${newTicket.id} ثبت شد و به زودی بررسی خواهد شد.`,
+      description: `تیکت ${ticketId} با موفقیت ثبت شد و به مدیر سیستم ارسال شد`,
     })
-
-    return newTicket
   }
 
-  // Handle ticket assignment (Admin Dashboard → Technician Dashboard sync)
-  const handleTicketAssignment = (ticketId: string, technicianId: string) => {
+  // ✅ SYNC FUNCTION 2: Admin assigns technician → appears in Technician Dashboard
+  // ✅ SYNC FUNCTION 3: Technician updates ticket → syncs to Client & Admin Dashboards
+  const handleTicketUpdate = (ticketId: string, updates: any) => {
     setTickets((prev) =>
-      prev.map((ticket) => {
-        if (ticket.id === ticketId) {
-          const updatedTicket = {
-            ...ticket,
-            assignedTo: technicianId,
-            status: "in-progress" as const,
-            updatedAt: new Date().toISOString(),
-          }
-
-          // Update technician workload
-          setTechnicians((prevTechs) =>
-            prevTechs.map((tech) => (tech.id === technicianId ? { ...tech, workload: tech.workload + 1 } : tech)),
-          )
-
-          toast({
-            title: "تیکت تخصیص داده شد",
-            description: `تیکت ${ticketId} به تکنسین تخصیص داده شد.`,
-          })
-
-          return updatedTicket
-        }
-        return ticket
-      }),
-    )
-  }
-
-  // Handle ticket updates (Technician Dashboard → Client & Admin Dashboard sync)
-  const handleTicketUpdate = (ticketId: string, updates: Partial<Ticket>) => {
-    setTickets((prev) =>
-      prev.map((ticket) => {
-        if (ticket.id === ticketId) {
-          const updatedTicket = {
-            ...ticket,
-            ...updates,
-            updatedAt: new Date().toISOString(),
-          }
-
-          toast({
-            title: "تیکت به‌روزرسانی شد",
-            description: `تیکت ${ticketId} با موفقیت به‌روزرسانی شد.`,
-          })
-
-          return updatedTicket
-        }
-        return ticket
-      }),
-    )
-  }
-
-  // Handle adding response to ticket (Technician Dashboard → Client & Admin Dashboard sync)
-  const handleAddResponse = (
-    ticketId: string,
-    response: {
-      message: string
-      author: string
-      isInternal: boolean
-    },
-  ) => {
-    const newResponse = {
-      id: Date.now().toString(),
-      message: response.message,
-      author: response.author,
-      timestamp: new Date().toISOString(),
-      isInternal: response.isInternal,
-    }
-
-    setTickets((prev) =>
-      prev.map((ticket) => {
-        if (ticket.id === ticketId) {
-          return {
-            ...ticket,
-            responses: [...ticket.responses, newResponse],
-            updatedAt: new Date().toISOString(),
-          }
-        }
-        return ticket
-      }),
+      prev.map((ticket) =>
+        ticket.id === ticketId
+          ? {
+              ...ticket,
+              ...updates,
+              updatedAt: new Date().toISOString(),
+            }
+          : ticket,
+      ),
     )
 
-    toast({
-      title: "پاسخ اضافه شد",
-      description: "پاسخ شما با موفقیت ثبت شد.",
-    })
-  }
-
-  // Handle category management (Admin Dashboard → Client Dashboard sync)
-  const handleCategoryCreate = (category: Omit<Category, "id">) => {
-    const newCategory: Category = {
-      ...category,
-      id: Date.now().toString(),
+    // Show appropriate toast based on update type
+    if (updates.assignedTo && updates.assignedTechnicianName) {
+      toast({
+        title: "تکنسین تعیین شد",
+        description: `تیکت ${ticketId} به ${updates.assignedTechnicianName} واگذار شد`,
+      })
+    } else if (updates.status) {
+      const statusLabels = {
+        open: "باز",
+        "in-progress": "در حال انجام",
+        resolved: "حل شده",
+        closed: "بسته",
+      }
+      toast({
+        title: "وضعیت تیکت به‌روزرسانی شد",
+        description: `وضعیت تیکت ${ticketId} به "${statusLabels[updates.status]}" تغییر کرد`,
+      })
+    } else if (updates.responses) {
+      toast({
+        title: "پاسخ جدید",
+        description: `پاسخ جدیدی برای تیکت ${ticketId} ثبت شد`,
+      })
     }
-
-    setCategories((prev) => [...prev, newCategory])
-
-    toast({
-      title: "دسته‌بندی ایجاد شد",
-      description: `دسته‌بندی "${category.label}" با موفقیت ایجاد شد.`,
-    })
   }
 
-  const handleCategoryUpdate = (categoryId: string, updates: Partial<Category>) => {
-    setCategories((prev) => prev.map((cat) => (cat.id === categoryId ? { ...cat, ...updates } : cat)))
-
+  // ✅ SYNC FUNCTION 4: Admin manages categories → syncs to Client Dashboard ticket form
+  const handleCategoryUpdate = (updatedCategories: any) => {
+    setCategories(updatedCategories)
     toast({
-      title: "دسته‌بندی به‌روزرسانی شد",
-      description: "تغییرات با موفقیت ذخیره شد.",
-    })
-  }
-
-  const handleCategoryDelete = (categoryId: string) => {
-    setCategories((prev) => prev.filter((cat) => cat.id !== categoryId))
-
-    toast({
-      title: "دسته‌بندی حذف شد",
-      description: "دسته‌بندی با موفقیت حذف شد.",
-    })
-  }
-
-  // Handle technician management
-  const handleTechnicianCreate = (technician: Omit<Technician, "id">) => {
-    const newTechnician: Technician = {
-      ...technician,
-      id: Date.now().toString(),
-    }
-
-    setTechnicians((prev) => [...prev, newTechnician])
-
-    toast({
-      title: "تکنسین اضافه شد",
-      description: `تکنسین "${technician.name}" با موفقیت اضافه شد.`,
-    })
-  }
-
-  const handleTechnicianUpdate = (technicianId: string, updates: Partial<Technician>) => {
-    setTechnicians((prev) => prev.map((tech) => (tech.id === technicianId ? { ...tech, ...updates } : tech)))
-
-    toast({
-      title: "تکنسین به‌روزرسانی شد",
-      description: "اطلاعات تکنسین با موفقیت به‌روزرسانی شد.",
-    })
-  }
-
-  const handleTechnicianDelete = (technicianId: string) => {
-    setTechnicians((prev) => prev.filter((tech) => tech.id !== technicianId))
-
-    toast({
-      title: "تکنسین حذف شد",
-      description: "تکنسین با موفقیت حذف شد.",
+      title: "دسته‌بندی‌ها به‌روزرسانی شد",
+      description: "تغییرات در فرم ایجاد تیکت اعمال شد",
     })
   }
 
@@ -428,7 +370,7 @@ export default function ITServiceDashboard() {
           <Card className="w-full max-w-md">
             <CardHeader className="text-center">
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <UserIcon className="w-8 h-8 text-primary" />
+                <Ticket className="w-8 h-8 text-primary" />
               </div>
               <CardTitle className="text-right text-xl">سیستم مدیریت خدمات IT</CardTitle>
               <p className="text-muted-foreground text-right">برای دسترسی به سیستم وارد شوید</p>
@@ -444,7 +386,7 @@ export default function ITServiceDashboard() {
                 <div className="space-y-2 text-xs">
                   <div className="flex justify-between items-center p-2 bg-muted/50 rounded">
                     <span className="text-right">کاربر: ahmad@company.com / 123456</span>
-                    <UserIcon className="w-3 h-3 text-blue-500" />
+                    <User className="w-3 h-3 text-blue-500" />
                   </div>
                   <div className="flex justify-between items-center p-2 bg-muted/50 rounded">
                     <span className="text-right">تکنسین: ali@company.com / 123456</span>
@@ -467,37 +409,20 @@ export default function ITServiceDashboard() {
         return (
           <AdminDashboard
             tickets={tickets}
-            categories={categories}
-            technicians={technicians}
             onTicketUpdate={handleTicketUpdate}
-            onTicketAssignment={handleTicketAssignment}
-            onAddResponse={handleAddResponse}
-            onCategoryCreate={handleCategoryCreate}
+            categories={categories}
             onCategoryUpdate={handleCategoryUpdate}
-            onCategoryDelete={handleCategoryDelete}
-            onTechnicianCreate={handleTechnicianCreate}
-            onTechnicianUpdate={handleTechnicianUpdate}
-            onTechnicianDelete={handleTechnicianDelete}
           />
         )
       case "engineer":
-        return (
-          <TechnicianDashboard
-            tickets={tickets}
-            technicians={technicians}
-            onTicketUpdate={handleTicketUpdate}
-            onAddResponse={handleAddResponse}
-            currentUser={user}
-          />
-        )
+        return <TechnicianDashboard tickets={tickets} onTicketUpdate={handleTicketUpdate} currentUser={user} />
       default:
         return (
           <ClientDashboard
             tickets={tickets}
-            categories={categories}
             onTicketCreate={handleTicketCreate}
-            onTicketUpdate={handleTicketUpdate}
             currentUser={user}
+            categories={categories}
           />
         )
     }
@@ -510,7 +435,7 @@ export default function ITServiceDashboard() {
       case "engineer":
         return <Wrench className="w-4 h-4" />
       default:
-        return <UserIcon className="w-4 h-4" />
+        return <User className="w-4 h-4" />
     }
   }
 
@@ -525,64 +450,68 @@ export default function ITServiceDashboard() {
     }
   }
 
-  const [loginDialogOpen, setLoginDialogOpen] = useState(false)
-
   return (
-    <AuthProvider>
-      <div className="min-h-screen bg-background" dir="rtl">
-        {/* Header */}
-        <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                    <UserIcon className="w-6 h-6 text-primary-foreground" />
-                  </div>
-                  <div className="text-right">
-                    <h1 className="text-xl font-bold">سیستم مدیریت خدمات IT</h1>
-                    <p className="text-sm text-muted-foreground">مدیریت درخواست‌های فنی و پشتیبانی</p>
-                  </div>
+    <div className="min-h-screen bg-background" dir="rtl">
+      {/* Header */}
+      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                  <Ticket className="w-6 h-6 text-primary-foreground" />
+                </div>
+                <div className="text-right">
+                  <h1 className="text-xl font-bold">سیستم مدیریت خدمات IT</h1>
+                  <p className="text-sm text-muted-foreground">مدیریت درخواست‌های فنی و پشتیبانی</p>
                 </div>
               </div>
+            </div>
 
-              <div className="flex items-center gap-4">
-                {user ? (
-                  <>
-                    <div className="flex items-center gap-3 text-right">
-                      <div>
-                        <p className="text-sm font-medium">{user.name}</p>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          {getRoleIcon(user.role)}
-                          <span>{getRoleLabel(user.role)}</span>
-                        </div>
+            <div className="flex items-center gap-4">
+              {user ? (
+                <>
+                  <div className="flex items-center gap-3 text-right">
+                    <div>
+                      <p className="text-sm font-medium">{user.name}</p>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        {getRoleIcon(user.role)}
+                        <span>{getRoleLabel(user.role)}</span>
                       </div>
-                      <Avatar className="w-9 h-9">
-                        <AvatarFallback className="text-sm">{user.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
                     </div>
-                    <Separator orientation="vertical" className="h-8" />
-                    <UserMenu user={user} onLogout={logout} />
-                  </>
-                ) : (
-                  <Button variant="outline" onClick={() => setLoginDialogOpen(true)} className="gap-2">
-                    <LogIn className="w-4 h-4" />
-                    ورود
-                  </Button>
-                )}
-              </div>
+                    <Avatar className="w-9 h-9">
+                      <AvatarFallback className="text-sm">{user.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                  </div>
+                  <Separator orientation="vertical" className="h-8" />
+                  <UserMenu user={user} onLogout={logout} />
+                </>
+              ) : (
+                <Button variant="outline" onClick={() => setLoginDialogOpen(true)} className="gap-2">
+                  <LogIn className="w-4 h-4" />
+                  ورود
+                </Button>
+              )}
             </div>
           </div>
-        </header>
+        </div>
+      </header>
 
-        {/* Main Content */}
-        <main className="container mx-auto px-4 py-8">{getDashboardContent()}</main>
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-8">{getDashboardContent()}</main>
 
-        {/* Login Dialog */}
-        <LoginDialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen} />
+      {/* Login Dialog */}
+      <LoginDialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen} />
 
-        <Toaster />
-      </div>
+      <Toaster />
+    </div>
+  )
+}
+
+export default function ITServiceDashboard() {
+  return (
+    <AuthProvider>
+      <ITServiceDashboardContent />
     </AuthProvider>
   )
 }

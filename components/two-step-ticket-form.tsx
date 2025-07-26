@@ -5,251 +5,541 @@ import { useForm } from "react-hook-form"
 import { yupResolver } from "@hookform/resolvers/yup"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { ArrowLeft, ArrowRight, Send } from "lucide-react"
-import { TicketFormStep1 } from "./ticket-form-step1"
-import { TicketFormStep2 } from "./ticket-form-step2"
-import { contactInfoSchema, ticketFormStep1Schema, ticketDetailsSchema } from "@/lib/validation-schemas"
-import { useToast } from "@/hooks/use-toast"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Controller } from "react-hook-form"
+import { toast } from "@/hooks/use-toast"
+import { ChevronLeft, ChevronRight, CheckCircle, User, FolderOpen, FileText } from "lucide-react"
 
-interface Category {
-  id: string
-  name: string
-  label: string
-  icon: string
-  subcategories: Array<{
-    id: string
-    name: string
-    label: string
-  }>
+import { TicketFormStep1 } from "@/components/ticket-form-step1"
+import { TicketFormStep2 } from "@/components/ticket-form-step2"
+import { issueSelectionSchema, ticketDetailsSchema } from "@/lib/validation-schemas"
+import { useAuth } from "@/lib/auth-context"
+import type { UploadedFile } from "@/lib/file-upload"
+
+// Issues data for display labels
+const issuesData = {
+  hardware: {
+    label: "مشکلات سخت‌افزاری",
+    icon: "💻",
+    subIssues: {
+      "computer-not-working": "رایانه کار نمی‌کند",
+      "printer-issues": "مشکلات چاپگر",
+      "monitor-problems": "مشکلات مانیتور",
+      "keyboard-mouse": "مشکلات کیبورد و ماوس",
+      "network-hardware": "مشکلات سخت‌افزار شبکه",
+      "ups-power": "مشکلات برق و UPS",
+      "other-hardware": "سایر مشکلات سخت‌افزاری",
+    },
+  },
+  software: {
+    label: "مشکلات نرم‌افزاری",
+    icon: "🖥️",
+    subIssues: {
+      "os-issues": "مشکلات سیستم عامل",
+      "application-problems": "مشکلات نرم‌افزارهای کاربردی",
+      "software-installation": "نصب و حذف نرم‌افزار",
+      "license-activation": "مشکلات لایسنس و فعال‌سازی",
+      "updates-patches": "به‌روزرسانی‌ها و وصله‌ها",
+      "performance-issues": "مشکلات عملکرد نرم‌افزار",
+      "other-software": "سایر مشکلات نرم‌افزاری",
+    },
+  },
+  network: {
+    label: "مشکلات شبکه و اینترنت",
+    icon: "🌐",
+    subIssues: {
+      "internet-connection": "مشکل اتصال اینترنت",
+      "wifi-problems": "مشکلات Wi-Fi",
+      "network-speed": "کندی شبکه",
+      "vpn-issues": "مشکلات VPN",
+      "network-sharing": "مشکلات اشتراک‌گذاری شبکه",
+      "firewall-security": "مشکلات فایروال و امنیت",
+      "other-network": "سایر مشکلات شبکه",
+    },
+  },
+  email: {
+    label: "مشکلات ایمیل",
+    icon: "📧",
+    subIssues: {
+      "cannot-send": "نمی‌توانم ایمیل ارسال کنم",
+      "cannot-receive": "ایمیل دریافت نمی‌کنم",
+      "login-problems": "مشکل ورود به ایمیل",
+      "sync-issues": "مشکلات همگام‌سازی",
+      "attachment-problems": "مشکلات پیوست",
+      "spam-issues": "مشکلات اسپم",
+      "other-email": "سایر مشکلات ایمیل",
+    },
+  },
+  security: {
+    label: "مشکلات امنیتی",
+    icon: "🔒",
+    subIssues: {
+      "virus-malware": "ویروس و بدافزار",
+      "suspicious-activity": "فعالیت مشکوک",
+      "data-breach": "نقض امنیت داده‌ها",
+      "phishing-attempt": "تلاش فیشینگ",
+      "unauthorized-access": "دسترسی غیرمجاز",
+      "password-issues": "مشکلات رمز عبور",
+      "other-security": "سایر مشکلات امنیتی",
+    },
+  },
+  access: {
+    label: "درخواست‌های دسترسی",
+    icon: "🔑",
+    subIssues: {
+      "new-account": "ایجاد حساب کاربری جدید",
+      "permission-change": "تغییر مجوزهای دسترسی",
+      "system-access": "دسترسی به سیستم‌ها",
+      "application-access": "دسترسی به نرم‌افزارها",
+      "network-access": "دسترسی شبکه",
+      "file-access": "دسترسی به فایل‌ها",
+      "other-access": "سایر درخواست‌های دسترسی",
+    },
+  },
+  training: {
+    label: "آموزش و راهنمایی",
+    icon: "📚",
+    subIssues: {
+      "software-training": "آموزش نرم‌افزار",
+      "hardware-guidance": "راهنمایی سخت‌افزار",
+      "security-awareness": "آگاهی امنیتی",
+      "best-practices": "بهترین روش‌های کاری",
+      troubleshooting: "آموزش عیب‌یابی",
+      documentation: "درخواست مستندات",
+      "other-training": "سایر آموزش‌ها",
+    },
+  },
+  maintenance: {
+    label: "نگهداری و تعمیرات",
+    icon: "🔧",
+    subIssues: {
+      "preventive-maintenance": "نگهداری پیشگیرانه",
+      "repair-request": "درخواست تعمیر",
+      "replacement-request": "درخواست تعویض",
+      "upgrade-request": "درخواست ارتقاء",
+      "cleaning-service": "خدمات نظافت تجهیزات",
+      calibration: "کالیبراسیون تجهیزات",
+      "other-maintenance": "سایر خدمات نگهداری",
+    },
+  },
+}
+
+const priorityLabels = {
+  low: "کم",
+  medium: "متوسط",
+  high: "بالا",
+  urgent: "فوری",
 }
 
 interface TwoStepTicketFormProps {
-  categories: Category[]
+  onClose: () => void
   onSubmit: (data: any) => void
-  onCancel: () => void
 }
 
-export function TwoStepTicketForm({ categories, onSubmit, onCancel }: TwoStepTicketFormProps) {
+export function TwoStepTicketForm({ onClose, onSubmit }: TwoStepTicketFormProps) {
+  const { user } = useAuth()
   const [currentStep, setCurrentStep] = useState(1)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const { toast } = useToast()
+  const [attachedFiles, setAttachedFiles] = useState<UploadedFile[]>([])
 
-  // Combined validation schema
-  const getValidationSchema = () => {
-    const baseSchema = contactInfoSchema.concat(ticketFormStep1Schema)
-    if (currentStep === 2) {
-      return baseSchema.concat(ticketDetailsSchema)
-    }
-    return baseSchema
-  }
-
+  // Initialize form with user data if available
   const {
     control,
     handleSubmit,
-    formState: { errors },
-    trigger,
-    getValues,
-    setValue,
     watch,
+    trigger,
+    formState: { errors, isSubmitting },
   } = useForm({
-    resolver: yupResolver(getValidationSchema()),
-    mode: "onChange",
+    resolver: yupResolver(currentStep === 1 ? issueSelectionSchema : ticketDetailsSchema),
     defaultValues: {
-      // Contact info
-      clientName: "",
-      clientEmail: "",
-      clientPhone: "",
-      // Step 1
+      // Contact Information - populated from user profile
+      clientName: user?.name || "",
+      clientEmail: user?.email || "",
+      clientPhone: user?.phone || "",
+
+      // Step 1 fields
       priority: "",
       mainIssue: "",
       subIssue: "",
-      // Step 2
+
+      // Step 2 fields
       title: "",
       description: "",
-      // Dynamic fields will be added as needed
+
+      // Dynamic fields (all optional)
+      deviceBrand: "",
+      deviceModel: "",
+      powerStatus: "",
+      lastWorking: "",
+      printerBrand: "",
+      printerType: "",
+      printerProblem: "",
+      monitorSize: "",
+      connectionType: "",
+      displayIssue: "",
+      operatingSystem: "",
+      osVersion: "",
+      osIssueType: "",
+      softwareName: "",
+      softwareVersion: "",
+      applicationIssue: "",
+      internetProvider: "",
+      connectionIssue: "",
+      wifiNetwork: "",
+      deviceType: "",
+      wifiIssue: "",
+      networkLocation: "",
+      emailProvider: "",
+      emailClient: "",
+      errorMessage: "",
+      emailAddress: "",
+      incidentTime: "",
+      securitySeverity: "",
+      affectedData: "",
+      requestedSystem: "",
+      accessLevel: "",
+      accessReason: "",
+      urgencyLevel: "",
+      trainingTopic: "",
+      currentLevel: "",
+      preferredMethod: "",
+      equipmentType: "",
+      maintenanceType: "",
+      preferredTime: "",
     },
   })
 
-  const watchedMainIssue = watch("mainIssue")
-  const watchedSubIssue = watch("subIssue")
+  // Watch form values for summary
+  const watchedValues = watch()
 
   const handleNext = async () => {
-    const fieldsToValidate = ["clientName", "clientEmail", "clientPhone", "priority", "mainIssue", "subIssue"]
-    const isValid = await trigger(fieldsToValidate)
-
+    const isValid = await trigger()
     if (isValid) {
       setCurrentStep(2)
-    } else {
-      toast({
-        title: "خطا در اعتبارسنجی",
-        description: "لطفاً تمام فیلدهای الزامی را تکمیل کنید.",
-        variant: "destructive",
-      })
     }
   }
 
-  const handlePrevious = () => {
+  const handleBack = () => {
     setCurrentStep(1)
   }
 
   const handleFormSubmit = async (data: any) => {
-    setIsSubmitting(true)
     try {
-      await onSubmit(data)
+      // Generate ticket ID
+      const ticketId = `TK-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 999) + 1).padStart(3, "0")}`
+
+      // Prepare ticket data
+      const ticketData = {
+        id: ticketId,
+        title: data.title,
+        description: data.description,
+        status: "open",
+        priority: data.priority,
+        category: data.mainIssue,
+        subCategory: data.subIssue,
+        clientName: data.clientName,
+        clientEmail: data.clientEmail,
+        clientPhone: data.clientPhone,
+        createdAt: new Date().toISOString(),
+        attachments: attachedFiles,
+        dynamicFields: {
+          // Include all dynamic fields that have values
+          ...Object.fromEntries(
+            Object.entries(data).filter(
+              ([key, value]) =>
+                value &&
+                ![
+                  "title",
+                  "description",
+                  "priority",
+                  "mainIssue",
+                  "subIssue",
+                  "clientName",
+                  "clientEmail",
+                  "clientPhone",
+                ].includes(key),
+            ),
+          ),
+        },
+      }
+
+      onSubmit(ticketData)
+
       toast({
-        title: "تیکت ایجاد شد",
-        description: "تیکت شما با موفقیت ثبت شد و به زودی بررسی خواهد شد.",
+        title: "تیکت با موفقیت ثبت شد",
+        description: `شماره تیکت شما: ${ticketId}`,
       })
+
+      onClose()
     } catch (error) {
       toast({
-        title: "خطا در ایجاد تیکت",
-        description: "مشکلی در ثبت تیکت رخ داد. لطفاً دوباره تلاش کنید.",
+        title: "خطا در ثبت تیکت",
+        description: "لطفاً دوباره تلاش کنید",
         variant: "destructive",
       })
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
-  const progressValue = (currentStep / 2) * 100
+  const renderContactInfo = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-right">
+          <User className="w-5 h-5" />
+          اطلاعات تماس
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="clientName" className="text-right">
+            نام و نام خانوادگی *
+          </Label>
+          <Controller
+            name="clientName"
+            control={control}
+            render={({ field }) => (
+              <Input {...field} placeholder="نام کامل خود را وارد کنید" className="text-right" dir="rtl" />
+            )}
+          />
+          {errors.clientName && <p className="text-sm text-red-500 text-right">{errors.clientName.message}</p>}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="clientEmail" className="text-right">
+              ایمیل *
+            </Label>
+            <Controller
+              name="clientEmail"
+              control={control}
+              render={({ field }) => (
+                <Input {...field} type="email" placeholder="email@example.com" className="text-right" dir="rtl" />
+              )}
+            />
+            {errors.clientEmail && <p className="text-sm text-red-500 text-right">{errors.clientEmail.message}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="clientPhone" className="text-right">
+              شماره تماس *
+            </Label>
+            <Controller
+              name="clientPhone"
+              control={control}
+              render={({ field }) => <Input {...field} placeholder="09123456789" className="text-right" dir="rtl" />}
+            />
+            {errors.clientPhone && <p className="text-sm text-red-500 text-right">{errors.clientPhone.message}</p>}
+          </div>
+        </div>
+
+        {user && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p className="text-sm text-blue-800 text-right">
+              <strong>توجه:</strong> اطلاعات تماس از پروفایل شما تکمیل شده است. در صورت نیاز می‌توانید آن‌ها را ویرایش
+              کنید.
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+
+  const renderSummary = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-right">
+          <CheckCircle className="w-5 h-5" />
+          خلاصه انتخاب‌های شما
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Contact Information */}
+        <div className="space-y-2">
+          <h4 className="font-medium text-right flex items-center gap-2">
+            <User className="w-4 h-4" />
+            اطلاعات تماس
+          </h4>
+          <div className="bg-gray-50 rounded-lg p-3 space-y-1">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">نام:</span>
+              <span className="text-sm font-medium">{watchedValues.clientName || "وارد نشده"}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">تلفن:</span>
+              <span className="text-sm font-medium">{watchedValues.clientPhone || "وارد نشده"}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">ایمیل:</span>
+              <span className="text-sm font-medium">{watchedValues.clientEmail || "وارد نشده"}</span>
+            </div>
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Issue Information */}
+        <div className="space-y-2">
+          <h4 className="font-medium text-right flex items-center gap-2">
+            <FolderOpen className="w-4 h-4" />
+            اطلاعات مشکل
+          </h4>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">اولویت:</span>
+              <Badge variant="outline" className="text-xs">
+                {watchedValues.priority ? priorityLabels[watchedValues.priority] : "انتخاب نشده"}
+              </Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">مشکل اصلی:</span>
+              <span className="text-sm font-medium">
+                {watchedValues.mainIssue && issuesData[watchedValues.mainIssue]
+                  ? issuesData[watchedValues.mainIssue].label
+                  : "انتخاب نشده"}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">زیر دسته:</span>
+              <span className="text-sm font-medium">
+                {watchedValues.mainIssue &&
+                watchedValues.subIssue &&
+                issuesData[watchedValues.mainIssue]?.subIssues[watchedValues.subIssue]
+                  ? issuesData[watchedValues.mainIssue].subIssues[watchedValues.subIssue]
+                  : "انتخاب نشده"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {currentStep === 2 && watchedValues.title && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              <h4 className="font-medium text-right flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                جزئیات تیکت
+              </h4>
+              <div className="space-y-2">
+                <div className="flex justify-between items-start">
+                  <span className="text-sm text-muted-foreground">عنوان:</span>
+                  <span className="text-sm font-medium text-right max-w-xs">{watchedValues.title}</span>
+                </div>
+                {watchedValues.description && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-sm text-muted-foreground">شرح:</span>
+                    <span className="text-sm text-right max-w-xs line-clamp-3">{watchedValues.description}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {attachedFiles.length > 0 && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              <h4 className="font-medium text-right">فایل‌های پیوست</h4>
+              <div className="space-y-1">
+                {attachedFiles.map((file, index) => (
+                  <div key={index} className="text-sm text-muted-foreground text-right">
+                    • {file.name}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  )
 
   return (
-    <div className="max-w-4xl mx-auto p-6" dir="rtl">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-center text-2xl font-bold">ایجاد تیکت جدید</CardTitle>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm text-gray-600">
-              <span>مرحله {currentStep} از 2</span>
-              <span>{currentStep === 1 ? "اطلاعات اولیه" : "جزئیات تیکت"}</span>
-            </div>
-            <Progress value={progressValue} className="w-full" />
+    <div className="space-y-6" dir="rtl">
+      {/* Progress Indicator */}
+      <div className="flex items-center justify-center space-x-4 space-x-reverse">
+        <div className={`flex items-center ${currentStep >= 1 ? "text-primary" : "text-muted-foreground"}`}>
+          <div
+            className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+              currentStep >= 1 ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground"
+            }`}
+          >
+            {currentStep > 1 ? <CheckCircle className="w-4 h-4" /> : "1"}
           </div>
-        </CardHeader>
+          <span className="mr-2 text-sm font-medium">انتخاب مشکل</span>
+        </div>
 
-        <CardContent>
-          <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
-            {currentStep === 1 && (
-              <>
-                {/* Contact Information */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-right">اطلاعات تماس</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label htmlFor="clientName" className="text-sm font-medium text-right block">
-                          نام و نام خانوادگی *
-                        </label>
-                        <input
-                          {...control.register?.("clientName")}
-                          type="text"
-                          id="clientName"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-right"
-                          placeholder="نام کامل خود را وارد کنید"
-                        />
-                        {errors.clientName && (
-                          <p className="text-sm text-red-500 text-right">{errors.clientName.message}</p>
-                        )}
-                      </div>
+        <div className={`w-12 h-0.5 ${currentStep >= 2 ? "bg-primary" : "bg-muted-foreground"}`} />
 
-                      <div className="space-y-2">
-                        <label htmlFor="clientEmail" className="text-sm font-medium text-right block">
-                          ایمیل *
-                        </label>
-                        <input
-                          {...control.register?.("clientEmail")}
-                          type="email"
-                          id="clientEmail"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-right"
-                          placeholder="example@domain.com"
-                        />
-                        {errors.clientEmail && (
-                          <p className="text-sm text-red-500 text-right">{errors.clientEmail.message}</p>
-                        )}
-                      </div>
-                    </div>
+        <div className={`flex items-center ${currentStep >= 2 ? "text-primary" : "text-muted-foreground"}`}>
+          <div
+            className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+              currentStep >= 2 ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground"
+            }`}
+          >
+            2
+          </div>
+          <span className="mr-2 text-sm font-medium">جزئیات تیکت</span>
+        </div>
+      </div>
 
-                    <div className="space-y-2">
-                      <label htmlFor="clientPhone" className="text-sm font-medium text-right block">
-                        شماره تماس *
-                      </label>
-                      <input
-                        {...control.register?.("clientPhone")}
-                        type="tel"
-                        id="clientPhone"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-right"
-                        placeholder="09123456789"
-                      />
-                      {errors.clientPhone && (
-                        <p className="text-sm text-red-500 text-right">{errors.clientPhone.message}</p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Contact Information - Always visible */}
+            {renderContactInfo()}
 
-                <TicketFormStep1 control={control} errors={errors} categories={categories} />
-              </>
-            )}
+            {/* Step Content */}
+            {currentStep === 1 && <TicketFormStep1 control={control} errors={errors} />}
 
             {currentStep === 2 && (
               <TicketFormStep2
                 control={control}
                 errors={errors}
-                mainIssue={watchedMainIssue}
-                subIssue={watchedSubIssue}
-                setValue={setValue}
-                getValues={getValues}
+                selectedIssue={watchedValues.mainIssue}
+                selectedSubIssue={watchedValues.subIssue}
+                attachedFiles={attachedFiles}
+                onFilesChange={setAttachedFiles}
               />
             )}
+          </div>
 
-            {/* Navigation Buttons */}
-            <div className="flex justify-between pt-6">
-              <div className="flex gap-2">
-                {currentStep === 2 && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handlePrevious}
-                    className="flex items-center gap-2 bg-transparent"
-                  >
-                    <ArrowRight className="w-4 h-4" />
-                    مرحله قبل
-                  </Button>
-                )}
-                <Button type="button" variant="outline" onClick={onCancel}>
-                  انصراف
-                </Button>
-              </div>
+          {/* Summary Sidebar */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-6">{renderSummary()}</div>
+          </div>
+        </div>
 
-              <div>
-                {currentStep === 1 ? (
-                  <Button type="button" onClick={handleNext} className="flex items-center gap-2">
-                    مرحله بعد
-                    <ArrowLeft className="w-4 h-4" />
-                  </Button>
-                ) : (
-                  <Button type="submit" disabled={isSubmitting} className="flex items-center gap-2">
-                    {isSubmitting ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        در حال ارسال...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4" />
-                        ایجاد تیکت
-                      </>
-                    )}
-                  </Button>
-                )}
-              </div>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+        {/* Navigation Buttons */}
+        <div className="flex justify-between items-center pt-6 border-t">
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" onClick={onClose}>
+              انصراف
+            </Button>
+            {currentStep === 2 && (
+              <Button type="button" variant="outline" onClick={handleBack}>
+                <ChevronRight className="w-4 h-4 ml-1" />
+                مرحله قبل
+              </Button>
+            )}
+          </div>
+
+          <div>
+            {currentStep === 1 ? (
+              <Button type="button" onClick={handleNext}>
+                مرحله بعد
+                <ChevronLeft className="w-4 h-4 mr-1" />
+              </Button>
+            ) : (
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "در حال ثبت..." : "ثبت تیکت"}
+              </Button>
+            )}
+          </div>
+        </div>
+      </form>
     </div>
   )
 }
