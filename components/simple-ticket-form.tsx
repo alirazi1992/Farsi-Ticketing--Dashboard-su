@@ -3,27 +3,20 @@
 import type React from "react"
 
 import { useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth } from "@/lib/auth-context"
 import { useTickets, ticketCategories } from "@/lib/ticket-context"
-import { Send, X, Upload, File, Trash2 } from "lucide-react"
+import { FileUpload } from "@/components/file-upload"
 import { toast } from "@/hooks/use-toast"
+import { Send, User, Mail, Phone, Building, FileText, Flag, Upload, X } from "lucide-react"
 
 interface SimpleTicketFormProps {
-  onCancel: () => void
-}
-
-interface AttachedFile {
-  id: string
-  name: string
-  size: number
-  type: string
-  url: string
+  onCancel?: () => void
 }
 
 export function SimpleTicketForm({ onCancel }: SimpleTicketFormProps) {
@@ -31,83 +24,95 @@ export function SimpleTicketForm({ onCancel }: SimpleTicketFormProps) {
   const { addTicket } = useTickets()
   const [formData, setFormData] = useState({
     title: "",
+    description: "",
     category: "",
     subcategory: "",
-    priority: "",
-    description: "",
+    priority: "medium" as "low" | "medium" | "high" | "urgent",
   })
-  const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([])
-  const [isUploading, setIsUploading] = useState(false)
+  const [attachments, setAttachments] = useState<File[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-  }
-
-  const handleCategoryChange = (category: string) => {
     setFormData((prev) => ({
       ...prev,
-      category,
-      subcategory: "", // Reset subcategory when category changes
+      [field]: value,
+      // Reset subcategory when category changes
+      ...(field === "category" ? { subcategory: "" } : {}),
     }))
   }
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files
-    if (!files) return
+  const handleFileUpload = (files: File[]) => {
+    setAttachments((prev) => [...prev, ...files])
+  }
 
-    setIsUploading(true)
+  const removeAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user) return
+
+    if (!formData.title.trim() || !formData.description.trim() || !formData.category) {
+      toast({
+        title: "خطا در ارسال",
+        description: "لطفاً تمام فیلدهای ضروری را پر کنید",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSubmitting(true)
 
     try {
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i]
-
-        // Check file size (max 10MB)
-        if (file.size > 10 * 1024 * 1024) {
-          toast({
-            title: "خطا",
-            description: `فایل ${file.name} بیش از 10 مگابایت است`,
-            variant: "destructive",
-          })
-          continue
-        }
-
-        // Simulate file upload
+      // Simulate file upload delay
+      if (attachments.length > 0) {
         await new Promise((resolve) => setTimeout(resolve, 1000))
-
-        const newFile: AttachedFile = {
-          id: Date.now().toString() + i,
-          name: file.name,
-          size: file.size,
-          type: file.type,
-          url: URL.createObjectURL(file),
-        }
-
-        setAttachedFiles((prev) => [...prev, newFile])
       }
 
+      const newTicket = {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        subcategory: formData.subcategory,
+        priority: formData.priority,
+        status: "open" as const,
+        clientId: user.id,
+        clientName: user.name,
+        clientEmail: user.email,
+        clientPhone: user.phone || "",
+        clientDepartment: user.department || "",
+      }
+
+      addTicket(newTicket)
+
       toast({
-        title: "فایل‌ها آپلود شدند",
-        description: "فایل‌های انتخابی با موفقیت آپلود شدند",
+        title: "تیکت با موفقیت ایجاد شد",
+        description: "تیکت شما ثبت شد و به زودی بررسی خواهد شد",
       })
+
+      // Reset form
+      setFormData({
+        title: "",
+        description: "",
+        category: "",
+        subcategory: "",
+        priority: "medium",
+      })
+      setAttachments([])
+
+      if (onCancel) {
+        onCancel()
+      }
     } catch (error) {
       toast({
-        title: "خطا در آپلود",
-        description: "خطا در آپلود فایل‌ها",
+        title: "خطا در ارسال",
+        description: "مشکلی در ارسال تیکت پیش آمد. لطفاً دوباره تلاش کنید",
         variant: "destructive",
       })
     } finally {
-      setIsUploading(false)
-      // Reset input
-      event.target.value = ""
+      setIsSubmitting(false)
     }
-  }
-
-  const removeFile = (fileId: string) => {
-    setAttachedFiles((prev) => prev.filter((file) => file.id !== fileId))
-    toast({
-      title: "فایل حذف شد",
-      description: "فایل از لیست پیوست‌ها حذف شد",
-    })
   }
 
   const formatFileSize = (bytes: number) => {
@@ -118,267 +123,210 @@ export function SimpleTicketForm({ onCancel }: SimpleTicketFormProps) {
     return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
   }
 
-  const handleSubmit = () => {
-    if (!formData.title || !formData.category || !formData.priority || !formData.description) {
-      toast({
-        title: "خطا",
-        description: "لطفاً تمام فیلدهای ضروری را تکمیل کنید",
-        variant: "destructive",
-      })
-      return
-    }
-
-    // Create ticket with user's information from auth context
-    addTicket({
-      title: formData.title,
-      description: formData.description,
-      category: formData.category,
-      subcategory: formData.subcategory || "سایر",
-      priority: formData.priority as "low" | "medium" | "high" | "urgent",
-      status: "open",
-      clientId: user?.id || "",
-      clientName: user?.name || "",
-      clientEmail: user?.email || "",
-      clientPhone: user?.phone || "",
-      clientDepartment: user?.department || "",
-      attachments: attachedFiles.map((file) => ({
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        url: file.url,
-      })),
-    })
-
-    toast({
-      title: "تیکت ایجاد شد",
-      description: "تیکت شما با موفقیت ثبت شد و به زودی بررسی خواهد شد",
-    })
-
-    onCancel() // Close the form
-  }
-
-  const priorities = [
-    { value: "low", label: "کم" },
-    { value: "medium", label: "متوسط" },
-    { value: "high", label: "بالا" },
-    { value: "urgent", label: "فوری" },
-  ]
-
-  const subcategoryOptions = formData.category
-    ? ticketCategories[formData.category as keyof typeof ticketCategories] || []
-    : []
-
   return (
-    <div className="space-y-6 font-iran" dir="rtl">
+    <div className="max-w-4xl mx-auto font-iran" dir="rtl">
       <Card>
         <CardHeader>
-          <CardTitle className="text-right font-iran">ایجاد تیکت جدید</CardTitle>
-          <CardDescription className="text-right font-iran">اطلاعات مربوط به مشکل خود را وارد کنید</CardDescription>
+          <CardTitle className="text-right flex items-center gap-2 font-iran">
+            <FileText className="w-6 h-6 text-blue-600" />
+            ایجاد تیکت جدید
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title" className="text-right font-iran">
-              عنوان تیکت *
-            </Label>
-            <Input
-              id="title"
-              placeholder="عنوان مشکل خود را وارد کنید"
-              value={formData.title}
-              onChange={(e) => handleInputChange("title", e.target.value)}
-              className="text-right font-iran"
-              dir="rtl"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="category" className="text-right font-iran">
-                دسته‌بندی *
-              </Label>
-              <Select value={formData.category} onValueChange={handleCategoryChange} dir="rtl">
-                <SelectTrigger className="text-right font-iran" dir="rtl">
-                  <SelectValue placeholder="انتخاب دسته‌بندی" />
-                </SelectTrigger>
-                <SelectContent dir="rtl" className="font-iran">
-                  {Object.keys(ticketCategories).map((category) => (
-                    <SelectItem key={category} value={category} className="text-right font-iran">
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="subcategory" className="text-right font-iran">
-                زیر دسته
-              </Label>
-              <Select
-                value={formData.subcategory}
-                onValueChange={(value) => handleInputChange("subcategory", value)}
-                disabled={!formData.category}
-                dir="rtl"
-              >
-                <SelectTrigger className="text-right font-iran" dir="rtl">
-                  <SelectValue placeholder="انتخاب زیر دسته" />
-                </SelectTrigger>
-                <SelectContent dir="rtl" className="font-iran">
-                  {subcategoryOptions.map((subcategory) => (
-                    <SelectItem key={subcategory} value={subcategory} className="text-right font-iran">
-                      {subcategory}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="priority" className="text-right font-iran">
-                اولویت *
-              </Label>
-              <Select
-                value={formData.priority}
-                onValueChange={(value) => handleInputChange("priority", value)}
-                dir="rtl"
-              >
-                <SelectTrigger className="text-right font-iran" dir="rtl">
-                  <SelectValue placeholder="انتخاب اولویت" />
-                </SelectTrigger>
-                <SelectContent dir="rtl" className="font-iran">
-                  {priorities.map((priority) => (
-                    <SelectItem key={priority.value} value={priority.value} className="text-right font-iran">
-                      {priority.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description" className="text-right font-iran">
-              توضیحات *
-            </Label>
-            <Textarea
-              id="description"
-              placeholder="توضیح کاملی از مشکل خود ارائه دهید..."
-              value={formData.description}
-              onChange={(e) => handleInputChange("description", e.target.value)}
-              className="text-right font-iran min-h-[120px]"
-              dir="rtl"
-              required
-            />
-          </div>
-
-          {/* File Upload Section */}
-          <div className="space-y-2">
-            <Label className="text-right font-iran">پیوست فایل (اختیاری)</Label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-              <div className="text-center">
-                <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                <div className="text-sm text-gray-600 mb-2 font-iran">فایل‌های خود را اینجا بکشید یا کلیک کنید</div>
-                <input
-                  type="file"
-                  multiple
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  id="file-upload"
-                  accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt,.zip,.rar"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => document.getElementById("file-upload")?.click()}
-                  disabled={isUploading}
-                  className="font-iran bg-transparent"
-                >
-                  {isUploading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin ml-2" />
-                      در حال آپلود...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-4 h-4 ml-2" />
-                      انتخاب فایل
-                    </>
-                  )}
-                </Button>
-                <p className="text-xs text-gray-500 mt-2 font-iran">
-                  حداکثر حجم: 10 مگابایت | فرمت‌های مجاز: JPG, PNG, PDF, DOC, TXT, ZIP
-                </p>
+        <CardContent className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* User Information Display */}
+            <div className="bg-blue-50 rounded-lg p-4 border-r-4 border-r-blue-500">
+              <h3 className="font-semibold mb-3 text-right font-iran">اطلاعات کاربر</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center gap-2 justify-end">
+                  <span className="font-medium font-iran">{user?.name}</span>
+                  <User className="w-4 h-4 text-blue-600" />
+                </div>
+                <div className="flex items-center gap-2 justify-end">
+                  <span className="font-iran">{user?.email}</span>
+                  <Mail className="w-4 h-4 text-blue-600" />
+                </div>
+                <div className="flex items-center gap-2 justify-end">
+                  <span className="font-iran">{user?.phone}</span>
+                  <Phone className="w-4 h-4 text-blue-600" />
+                </div>
+                <div className="flex items-center gap-2 justify-end">
+                  <span className="font-iran">{user?.department}</span>
+                  <Building className="w-4 h-4 text-blue-600" />
+                </div>
               </div>
             </div>
 
-            {/* Attached Files List */}
-            {attachedFiles.length > 0 && (
-              <div className="space-y-2">
-                <Label className="text-right font-iran">فایل‌های پیوست شده:</Label>
-                <div className="space-y-2">
-                  {attachedFiles.map((file) => (
-                    <div key={file.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+            {/* Ticket Details */}
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="title" className="text-right block mb-2 font-iran">
+                  عنوان تیکت *
+                </Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => handleInputChange("title", e.target.value)}
+                  placeholder="عنوان مشکل یا درخواست خود را بنویسید..."
+                  className="text-right font-iran"
+                  dir="rtl"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="description" className="text-right block mb-2 font-iran">
+                  توضیحات *
+                </Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => handleInputChange("description", e.target.value)}
+                  placeholder="توضیح کاملی از مشکل یا درخواست خود ارائه دهید..."
+                  className="text-right font-iran min-h-[120px]"
+                  dir="rtl"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="category" className="text-right block mb-2 font-iran">
+                    دسته‌بندی *
+                  </Label>
+                  <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
+                    <SelectTrigger className="text-right font-iran" dir="rtl">
+                      <SelectValue placeholder="انتخاب دسته‌بندی" />
+                    </SelectTrigger>
+                    <SelectContent dir="rtl" className="font-iran">
+                      {Object.keys(ticketCategories).map((category) => (
+                        <SelectItem key={category} value={category} className="text-right font-iran">
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="subcategory" className="text-right block mb-2 font-iran">
+                    زیر دسته‌بندی
+                  </Label>
+                  <Select
+                    value={formData.subcategory}
+                    onValueChange={(value) => handleInputChange("subcategory", value)}
+                    disabled={!formData.category}
+                  >
+                    <SelectTrigger className="text-right font-iran" dir="rtl">
+                      <SelectValue placeholder="انتخاب زیر دسته‌بندی" />
+                    </SelectTrigger>
+                    <SelectContent dir="rtl" className="font-iran">
+                      {formData.category &&
+                        ticketCategories[formData.category as keyof typeof ticketCategories]?.map((subcategory) => (
+                          <SelectItem key={subcategory} value={subcategory} className="text-right font-iran">
+                            {subcategory}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="priority" className="text-right block mb-2 font-iran">
+                    اولویت
+                  </Label>
+                  <Select value={formData.priority} onValueChange={(value) => handleInputChange("priority", value)}>
+                    <SelectTrigger className="text-right font-iran" dir="rtl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent dir="rtl" className="font-iran">
+                      <SelectItem value="low" className="text-right font-iran">
+                        <div className="flex items-center gap-2">
+                          <Flag className="w-3 h-3 text-green-600" />
+                          پایین
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="medium" className="text-right font-iran">
+                        <div className="flex items-center gap-2">
+                          <Flag className="w-3 h-3 text-yellow-600" />
+                          متوسط
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="high" className="text-right font-iran">
+                        <div className="flex items-center gap-2">
+                          <Flag className="w-3 h-3 text-orange-600" />
+                          بالا
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="urgent" className="text-right font-iran">
+                        <div className="flex items-center gap-2">
+                          <Flag className="w-3 h-3 text-red-600" />
+                          فوری
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* File Upload Section */}
+            <div>
+              <Label className="text-right block mb-2 font-iran">
+                <Upload className="w-4 h-4 inline ml-1" />
+                پیوست فایل (اختیاری)
+              </Label>
+              <FileUpload onFileUpload={handleFileUpload} />
+
+              {/* Uploaded Files Display */}
+              {attachments.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <h4 className="text-sm font-medium text-right font-iran">فایل‌های پیوست شده:</h4>
+                  {attachments.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between bg-gray-50 rounded-lg p-3 border">
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => removeFile(file.id)}
+                        onClick={() => removeAttachment(index)}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <X className="w-4 h-4" />
                       </Button>
-                      <div className="flex items-center gap-2 flex-1 justify-end">
-                        <div className="text-right">
-                          <p className="text-sm font-medium font-iran">{file.name}</p>
-                          <p className="text-xs text-gray-500 font-iran">{formatFileSize(file.size)}</p>
-                        </div>
-                        <File className="w-5 h-5 text-gray-400" />
+                      <div className="text-right">
+                        <p className="text-sm font-medium font-iran">{file.name}</p>
+                        <p className="text-xs text-muted-foreground font-iran">{formatFileSize(file.size)}</p>
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
-          </div>
-
-          {/* User Info Display (Read-only) */}
-          <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-            <h4 className="font-semibold text-right font-iran">اطلاعات درخواست‌کننده:</h4>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div className="text-right font-iran">
-                <span className="font-medium">نام:</span> {user?.name}
-              </div>
-              <div className="text-right font-iran">
-                <span className="font-medium">ایمیل:</span> {user?.email}
-              </div>
-              <div className="text-right font-iran">
-                <span className="font-medium">تلفن:</span> {user?.phone}
-              </div>
-              <div className="text-right font-iran">
-                <span className="font-medium">بخش:</span> {user?.department}
-              </div>
+              )}
             </div>
-          </div>
+
+            {/* Form Actions */}
+            <div className="flex gap-3 justify-end pt-4 border-t">
+              {onCancel && (
+                <Button type="button" variant="outline" onClick={onCancel} className="font-iran bg-transparent">
+                  انصراف
+                </Button>
+              )}
+              <Button type="submit" disabled={isSubmitting} className="gap-2 bg-blue-600 hover:bg-blue-700 font-iran">
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    در حال ارسال...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    ارسال تیکت
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
         </CardContent>
       </Card>
-
-      {/* Action Buttons */}
-      <div className="flex justify-between">
-        <Button variant="outline" onClick={onCancel} className="font-iran bg-transparent">
-          <X className="ml-2 h-4 w-4" />
-          انصراف
-        </Button>
-
-        <Button
-          onClick={handleSubmit}
-          disabled={!formData.title || !formData.category || !formData.priority || !formData.description}
-          className="bg-green-600 hover:bg-green-700 font-iran"
-        >
-          <Send className="mr-2 h-4 w-4" />
-          ارسال تیکت
-        </Button>
-      </div>
     </div>
   )
 }
