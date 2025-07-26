@@ -3,190 +3,166 @@
 import type React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
 
-interface Ticket {
+export interface Ticket {
   id: string
   title: string
   description: string
-  category: string
   priority: "low" | "medium" | "high" | "urgent"
   status: "open" | "in-progress" | "resolved" | "closed"
+  category: string
+  subcategory?: string
+  clientId: string
   clientName: string
   clientEmail: string
   clientPhone: string
-  clientDepartment: string
-  assignedTo?: string | null
-  assignedTechnicianName?: string | null
-  createdAt: string
-  updatedAt: string
-  responses: Response[]
-  resolution?: string
-  estimatedTime?: string
-  actualTime?: string
-  attachments?: any[]
+  assignedTo?: string
+  assignedTechnicianName?: string
+  createdAt: Date
+  updatedAt: Date
+  resolvedAt?: Date
+  attachments?: string[]
+  comments?: TicketComment[]
+  estimatedTime?: number
+  actualTime?: number
 }
 
-interface Response {
+export interface TicketComment {
   id: string
-  text: string
-  author: string
-  timestamp: string
-  type: "client" | "technician" | "admin"
+  ticketId: string
+  authorId: string
+  authorName: string
+  content: string
+  createdAt: Date
+  isInternal: boolean
 }
 
 interface TicketContextType {
   tickets: Ticket[]
-  addTicket: (ticket: Omit<Ticket, "id" | "responses">) => void
-  updateTicket: (ticketId: string, updates: Partial<Ticket>) => void
-  deleteTicket: (ticketId: string) => void
-  getTicketsByUser: (userEmail: string) => Ticket[]
+  addTicket: (ticket: Omit<Ticket, "id" | "createdAt" | "updatedAt">) => void
+  updateTicket: (id: string, updates: Partial<Ticket>) => void
+  deleteTicket: (id: string) => void
+  getTicketsByClient: (clientId: string) => Ticket[]
   getTicketsByTechnician: (technicianId: string) => Ticket[]
-  assignTicket: (ticketId: string, technicianId: string, technicianName: string) => void
-  addResponse: (ticketId: string, response: Omit<Response, "id" | "timestamp">) => void
+  addComment: (ticketId: string, comment: Omit<TicketComment, "id" | "createdAt">) => void
 }
 
 const TicketContext = createContext<TicketContextType | undefined>(undefined)
 
-export function useTickets() {
-  const context = useContext(TicketContext)
-  if (context === undefined) {
-    throw new Error("useTickets must be used within a TicketProvider")
-  }
-  return context
-}
-
 export function TicketProvider({ children }: { children: React.ReactNode }) {
   const [tickets, setTickets] = useState<Ticket[]>([])
 
-  // Load tickets from localStorage on mount
   useEffect(() => {
     const savedTickets = localStorage.getItem("tickets")
     if (savedTickets) {
-      try {
-        setTickets(JSON.parse(savedTickets))
-      } catch (error) {
-        console.error("Error loading tickets:", error)
-      }
+      const parsedTickets = JSON.parse(savedTickets).map((ticket: any) => ({
+        ...ticket,
+        createdAt: new Date(ticket.createdAt),
+        updatedAt: new Date(ticket.updatedAt),
+        resolvedAt: ticket.resolvedAt ? new Date(ticket.resolvedAt) : undefined,
+        comments:
+          ticket.comments?.map((comment: any) => ({
+            ...comment,
+            createdAt: new Date(comment.createdAt),
+          })) || [],
+      }))
+      setTickets(parsedTickets)
     } else {
-      // Initialize with sample tickets
+      // Initialize with sample data
       const sampleTickets: Ticket[] = [
         {
-          id: "TCK-001",
-          title: "مشکل اتصال اینترنت",
-          description: "اینترنت دفتر کار نمی‌کند و نمی‌توانم به سیستم‌های شرکت دسترسی داشته باشم",
-          category: "network",
+          id: "1",
+          title: "مشکل در اتصال به اینترنت",
+          description: "کامپیوتر من نمی‌تواند به اینترنت متصل شود. لطفاً کمک کنید.",
           priority: "high",
           status: "open",
-          clientName: "احمد محمدی",
-          clientEmail: "ahmad@company.com",
-          clientPhone: "09987654321",
-          clientDepartment: "HR",
-          assignedTo: null,
-          assignedTechnicianName: null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          responses: [],
+          category: "شبکه",
+          subcategory: "اتصال اینترنت",
+          clientId: "3",
+          clientName: "سارا محمدی",
+          clientEmail: "sara.mohammadi@company.com",
+          clientPhone: "09123456787",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          comments: [],
         },
         {
-          id: "TCK-002",
-          title: "چاپگر کار نمی‌کند",
-          description: "چاپگر طبقه دوم اصلاً چاپ نمی‌کند و پیام خطا می‌دهد",
-          category: "hardware",
+          id: "2",
+          title: "نصب نرم‌افزار جدید",
+          description: "نیاز به نصب نرم‌افزار حسابداری جدید دارم.",
           priority: "medium",
           status: "in-progress",
-          clientName: "سارا حسینی",
-          clientEmail: "sara@company.com",
-          clientPhone: "09123456789",
-          clientDepartment: "Finance",
-          assignedTo: "tech-001",
+          category: "نرم‌افزار",
+          subcategory: "نصب",
+          clientId: "3",
+          clientName: "سارا محمدی",
+          clientEmail: "sara.mohammadi@company.com",
+          clientPhone: "09123456787",
+          assignedTo: "2",
           assignedTechnicianName: "علی احمدی",
-          createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-          updatedAt: new Date().toISOString(),
-          responses: [
-            {
-              id: "resp-001",
-              text: "تیکت شما دریافت شد. در حال بررسی مشکل چاپگر هستیم.",
-              author: "علی احمدی",
-              timestamp: new Date().toISOString(),
-              type: "technician",
-            },
-          ],
+          createdAt: new Date(Date.now() - 86400000),
+          updatedAt: new Date(),
+          comments: [],
         },
       ]
       setTickets(sampleTickets)
+      localStorage.setItem("tickets", JSON.stringify(sampleTickets))
     }
   }, [])
 
-  // Save tickets to localStorage whenever tickets change
-  useEffect(() => {
-    localStorage.setItem("tickets", JSON.stringify(tickets))
-  }, [tickets])
-
-  const generateTicketId = (): string => {
-    const ticketNumber = tickets.length + 1
-    return `TCK-${ticketNumber.toString().padStart(3, "0")}`
+  const saveTickets = (newTickets: Ticket[]) => {
+    setTickets(newTickets)
+    localStorage.setItem("tickets", JSON.stringify(newTickets))
   }
 
-  const addTicket = (ticketData: Omit<Ticket, "id" | "responses">) => {
+  const addTicket = (ticketData: Omit<Ticket, "id" | "createdAt" | "updatedAt">) => {
     const newTicket: Ticket = {
       ...ticketData,
-      id: generateTicketId(),
-      responses: [],
+      id: Date.now().toString(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      comments: [],
     }
-    setTickets((prev) => [newTicket, ...prev])
+    const newTickets = [...tickets, newTicket]
+    saveTickets(newTickets)
   }
 
-  const updateTicket = (ticketId: string, updates: Partial<Ticket>) => {
-    setTickets((prev) =>
-      prev.map((ticket) =>
-        ticket.id === ticketId
-          ? {
-              ...ticket,
-              ...updates,
-              updatedAt: new Date().toISOString(),
-            }
-          : ticket,
-      ),
+  const updateTicket = (id: string, updates: Partial<Ticket>) => {
+    const newTickets = tickets.map((ticket) =>
+      ticket.id === id ? { ...ticket, ...updates, updatedAt: new Date() } : ticket,
     )
+    saveTickets(newTickets)
   }
 
-  const deleteTicket = (ticketId: string) => {
-    setTickets((prev) => prev.filter((ticket) => ticket.id !== ticketId))
+  const deleteTicket = (id: string) => {
+    const newTickets = tickets.filter((ticket) => ticket.id !== id)
+    saveTickets(newTickets)
   }
 
-  const getTicketsByUser = (userEmail: string): Ticket[] => {
-    return tickets.filter((ticket) => ticket.clientEmail === userEmail)
+  const getTicketsByClient = (clientId: string) => {
+    return tickets.filter((ticket) => ticket.clientId === clientId)
   }
 
-  const getTicketsByTechnician = (technicianId: string): Ticket[] => {
+  const getTicketsByTechnician = (technicianId: string) => {
     return tickets.filter((ticket) => ticket.assignedTo === technicianId)
   }
 
-  const assignTicket = (ticketId: string, technicianId: string, technicianName: string) => {
-    updateTicket(ticketId, {
-      assignedTo: technicianId,
-      assignedTechnicianName: technicianName,
-      status: "in-progress",
-    })
-  }
-
-  const addResponse = (ticketId: string, responseData: Omit<Response, "id" | "timestamp">) => {
-    const newResponse: Response = {
-      ...responseData,
-      id: `resp-${Date.now()}`,
-      timestamp: new Date().toISOString(),
+  const addComment = (ticketId: string, commentData: Omit<TicketComment, "id" | "createdAt">) => {
+    const newComment: TicketComment = {
+      ...commentData,
+      id: Date.now().toString(),
+      createdAt: new Date(),
     }
 
-    setTickets((prev) =>
-      prev.map((ticket) =>
-        ticket.id === ticketId
-          ? {
-              ...ticket,
-              responses: [...ticket.responses, newResponse],
-              updatedAt: new Date().toISOString(),
-            }
-          : ticket,
-      ),
+    const newTickets = tickets.map((ticket) =>
+      ticket.id === ticketId
+        ? {
+            ...ticket,
+            comments: [...(ticket.comments || []), newComment],
+            updatedAt: new Date(),
+          }
+        : ticket,
     )
+    saveTickets(newTickets)
   }
 
   return (
@@ -196,13 +172,20 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
         addTicket,
         updateTicket,
         deleteTicket,
-        getTicketsByUser,
+        getTicketsByClient,
         getTicketsByTechnician,
-        assignTicket,
-        addResponse,
+        addComment,
       }}
     >
       {children}
     </TicketContext.Provider>
   )
+}
+
+export function useTickets() {
+  const context = useContext(TicketContext)
+  if (context === undefined) {
+    throw new Error("useTickets must be used within a TicketProvider")
+  }
+  return context
 }

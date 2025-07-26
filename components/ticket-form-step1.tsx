@@ -2,186 +2,98 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { ChevronRight } from "lucide-react"
+import { ChevronLeft } from "lucide-react"
 
-interface TicketFormStep1Props {
-  categories: any[]
-  initialData: any
-  onSubmit: (data: any) => void
-  onCancel: () => void
+interface FormData {
+  clientName: string
+  clientEmail: string
+  clientPhone: string
 }
 
-export function TicketFormStep1({ categories, initialData, onSubmit, onCancel }: TicketFormStep1Props) {
-  const [formData, setFormData] = useState({
-    title: initialData.title || "",
-    category: initialData.category || "",
-    subcategory: initialData.subcategory || "",
-    priority: initialData.priority || "medium",
-  })
+interface TicketFormStep1Props {
+  initialData: FormData
+  onSubmit: (data: FormData) => void
+}
 
-  const [selectedCategory, setSelectedCategory] = useState<any>(null)
-  const [availableSubcategories, setAvailableSubcategories] = useState<any[]>([])
-
-  useEffect(() => {
-    if (formData.category) {
-      const category = categories.find((cat) => cat.id === formData.category)
-      setSelectedCategory(category)
-      setAvailableSubcategories(category?.subcategories || [])
-    } else {
-      setSelectedCategory(null)
-      setAvailableSubcategories([])
-    }
-  }, [formData.category, categories])
+export function TicketFormStep1({ initialData, onSubmit }: TicketFormStep1Props) {
+  const [formData, setFormData] = useState<FormData>(initialData)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     onSubmit(formData)
   }
 
-  const handleCategoryChange = (categoryId: string) => {
-    setFormData({
-      ...formData,
-      category: categoryId,
-      subcategory: "", // Reset subcategory when category changes
-    })
+  const handleChange = (field: keyof FormData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const priorityOptions = [
-    { value: "low", label: "کم", color: "bg-green-100 text-green-800" },
-    { value: "medium", label: "متوسط", color: "bg-yellow-100 text-yellow-800" },
-    { value: "high", label: "بالا", color: "bg-orange-100 text-orange-800" },
-    { value: "urgent", label: "فوری", color: "bg-red-100 text-red-800" },
-  ]
-
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-right">مرحله اول: اطلاعات اولیه تیکت</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Title */}
-          <div className="space-y-2">
-            <Label htmlFor="title" className="text-right">
-              عنوان تیکت *
-            </Label>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="عنوان مشکل خود را وارد کنید"
-              required
-              className="text-right"
-            />
-          </div>
+    <form onSubmit={handleSubmit} className="space-y-6 font-iran" dir="rtl">
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium font-iran">اطلاعات تماس</h3>
+        <p className="text-sm text-muted-foreground font-iran">
+          اطلاعات زیر از پروفایل شما تکمیل شده است. در صورت نیاز می‌توانید آن‌ها را ویرایش کنید.
+        </p>
 
-          {/* Category */}
-          <div className="space-y-2">
-            <Label className="text-right">دسته‌بندی *</Label>
-            <Select value={formData.category} onValueChange={handleCategoryChange} required>
-              <SelectTrigger className="text-right">
-                <SelectValue placeholder="دسته‌بندی مشکل را انتخاب کنید" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    <div className="text-right">
-                      <div className="font-medium">{category.name}</div>
-                      <div className="text-sm text-muted-foreground">{category.description}</div>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="clientName" className="text-right block font-iran">
+            نام و نام خانوادگی *
+          </Label>
+          <Input
+            id="clientName"
+            type="text"
+            value={formData.clientName}
+            onChange={(e) => handleChange("clientName", e.target.value)}
+            required
+            className="text-right font-iran"
+            dir="rtl"
+            placeholder="نام کامل خود را وارد کنید"
+          />
+        </div>
 
-          {/* Subcategory */}
-          {selectedCategory && availableSubcategories.length > 0 && (
-            <div className="space-y-2">
-              <Label className="text-right">زیردسته *</Label>
-              <Select
-                value={formData.subcategory}
-                onValueChange={(value) => setFormData({ ...formData, subcategory: value })}
-                required
-              >
-                <SelectTrigger className="text-right">
-                  <SelectValue placeholder="زیردسته مشکل را انتخاب کنید" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableSubcategories.map((subcategory) => (
-                    <SelectItem key={subcategory.id} value={subcategory.id}>
-                      {subcategory.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+        <div className="space-y-2">
+          <Label htmlFor="clientEmail" className="text-right block font-iran">
+            ایمیل *
+          </Label>
+          <Input
+            id="clientEmail"
+            type="email"
+            value={formData.clientEmail}
+            onChange={(e) => handleChange("clientEmail", e.target.value)}
+            required
+            className="text-right font-iran"
+            dir="rtl"
+            placeholder="example@company.com"
+          />
+        </div>
 
-          {/* Priority */}
-          <div className="space-y-2">
-            <Label className="text-right">اولویت *</Label>
-            <Select
-              value={formData.priority}
-              onValueChange={(value) => setFormData({ ...formData, priority: value })}
-              required
-            >
-              <SelectTrigger className="text-right">
-                <SelectValue placeholder="اولویت مشکل را انتخاب کنید" />
-              </SelectTrigger>
-              <SelectContent>
-                {priorityOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    <div className="flex items-center gap-2">
-                      <Badge className={option.color}>{option.label}</Badge>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="clientPhone" className="text-right block font-iran">
+            شماره تماس *
+          </Label>
+          <Input
+            id="clientPhone"
+            type="tel"
+            value={formData.clientPhone}
+            onChange={(e) => handleChange("clientPhone", e.target.value)}
+            required
+            className="text-right font-iran"
+            dir="rtl"
+            placeholder="09123456789"
+          />
+        </div>
+      </div>
 
-          {/* Selected Category Info */}
-          {selectedCategory && (
-            <div className="p-4 bg-muted rounded-lg">
-              <h4 className="font-medium text-right mb-2">دسته‌بندی انتخاب شده:</h4>
-              <p className="text-sm text-right">
-                <strong>{selectedCategory.name}</strong> - {selectedCategory.description}
-              </p>
-              {formData.subcategory && (
-                <p className="text-sm text-right mt-1">
-                  زیردسته:{" "}
-                  <strong>{availableSubcategories.find((sub) => sub.id === formData.subcategory)?.name}</strong>
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Form Actions */}
-          <div className="flex justify-between pt-4">
-            <Button type="button" variant="outline" onClick={onCancel}>
-              انصراف
-            </Button>
-            <Button
-              type="submit"
-              disabled={
-                !formData.title || !formData.category || (availableSubcategories.length > 0 && !formData.subcategory)
-              }
-              className="gap-2"
-            >
-              مرحله بعد
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+      <div className="flex justify-end">
+        <Button type="submit" className="font-iran">
+          مرحله بعد
+          <ChevronLeft className="mr-2 h-4 w-4" />
+        </Button>
+      </div>
+    </form>
   )
 }

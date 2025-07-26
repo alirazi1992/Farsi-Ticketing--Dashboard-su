@@ -2,13 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "IRANYekan";
+  src: url("/fonts/IRANYekanXVFaNumVF.woff2") format("woff2"), url("/fonts/IRANYekanXVFaNumVF.woff") format("woff"),
+    url("/fonts/IRANYekanXVFaNumVF.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "IRANYekan", Arial, Helvetica, sans-serif;
+  direction: rtl;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .font-iran {
+    font-family: "IRANYekan", Arial, Helvetica, sans-serif;
   }
 }
 
@@ -86,9 +100,10 @@ body {
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-border font-iran;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-iran;
+    direction: rtl;
   }
 }

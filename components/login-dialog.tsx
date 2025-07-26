@@ -8,7 +8,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { useAuth } from "@/lib/auth-context"
 import { toast } from "@/hooks/use-toast"
 import { Eye, EyeOff, LogIn, UserPlus, User, Wrench, Shield } from "lucide-react"
@@ -22,6 +29,8 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
   const { login, register, isLoading } = useAuth()
   const [activeTab, setActiveTab] = useState("login")
   const [showPassword, setShowPassword] = useState(false)
+  const [username, setUsername] = useState("")
+  const [password, setPassword] = useState("")
 
   // Login form state
   const [loginForm, setLoginForm] = useState({
@@ -163,8 +172,22 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
     }
   }
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    login(username, password)
+    onOpenChange(false)
+    setUsername("")
+    setPassword("")
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogTrigger asChild>
+        <Button size="lg" className="font-iran">
+          <LogIn className="ml-2 h-4 w-4" />
+          ورود به سیستم
+        </Button>
+      </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]" dir="rtl">
         <DialogHeader className="text-right">
           <DialogTitle className="text-right">ورود به سیستم</DialogTitle>
@@ -453,6 +476,12 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                     </div>
                   </Button>
                 ))}
+              </div>
+              <div className="text-sm text-gray-500 mt-4 text-right font-iran">
+                <p>حساب‌های نمونه:</p>
+                <p>مدیر: admin / admin123</p>
+                <p>تکنسین: tech1 / tech123</p>
+                <p>کاربر: user1 / user123</p>
               </div>
             </TabsContent>
           </Tabs>
