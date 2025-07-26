@@ -147,6 +147,31 @@ interface AdminTicketManagementProps {
   onTicketUpdate: (ticketId: string, updates: any) => void
 }
 
+// Helper functions for safe string operations
+const safeString = (value: any): string => {
+  if (value === null || value === undefined) return ""
+  return String(value).trim()
+}
+
+const getDisplayName = (name: any, fallback = "نامشخص"): string => {
+  const safeName = safeString(name)
+  return safeName || fallback
+}
+
+const getAvatarFallback = (name: any): string => {
+  const displayName = getDisplayName(name)
+  return displayName.charAt(0).toUpperCase()
+}
+
+const safeDate = (dateValue: any): string => {
+  if (!dateValue) return "نامشخص"
+  try {
+    return new Date(dateValue).toLocaleDateString("fa-IR")
+  } catch {
+    return "نامشخص"
+  }
+}
+
 export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTicketManagementProps) {
   const [technicians, setTechnicians] = useState(initialTechnicians)
   const [searchQuery, setSearchQuery] = useState("")
@@ -158,7 +183,7 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
   const [assignDialogOpen, setAssignDialogOpen] = useState(false)
   const [bulkAssignDialogOpen, setBulkAssignDialogOpen] = useState(false)
   const [selectedTicketForAssign, setSelectedTicketForAssign] = useState<any>(null)
-  const [technicianFilter, setTechnicianFilter] = useState("all") // For filtering technicians in assignment dialog
+  const [technicianFilter, setTechnicianFilter] = useState("all")
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
   const [selectedTicket, setSelectedTicket] = useState<any>(null)
 
@@ -166,7 +191,7 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
   useEffect(() => {
     const updatedTechnicians = technicians.map((tech) => {
       const assignedTickets = tickets.filter(
-        (ticket) => ticket.assignedTo === tech.id && (ticket.status === "open" || ticket.status === "in-progress"),
+        (ticket) => ticket?.assignedTo === tech.id && (ticket?.status === "open" || ticket?.status === "in-progress"),
       )
 
       return {
@@ -181,12 +206,19 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
 
   // Filter tickets based on search and filters
   const filteredTickets = tickets.filter((ticket) => {
-    const matchesSearch =
-      (ticket.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (ticket.description || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (ticket.id || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (ticket.clientName || "").toLowerCase().includes(searchQuery.toLowerCase())
+    if (!ticket) return false
 
+    const searchableText = [
+      safeString(ticket.title),
+      safeString(ticket.description),
+      safeString(ticket.id),
+      safeString(ticket.clientName),
+      safeString(ticket.submittedBy),
+    ]
+      .join(" ")
+      .toLowerCase()
+
+    const matchesSearch = searchableText.includes(searchQuery.toLowerCase())
     const matchesStatus = filterStatus === "all" || ticket.status === filterStatus
     const matchesPriority = filterPriority === "all" || ticket.priority === filterPriority
     const matchesCategory = filterCategory === "all" || ticket.category === filterCategory
@@ -200,10 +232,11 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
 
   // Get recommended technicians for a specific ticket
   const getRecommendedTechnicians = (ticket: any) => {
+    if (!ticket?.category) return technicians
+
     return technicians
       .filter((tech) => tech.specialties.includes(ticket.category))
       .sort((a, b) => {
-        // Sort by: 1. Availability, 2. Rating, 3. Workload (ascending)
         if (a.status !== b.status) {
           return a.status === "available" ? -1 : 1
         }
@@ -218,7 +251,6 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
   const getFilteredTechnicians = (ticket?: any) => {
     let filteredTechs = technicians
 
-    // Filter by specialty if we have a specific ticket
     if (ticket && technicianFilter === "recommended") {
       filteredTechs = getRecommendedTechnicians(ticket)
     } else if (technicianFilter === "available") {
@@ -230,15 +262,12 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
     }
 
     return filteredTechs.sort((a, b) => {
-      // Always prioritize available technicians
       if (a.status !== b.status) {
         return a.status === "available" ? -1 : 1
       }
-      // Then by rating
       if (a.rating !== b.rating) {
         return b.rating - a.rating
       }
-      // Finally by workload
       return a.activeTickets - b.activeTickets
     })
   }
@@ -253,7 +282,7 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
     if (selectedTickets.length === filteredTickets.length) {
       setSelectedTickets([])
     } else {
-      setSelectedTickets(filteredTickets.map((ticket) => ticket.id))
+      setSelectedTickets(filteredTickets.map((ticket) => ticket.id).filter(Boolean))
     }
   }
 
@@ -373,27 +402,15 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
                 .map(
                   (ticket) => `
                 <tr>
-                  <td>${ticket.id || "نامشخص"}</td>
-                  <td>${ticket.title || "بدون عنوان"}</td>
+                  <td>${safeString(ticket.id) || "نامشخص"}</td>
+                  <td>${safeString(ticket.title) || "بدون عنوان"}</td>
                   <td class="status-${ticket.status || "open"}">${statusLabels[ticket.status] || "نامشخص"}</td>
                   <td class="priority-${ticket.priority || "medium"}">${priorityLabels[ticket.priority] || "نامشخص"}</td>
-                  <td>${categoryLabels[ticket.category] || ticket.category || "نامشخص"}</td>
-                  <td>${ticket.clientName || ticket.submittedBy || "نامشخص"}</td>
-                  <td>${ticket.assignedTechnicianName || "تعیین نشده"}</td>
-                  <td>${
-                    ticket.createdAt
-                      ? new Date(ticket.createdAt).toLocaleDateString("fa-IR")
-                      : ticket.submittedAt
-                        ? new Date(ticket.submittedAt).toLocaleDateString("fa-IR")
-                        : "نامشخص"
-                  }</td>
-                  <td>${
-                    ticket.updatedAt
-                      ? new Date(ticket.updatedAt).toLocaleDateString("fa-IR")
-                      : ticket.submittedAt
-                        ? new Date(ticket.submittedAt).toLocaleDateString("fa-IR")
-                        : "نامشخص"
-                  }</td>
+                  <td>${categoryLabels[ticket.category] || safeString(ticket.category) || "نامشخص"}</td>
+                  <td>${getDisplayName(ticket.clientName || ticket.submittedBy)}</td>
+                  <td>${getDisplayName(ticket.assignedTechnicianName, "تعیین نشده")}</td>
+                  <td>${safeDate(ticket.createdAt || ticket.submittedAt)}</td>
+                  <td>${safeDate(ticket.updatedAt || ticket.submittedAt)}</td>
                 </tr>
               `,
                 )
@@ -430,24 +447,16 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
       headers.join(","),
       ...filteredTickets.map((ticket) =>
         [
-          ticket.id || "نامشخص",
-          `"${ticket.title || "بدون عنوان"}"`,
+          safeString(ticket.id) || "نامشخص",
+          `"${safeString(ticket.title) || "بدون عنوان"}"`,
           statusLabels[ticket.status] || "نامشخص",
           priorityLabels[ticket.priority] || "نامشخص",
-          categoryLabels[ticket.category] || ticket.category || "نامشخص",
-          `"${ticket.clientName || ticket.submittedBy || "نامشخص"}"`,
-          ticket.clientEmail || ticket.email || "نامشخص",
-          `"${ticket.assignedTechnicianName || "تعیین نشده"}"`,
-          ticket.createdAt
-            ? new Date(ticket.createdAt).toLocaleDateString("fa-IR")
-            : ticket.submittedAt
-              ? new Date(ticket.submittedAt).toLocaleDateString("fa-IR")
-              : "نامشخص",
-          ticket.updatedAt
-            ? new Date(ticket.updatedAt).toLocaleDateString("fa-IR")
-            : ticket.submittedAt
-              ? new Date(ticket.submittedAt).toLocaleDateString("fa-IR")
-              : "نامشخص",
+          categoryLabels[ticket.category] || safeString(ticket.category) || "نامشخص",
+          `"${getDisplayName(ticket.clientName || ticket.submittedBy)}"`,
+          safeString(ticket.clientEmail || ticket.email) || "نامشخص",
+          `"${getDisplayName(ticket.assignedTechnicianName, "تعیین نشده")}"`,
+          safeDate(ticket.createdAt || ticket.submittedAt),
+          safeDate(ticket.updatedAt || ticket.submittedAt),
         ].join(","),
       ),
     ].join("\n")
@@ -476,7 +485,7 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
       return null
     }
 
-    const specialtyMatches = availableTechnicians.filter((tech) => tech.specialties.includes(ticket.category))
+    const specialtyMatches = availableTechnicians.filter((tech) => tech.specialties.includes(ticket?.category))
 
     const candidateTechnicians = specialtyMatches.length > 0 ? specialtyMatches : availableTechnicians
 
@@ -522,14 +531,14 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <Avatar className="w-10 h-10">
-            <AvatarFallback className="text-sm font-medium">{(technician.name || "نامشخص").charAt(0)}</AvatarFallback>
+            <AvatarFallback className="text-sm font-medium">{getAvatarFallback(technician.name)}</AvatarFallback>
           </Avatar>
           <div className="text-right">
             <div className="flex items-center gap-2">
-              <p className="font-medium">{technician.name || "نامشخص"}</p>
+              <p className="font-medium">{getDisplayName(technician.name)}</p>
               {showRecommended && <Star className="w-4 h-4 text-yellow-500 fill-current" />}
             </div>
-            <p className="text-sm text-muted-foreground">{technician.email || "ایمیل نامشخص"}</p>
+            <p className="text-sm text-muted-foreground">{safeString(technician.email) || "ایمیل نامشخص"}</p>
           </div>
         </div>
         <div className="text-left">
@@ -564,7 +573,7 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
         </div>
 
         <div className="text-xs text-muted-foreground">
-          <span>میانگین پاسخ: {technician.avgResponseTime || "نامشخص"}</span>
+          <span>میانگین پاسخ: {safeString(technician.avgResponseTime) || "نامشخص"}</span>
         </div>
 
         {technician.expertise && technician.expertise.length > 0 && (
@@ -577,19 +586,9 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
     </div>
   )
 
-  // Add this after the existing handleViewTicket function (around line 300)
   const handleViewTicket = (ticket: any) => {
     setSelectedTicket(ticket)
     setViewDialogOpen(true)
-  }
-
-  const getDisplayName = (name: string | undefined, fallback = "نامشخص") => {
-    return name && name.trim() ? name : fallback
-  }
-
-  const getAvatarFallback = (name: string | undefined) => {
-    const displayName = getDisplayName(name)
-    return displayName.charAt(0)
   }
 
   return (
@@ -634,7 +633,6 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
                       </DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
-                      {/* Technician Filter */}
                       <div className="flex gap-2">
                         <Select value={technicianFilter} onValueChange={setTechnicianFilter} dir="rtl">
                           <SelectTrigger className="w-48 text-right">
@@ -779,6 +777,8 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
               <TableBody>
                 {filteredTickets.length > 0 ? (
                   filteredTickets.map((ticket) => {
+                    if (!ticket) return null
+
                     const CategoryIcon = categoryIcons[ticket.category] || HardDrive
                     const isSelected = selectedTickets.includes(ticket.id)
 
@@ -790,10 +790,10 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
                             onCheckedChange={(checked) => handleTicketSelect(ticket.id, checked as boolean)}
                           />
                         </TableCell>
-                        <TableCell className="font-mono text-sm">{ticket.id || "نامشخص"}</TableCell>
+                        <TableCell className="font-mono text-sm">{safeString(ticket.id) || "نامشخص"}</TableCell>
                         <TableCell className="max-w-xs">
-                          <div className="truncate" title={ticket.title || "بدون عنوان"}>
-                            {ticket.title || "بدون عنوان"}
+                          <div className="truncate" title={safeString(ticket.title) || "بدون عنوان"}>
+                            {safeString(ticket.title) || "بدون عنوان"}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -810,7 +810,7 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
                           <div className="flex items-center gap-2">
                             <CategoryIcon className="w-4 h-4" />
                             <span className="text-sm">
-                              {categoryLabels[ticket.category] || ticket.category || "نامشخص"}
+                              {categoryLabels[ticket.category] || safeString(ticket.category) || "نامشخص"}
                             </span>
                           </div>
                         </TableCell>
@@ -826,7 +826,7 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
                                 {getDisplayName(ticket.clientName || ticket.submittedBy)}
                               </div>
                               <div className="text-xs text-muted-foreground">
-                                {ticket.clientEmail || ticket.email || "ایمیل نامشخص"}
+                                {safeString(ticket.clientEmail || ticket.email) || "ایمیل نامشخص"}
                               </div>
                             </div>
                           </div>
@@ -839,19 +839,13 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
                                   {getAvatarFallback(ticket.assignedTechnicianName)}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="text-sm">{ticket.assignedTechnicianName}</span>
+                              <span className="text-sm">{getDisplayName(ticket.assignedTechnicianName)}</span>
                             </div>
                           ) : (
                             <span className="text-sm text-muted-foreground">تعیین نشده</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-sm">
-                          {ticket.createdAt
-                            ? new Date(ticket.createdAt).toLocaleDateString("fa-IR")
-                            : ticket.submittedAt
-                              ? new Date(ticket.submittedAt).toLocaleDateString("fa-IR")
-                              : "نامشخص"}
-                        </TableCell>
+                        <TableCell className="text-sm">{safeDate(ticket.createdAt || ticket.submittedAt)}</TableCell>
                         <TableCell>
                           <Button variant="ghost" size="sm" onClick={() => handleViewTicket(ticket)} className="gap-1">
                             <Eye className="w-3 h-3" />
@@ -881,14 +875,14 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-right">جزئیات تیکت {selectedTicket?.id || "نامشخص"}</DialogTitle>
+            <DialogTitle className="text-right">جزئیات تیکت {safeString(selectedTicket?.id) || "نامشخص"}</DialogTitle>
           </DialogHeader>
           {selectedTicket && (
             <div className="space-y-6">
               {/* Ticket Header */}
               <div className="flex justify-between items-start">
                 <div className="text-right space-y-2">
-                  <h3 className="text-xl font-semibold">{selectedTicket.title || "بدون عنوان"}</h3>
+                  <h3 className="text-xl font-semibold">{safeString(selectedTicket.title) || "بدون عنوان"}</h3>
                   <div className="flex gap-2">
                     <Badge className={statusColors[selectedTicket.status] || statusColors.open}>
                       {statusLabels[selectedTicket.status] || "نامشخص"}
@@ -900,7 +894,7 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
                 </div>
                 <div className="text-left space-y-1">
                   <p className="text-sm text-muted-foreground">شماره تیکت</p>
-                  <p className="font-mono text-lg">{selectedTicket.id || "نامشخص"}</p>
+                  <p className="font-mono text-lg">{safeString(selectedTicket.id) || "نامشخص"}</p>
                 </div>
               </div>
 
@@ -914,31 +908,21 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">دسته‌بندی:</span>
-                        <span>{categoryLabels[selectedTicket.category] || selectedTicket.category || "نامشخص"}</span>
+                        <span>
+                          {categoryLabels[selectedTicket.category] || safeString(selectedTicket.category) || "نامشخص"}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">زیر دسته:</span>
-                        <span>{selectedTicket.subcategory || "نامشخص"}</span>
+                        <span>{safeString(selectedTicket.subcategory) || "نامشخص"}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">تاریخ ایجاد:</span>
-                        <span>
-                          {selectedTicket.createdAt
-                            ? new Date(selectedTicket.createdAt).toLocaleDateString("fa-IR")
-                            : selectedTicket.submittedAt
-                              ? new Date(selectedTicket.submittedAt).toLocaleDateString("fa-IR")
-                              : "نامشخص"}
-                        </span>
+                        <span>{safeDate(selectedTicket.createdAt || selectedTicket.submittedAt)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">آخرین به‌روزرسانی:</span>
-                        <span>
-                          {selectedTicket.updatedAt
-                            ? new Date(selectedTicket.updatedAt).toLocaleDateString("fa-IR")
-                            : selectedTicket.submittedAt
-                              ? new Date(selectedTicket.submittedAt).toLocaleDateString("fa-IR")
-                              : "نامشخص"}
-                        </span>
+                        <span>{safeDate(selectedTicket.updatedAt || selectedTicket.submittedAt)}</span>
                       </div>
                     </div>
                   </div>
@@ -950,7 +934,7 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
                         <Avatar className="w-8 h-8">
                           <AvatarFallback>{getAvatarFallback(selectedTicket.assignedTechnicianName)}</AvatarFallback>
                         </Avatar>
-                        <span>{selectedTicket.assignedTechnicianName}</span>
+                        <span>{getDisplayName(selectedTicket.assignedTechnicianName)}</span>
                       </div>
                     </div>
                   )}
@@ -958,11 +942,13 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
 
                 <div className="bg-muted p-4 rounded-lg text-right">
                   <h4 className="font-medium mb-2">شرح مشکل</h4>
-                  <p className="whitespace-pre-wrap">{selectedTicket.description || "توضیحی ارائه نشده است"}</p>
+                  <p className="whitespace-pre-wrap">
+                    {safeString(selectedTicket.description) || "توضیحی ارائه نشده است"}
+                  </p>
                 </div>
 
                 {selectedTicket.responses && selectedTicket.responses.length > 0 && (
-                  <div>
+                  <div className="md:col-span-2">
                     <h4 className="font-medium mb-4 flex items-center gap-2">
                       <MessageSquare className="w-4 h-4" />
                       پاسخ‌ها و به‌روزرسانی‌ها
@@ -977,7 +963,9 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
                                   {getAvatarFallback(response.technicianName)}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="font-medium text-sm">{response.technicianName || "تکنسین نامشخص"}</span>
+                              <span className="font-medium text-sm">
+                                {getDisplayName(response.technicianName, "تکنسین نامشخص")}
+                              </span>
                             </div>
                             <div className="text-left">
                               <Badge className={statusColors[response.status] || statusColors.open}>
@@ -986,13 +974,15 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
                               <p className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Calendar className="w-3 h-3" />
                                 {response.timestamp
-                                  ? `${new Date(response.timestamp).toLocaleDateString("fa-IR")} - ${new Date(response.timestamp).toLocaleTimeString("fa-IR")}`
+                                  ? `${safeDate(response.timestamp)} - ${new Date(response.timestamp).toLocaleTimeString("fa-IR")}`
                                   : "زمان نامشخص"}
                               </p>
                             </div>
                           </div>
                           <div className="bg-muted/50 p-3 rounded text-right">
-                            <p className="whitespace-pre-wrap">{response.message || "پیامی ارسال نشده است"}</p>
+                            <p className="whitespace-pre-wrap">
+                              {safeString(response.message) || "پیامی ارسال نشده است"}
+                            </p>
                           </div>
                         </div>
                       ))}
