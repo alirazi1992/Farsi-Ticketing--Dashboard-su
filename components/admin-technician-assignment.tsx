@@ -4,340 +4,346 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Switch } from "@/components/ui/switch"
 import { toast } from "@/hooks/use-toast"
-import { AssignmentCriteriaDialog } from "./assignment-criteria-dialog"
-import { Clock, User, AlertCircle, CheckCircle, Settings } from "lucide-react"
+import { Users, UserCheck, UserX, Edit, Trash2, Award } from "lucide-react"
 
 interface AdminTechnicianAssignmentProps {
+  technicians: any[]
   tickets: any[]
+  onTechnicianUpdate: (technicianId: string, updates: any) => void
+  onTechnicianDelete: (technicianId: string) => void
   onTicketUpdate: (ticketId: string, updates: any) => void
 }
 
-// Helper functions for safe string operations
-const safeString = (value: any): string => {
-  return value && typeof value === "string" ? value : ""
-}
-
-const getDisplayName = (name: any): string => {
-  const safeName = safeString(name)
-  return safeName || "نام نامشخص"
-}
-
-const getAvatarFallback = (name: any): string => {
-  const safeName = safeString(name)
-  return safeName && safeName.length > 0 ? safeName.charAt(0) : "N"
-}
-
-// Mock technicians data
-const technicians = [
-  {
-    id: "tech-001",
-    name: "علی احمدی",
-    email: "ali@company.com",
-    specialties: ["hardware", "network"],
-    currentTickets: 3,
-    maxTickets: 10,
-    status: "available",
-  },
-  {
-    id: "tech-002",
-    name: "سارا محمدی",
-    email: "sara@company.com",
-    specialties: ["software", "email"],
-    currentTickets: 5,
-    maxTickets: 8,
-    status: "busy",
-  },
-  {
-    id: "tech-003",
-    name: "محمد رضایی",
-    email: "mohammad@company.com",
-    specialties: ["security", "access"],
-    currentTickets: 2,
-    maxTickets: 12,
-    status: "available",
-  },
-]
-
-export function AdminTechnicianAssignment({ tickets = [], onTicketUpdate }: AdminTechnicianAssignmentProps) {
-  const [criteriaDialogOpen, setCriteriaDialogOpen] = useState(false)
-  const [selectedTicket, setSelectedTicket] = useState<any>(null)
+export function AdminTechnicianAssignment({
+  technicians = [],
+  tickets = [],
+  onTechnicianUpdate,
+  onTechnicianDelete,
+  onTicketUpdate,
+}: AdminTechnicianAssignmentProps) {
+  const [editingTechnician, setEditingTechnician] = useState<any>(null)
+  const [assignmentDialog, setAssignmentDialog] = useState<any>(null)
 
   // Safe array access
+  const safeTechnicians = Array.isArray(technicians) ? technicians : []
   const safeTickets = Array.isArray(tickets) ? tickets : []
 
-  const handleAssignTicket = (ticketId: string, technicianId: string) => {
-    const technician = technicians.find((t) => t.id === technicianId)
-    if (!technician) return
+  // Get unassigned tickets
+  const unassignedTickets = safeTickets.filter((ticket) => !ticket.assignedTo || ticket.assignedTo === "")
 
-    onTicketUpdate(ticketId, {
+  const handleTechnicianStatusToggle = (technicianId: string, isActive: boolean) => {
+    onTechnicianUpdate(technicianId, { isActive })
+    toast({
+      title: isActive ? "تکنسین فعال شد" : "تکنسین غیرفعال شد",
+      description: `وضعیت تکنسین با موفقیت تغییر یافت`,
+    })
+  }
+
+  const handleEditTechnician = (formData: FormData) => {
+    if (!editingTechnician) return
+
+    const updates = {
+      name: formData.get("name") as string,
+      email: formData.get("email") as string,
+      specialties: (formData.get("specialties") as string).split(",").map((s) => s.trim()),
+      skills: (formData.get("skills") as string).split(",").map((s) => s.trim()),
+      experience: formData.get("experience") as string,
+    }
+
+    onTechnicianUpdate(editingTechnician.id, updates)
+    setEditingTechnician(null)
+
+    toast({
+      title: "تکنسین ویرایش شد",
+      description: "اطلاعات تکنسین با موفقیت به‌روزرسانی شد",
+    })
+  }
+
+  const handleAssignTicket = (formData: FormData) => {
+    if (!assignmentDialog) return
+
+    const technicianId = formData.get("technician") as string
+    const selectedTechnician = safeTechnicians.find((t) => t.id === technicianId)
+
+    if (!selectedTechnician) return
+
+    // Update ticket
+    onTicketUpdate(assignmentDialog.id, {
       assignedTo: technicianId,
-      assignedTechnicianName: technician.name,
+      assignedTechnicianName: selectedTechnician.name || "نامشخص",
       status: "in-progress",
     })
 
-    toast({
-      title: "تیکت واگذار شد",
-      description: `تیکت به ${technician.name} واگذار شد`,
+    // Update technician workload
+    onTechnicianUpdate(technicianId, {
+      workload: (selectedTechnician.workload || 0) + 1,
     })
-  }
 
-  const handleUnassignTicket = (ticketId: string) => {
-    onTicketUpdate(ticketId, {
-      assignedTo: null,
-      assignedTechnicianName: null,
-      status: "open",
-    })
+    setAssignmentDialog(null)
 
     toast({
-      title: "واگذاری لغو شد",
-      description: "تیکت از تکنسین لغو واگذاری شد",
+      title: "تیکت تخصیص یافت",
+      description: `تیکت به ${selectedTechnician.name || "تکنسین"} تخصیص یافت`,
     })
   }
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "urgent":
-        return "bg-red-100 text-red-800"
-      case "high":
-        return "bg-orange-100 text-orange-800"
-      case "medium":
-        return "bg-yellow-100 text-yellow-800"
-      case "low":
-        return "bg-green-100 text-green-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
+  const getWorkloadBadge = (workload: number) => {
+    if (workload === 0) return <Badge variant="outline">آزاد</Badge>
+    if (workload <= 2) return <Badge variant="default">عادی</Badge>
+    if (workload <= 4) return <Badge variant="secondary">پرکار</Badge>
+    return <Badge variant="destructive">بسیار پرکار</Badge>
   }
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "open":
-        return <AlertCircle className="w-4 h-4 text-red-500" />
-      case "in-progress":
-        return <Clock className="w-4 h-4 text-yellow-500" />
-      case "resolved":
-        return <CheckCircle className="w-4 h-4 text-green-500" />
-      default:
-        return <AlertCircle className="w-4 h-4 text-gray-500" />
-    }
-  }
-
-  const unassignedTickets = safeTickets.filter((ticket) => !ticket.assignedTo)
-  const assignedTickets = safeTickets.filter((ticket) => ticket.assignedTo)
 
   return (
     <div className="space-y-6" dir="rtl">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">واگذاری تکنسین</h2>
-          <p className="text-muted-foreground">مدیریت واگذاری تیکت‌ها به تکنسین‌ها</p>
-        </div>
-        <Button onClick={() => setCriteriaDialogOpen(true)} className="gap-2">
-          <Settings className="w-4 h-4" />
-          تنظیمات واگذاری خودکار
-        </Button>
-      </div>
-
-      {/* Technicians Overview */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="w-5 h-5" />
-            وضعیت تکنسین‌ها
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {technicians.map((technician) => (
-              <Card key={technician.id} className="p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <Avatar>
-                    <AvatarFallback>{getAvatarFallback(technician.name)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <h4 className="font-medium">{getDisplayName(technician.name)}</h4>
-                    <p className="text-sm text-muted-foreground">{safeString(technician.email)}</p>
+      {/* Technicians List */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {safeTechnicians.length === 0 ? (
+          <div className="col-span-full text-center py-8">
+            <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500">هیچ تکنسینی تعریف نشده است</p>
+          </div>
+        ) : (
+          safeTechnicians.map((technician) => (
+            <Card key={technician.id} className={`${!technician.isActive ? "opacity-60" : ""}`}>
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-lg">{technician.name || "نام نامشخص"}</CardTitle>
+                    <p className="text-sm text-muted-foreground">{technician.email || "ایمیل نامشخص"}</p>
                   </div>
-                  <Badge variant={technician.status === "available" ? "default" : "secondary"}>
-                    {technician.status === "available" ? "آزاد" : "مشغول"}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    {technician.isActive ? (
+                      <UserCheck className="w-5 h-5 text-green-500" />
+                    ) : (
+                      <UserX className="w-5 h-5 text-red-500" />
+                    )}
+                    {getWorkloadBadge(technician.workload || 0)}
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>تیکت‌های فعال:</span>
-                    <span>
-                      {technician.currentTickets}/{technician.maxTickets}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-blue-600 h-2 rounded-full"
-                      style={{ width: `${(technician.currentTickets / technician.maxTickets) * 100}%` }}
-                    />
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {(technician.specialties || []).map((specialty) => (
-                      <Badge key={specialty} variant="outline" className="text-xs">
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label className="text-sm font-medium">تخصص‌ها</Label>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {(technician.specialties || []).map((specialty: string, index: number) => (
+                      <Badge key={index} variant="outline" className="text-xs">
                         {specialty}
                       </Badge>
                     ))}
                   </div>
                 </div>
-              </Card>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+
+                <div>
+                  <Label className="text-sm font-medium">مهارت‌ها</Label>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {(technician.skills || []).map((skill: string, index: number) => (
+                      <Badge key={index} variant="secondary" className="text-xs">
+                        {skill}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center text-sm">
+                  <span>سابقه کار:</span>
+                  <span className="font-medium">{technician.experience || "نامشخص"}</span>
+                </div>
+
+                <div className="flex justify-between items-center text-sm">
+                  <span>تعداد تیکت‌ها:</span>
+                  <span className="font-medium">{technician.workload || 0}</span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={technician.isActive}
+                      onCheckedChange={(checked) => handleTechnicianStatusToggle(technician.id, checked)}
+                    />
+                    <Label className="text-sm">{technician.isActive ? "فعال" : "غیرفعال"}</Label>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Dialog
+                    open={editingTechnician?.id === technician.id}
+                    onOpenChange={(open) => setEditingTechnician(open ? technician : null)}
+                  >
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="flex-1 bg-transparent">
+                        <Edit className="w-3 h-3 mr-1" />
+                        ویرایش
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[500px]" dir="rtl">
+                      <form action={handleEditTechnician}>
+                        <DialogHeader>
+                          <DialogTitle className="text-right">ویرایش تکنسین</DialogTitle>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-name">نام و نام خانوادگی</Label>
+                            <Input id="edit-name" name="name" defaultValue={technician.name || ""} required />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-email">ایمیل</Label>
+                            <Input
+                              id="edit-email"
+                              name="email"
+                              type="email"
+                              defaultValue={technician.email || ""}
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-specialties">تخصص‌ها (با کاما جدا کنید)</Label>
+                            <Input
+                              id="edit-specialties"
+                              name="specialties"
+                              defaultValue={(technician.specialties || []).join(", ")}
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-skills">مهارت‌ها (با کاما جدا کنید)</Label>
+                            <Input
+                              id="edit-skills"
+                              name="skills"
+                              defaultValue={(technician.skills || []).join(", ")}
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-experience">سابقه کار</Label>
+                            <Input
+                              id="edit-experience"
+                              name="experience"
+                              defaultValue={technician.experience || ""}
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <Button type="button" variant="outline" onClick={() => setEditingTechnician(null)}>
+                            انصراف
+                          </Button>
+                          <Button type="submit">ذخیره</Button>
+                        </div>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onTechnicianDelete(technician.id)}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
 
       {/* Unassigned Tickets */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-red-500" />
-            تیکت‌های واگذار نشده ({unassignedTickets.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {unassignedTickets.length === 0 ? (
-            <div className="text-center py-8">
-              <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
-              <p className="text-muted-foreground">همه تیکت‌ها واگذار شده‌اند</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
+      {unassignedTickets.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-right flex items-center gap-2">
+              <Award className="w-5 h-5" />
+              تیکت‌های تخصیص نیافته ({unassignedTickets.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
               {unassignedTickets.map((ticket) => (
-                <Card key={ticket.id} className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        {getStatusIcon(ticket.status)}
-                        <h4 className="font-medium">{safeString(ticket.title) || "عنوان نامشخص"}</h4>
-                        <Badge className={getPriorityColor(ticket.priority)}>
-                          {ticket.priority === "urgent"
-                            ? "فوری"
+                <div key={ticket.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium">{ticket.id}</span>
+                      <Badge
+                        variant={
+                          ticket.priority === "urgent"
+                            ? "destructive"
                             : ticket.priority === "high"
-                              ? "بالا"
-                              : ticket.priority === "medium"
-                                ? "متوسط"
-                                : "پایین"}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {safeString(ticket.description) || "توضیحات موجود نیست"}
-                      </p>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>ارسال‌کننده: {getDisplayName(ticket.clientName)}</span>
-                        <span>دسته‌بندی: {safeString(ticket.category) || "نامشخص"}</span>
-                        <span>شناسه: {safeString(ticket.id)}</span>
-                      </div>
+                              ? "secondary"
+                              : "outline"
+                        }
+                      >
+                        {ticket.priority === "urgent"
+                          ? "فوری"
+                          : ticket.priority === "high"
+                            ? "بالا"
+                            : ticket.priority === "medium"
+                              ? "متوسط"
+                              : "پایین"}
+                      </Badge>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Select onValueChange={(value) => handleAssignTicket(ticket.id, value)}>
-                        <SelectTrigger className="w-48">
-                          <SelectValue placeholder="انتخاب تکنسین" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {technicians.map((technician) => (
-                            <SelectItem key={technician.id} value={technician.id}>
-                              <div className="flex items-center gap-2">
-                                <Avatar className="w-6 h-6">
-                                  <AvatarFallback className="text-xs">
-                                    {getAvatarFallback(technician.name)}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <span>{getDisplayName(technician.name)}</span>
-                                <Badge
-                                  variant={technician.status === "available" ? "default" : "secondary"}
-                                  className="text-xs"
-                                >
-                                  {technician.currentTickets}/{technician.maxTickets}
-                                </Badge>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <p className="text-sm text-muted-foreground truncate">{ticket.title || "بدون عنوان"}</p>
+                    <p className="text-xs text-muted-foreground">درخواست‌کننده: {ticket.clientName || "نامشخص"}</p>
                   </div>
-                </Card>
+                  <Dialog
+                    open={assignmentDialog?.id === ticket.id}
+                    onOpenChange={(open) => setAssignmentDialog(open ? ticket : null)}
+                  >
+                    <DialogTrigger asChild>
+                      <Button size="sm">تخصیص</Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[400px]" dir="rtl">
+                      <form action={handleAssignTicket}>
+                        <DialogHeader>
+                          <DialogTitle className="text-right">تخصیص تیکت</DialogTitle>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <div className="space-y-2">
+                            <Label>تیکت: {ticket.title}</Label>
+                            <Label htmlFor="technician">انتخاب تکنسین</Label>
+                            <Select name="technician" required>
+                              <SelectTrigger>
+                                <SelectValue placeholder="تکنسین را انتخاب کنید" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {safeTechnicians
+                                  .filter((t) => t.isActive)
+                                  .map((technician) => (
+                                    <SelectItem key={technician.id} value={technician.id}>
+                                      <div className="flex items-center justify-between w-full">
+                                        <span>{technician.name || "نامشخص"}</span>
+                                        <Badge variant="outline" className="ml-2">
+                                          {technician.workload || 0} تیکت
+                                        </Badge>
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <Button type="button" variant="outline" onClick={() => setAssignmentDialog(null)}>
+                            انصراف
+                          </Button>
+                          <Button type="submit">تخصیص</Button>
+                        </div>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               ))}
             </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Assigned Tickets */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="w-5 h-5 text-blue-500" />
-            تیکت‌های واگذار شده ({assignedTickets.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {assignedTickets.length === 0 ? (
-            <div className="text-center py-8">
-              <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-muted-foreground">هیچ تیکت واگذار شده‌ای وجود ندارد</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {assignedTickets.map((ticket) => (
-                <Card key={ticket.id} className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        {getStatusIcon(ticket.status)}
-                        <h4 className="font-medium">{safeString(ticket.title) || "عنوان نامشخص"}</h4>
-                        <Badge className={getPriorityColor(ticket.priority)}>
-                          {ticket.priority === "urgent"
-                            ? "فوری"
-                            : ticket.priority === "high"
-                              ? "بالا"
-                              : ticket.priority === "medium"
-                                ? "متوسط"
-                                : "پایین"}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {safeString(ticket.description) || "توضیحات موجود نیست"}
-                      </p>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>ارسال‌کننده: {getDisplayName(ticket.clientName)}</span>
-                        <span>واگذار شده به: {getDisplayName(ticket.assignedTechnicianName)}</span>
-                        <span>شناسه: {safeString(ticket.id)}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 rounded-md">
-                        <Avatar className="w-6 h-6">
-                          <AvatarFallback className="text-xs">
-                            {getAvatarFallback(ticket.assignedTechnicianName)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm font-medium">{getDisplayName(ticket.assignedTechnicianName)}</span>
-                      </div>
-                      <Button variant="outline" size="sm" onClick={() => handleUnassignTicket(ticket.id)}>
-                        لغو واگذاری
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <AssignmentCriteriaDialog
-        open={criteriaDialogOpen}
-        onOpenChange={setCriteriaDialogOpen}
-        technicians={technicians}
-      />
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

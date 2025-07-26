@@ -1,253 +1,465 @@
 "use client"
 
 import { useState } from "react"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { CategoryManagement } from "@/components/category-management"
-import { AdminTechnicianAssignment } from "@/components/admin-technician-assignment"
-import { AutoAssignmentSettings } from "@/components/auto-assignment-settings"
-import { EnhancedAutoAssignment } from "@/components/enhanced-auto-assignment"
-import { AdminTicketManagement } from "@/components/admin-ticket-management"
-import { UserMenu } from "@/components/user-menu"
-import { SettingsDialog } from "@/components/settings-dialog"
-import {
-  Users,
-  Ticket,
-  Settings,
-  BarChart3,
-  Clock,
-  CheckCircle,
-  AlertTriangle,
-  TrendingUp,
-  Activity,
-  Zap,
-  Target,
-  Brain,
-  Layers,
-} from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { toast } from "@/hooks/use-toast"
+import { CategoryManagement } from "./category-management"
+import { AutoAssignmentSettings } from "./auto-assignment-settings"
+import { AdminTicketManagement } from "./admin-ticket-management"
+import { AdminTechnicianAssignment } from "./admin-technician-assignment"
+import { BarChart3, Users, Ticket, Clock, CheckCircle, AlertTriangle, UserPlus } from "lucide-react"
 
 interface AdminDashboardProps {
   tickets: any[]
-  categories: any[]
   onTicketUpdate: (ticketId: string, updates: any) => void
-  onCategoriesUpdate: (categories: any[]) => void
+  categories: any[]
+  onCategoryUpdate: (categories: any[]) => void
 }
+
+// Mock technicians data
+const mockTechnicians = [
+  {
+    id: "tech-001",
+    name: "علی احمدی",
+    email: "ali@company.com",
+    specialties: ["network", "hardware"],
+    workload: 3,
+    isActive: true,
+    skills: ["شبکه", "سخت‌افزار", "ویندوز"],
+    experience: "5 سال",
+  },
+  {
+    id: "tech-002",
+    name: "سارا محمدی",
+    email: "sara@company.com",
+    specialties: ["software", "email"],
+    workload: 2,
+    isActive: true,
+    skills: ["نرم‌افزار", "ایمیل", "آفیس"],
+    experience: "3 سال",
+  },
+  {
+    id: "tech-003",
+    name: "حسن رضایی",
+    email: "hassan@company.com",
+    specialties: ["security", "access"],
+    workload: 1,
+    isActive: false,
+    skills: ["امنیت", "دسترسی", "فایروال"],
+    experience: "7 سال",
+  },
+]
 
 export function AdminDashboard({
   tickets = [],
-  categories = [],
   onTicketUpdate,
-  onCategoriesUpdate,
+  categories = [],
+  onCategoryUpdate,
 }: AdminDashboardProps) {
-  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [technicians, setTechnicians] = useState(mockTechnicians)
+  const [selectedTicket, setSelectedTicket] = useState<any>(null)
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false)
+  const [newTechnicianDialog, setNewTechnicianDialog] = useState(false)
 
   // Safe array operations
   const safeTickets = Array.isArray(tickets) ? tickets : []
   const safeCategories = Array.isArray(categories) ? categories : []
 
   // Calculate statistics
-  const totalTickets = safeTickets.length
-  const openTickets = safeTickets.filter((t) => t?.status === "open").length
-  const inProgressTickets = safeTickets.filter((t) => t?.status === "in-progress").length
-  const resolvedTickets = safeTickets.filter((t) => t?.status === "resolved").length
-  const urgentTickets = safeTickets.filter((t) => t?.priority === "urgent").length
+  const stats = {
+    total: safeTickets.length,
+    open: safeTickets.filter((t) => t.status === "open").length,
+    inProgress: safeTickets.filter((t) => t.status === "in-progress").length,
+    resolved: safeTickets.filter((t) => t.status === "resolved").length,
+    urgent: safeTickets.filter((t) => t.priority === "urgent").length,
+    high: safeTickets.filter((t) => t.priority === "high").length,
+    medium: safeTickets.filter((t) => t.priority === "medium").length,
+    low: safeTickets.filter((t) => t.priority === "low").length,
+  }
+
+  const handleTicketPreview = (ticket: any) => {
+    setSelectedTicket(ticket)
+    setPreviewDialogOpen(true)
+  }
+
+  const handleAddTechnician = (formData: FormData) => {
+    const newTechnician = {
+      id: `tech-${Date.now()}`,
+      name: formData.get("name") as string,
+      email: formData.get("email") as string,
+      specialties: (formData.get("specialties") as string).split(",").map((s) => s.trim()),
+      workload: 0,
+      isActive: true,
+      skills: (formData.get("skills") as string).split(",").map((s) => s.trim()),
+      experience: formData.get("experience") as string,
+    }
+
+    setTechnicians([...technicians, newTechnician])
+    setNewTechnicianDialog(false)
+
+    toast({
+      title: "تکنسین اضافه شد",
+      description: `تکنسین "${newTechnician.name}" با موفقیت اضافه شد`,
+    })
+  }
+
+  const handleTechnicianUpdate = (technicianId: string, updates: any) => {
+    setTechnicians(technicians.map((tech) => (tech.id === technicianId ? { ...tech, ...updates } : tech)))
+  }
+
+  const handleTechnicianDelete = (technicianId: string) => {
+    setTechnicians(technicians.filter((tech) => tech.id !== technicianId))
+    toast({
+      title: "تکنسین حذف شد",
+      description: "تکنسین با موفقیت حذف شد",
+    })
+  }
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="flex h-16 items-center justify-between px-6">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Settings className="w-4 h-4 text-primary-foreground" />
+    <div className="space-y-6" dir="rtl">
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">کل تیکت‌ها</p>
+                <p className="text-2xl font-bold">{stats.total}</p>
               </div>
-              <h1 className="text-xl font-semibold">پنل مدیریت</h1>
+              <Ticket className="h-8 w-8 text-blue-600" />
             </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
-              <Settings className="w-4 h-4 ml-2" />
-              تنظیمات
-            </Button>
-            <UserMenu />
-          </div>
-        </div>
-      </header>
+          </CardContent>
+        </Card>
 
-      {/* Dashboard Content */}
-      <div className="p-6">
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">کل تیکت‌ها</p>
-                  <p className="text-2xl font-bold">{totalTickets}</p>
-                </div>
-                <Ticket className="w-8 h-8 text-blue-500" />
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">باز</p>
+                <p className="text-2xl font-bold text-red-600">{stats.open}</p>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">باز</p>
-                  <p className="text-2xl font-bold text-orange-600">{openTickets}</p>
-                </div>
-                <AlertTriangle className="w-8 h-8 text-orange-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">در حال انجام</p>
-                  <p className="text-2xl font-bold text-blue-600">{inProgressTickets}</p>
-                </div>
-                <Clock className="w-8 h-8 text-blue-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">حل شده</p>
-                  <p className="text-2xl font-bold text-green-600">{resolvedTickets}</p>
-                </div>
-                <CheckCircle className="w-8 h-8 text-green-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">فوری</p>
-                  <p className="text-2xl font-bold text-red-600">{urgentTickets}</p>
-                </div>
-                <Zap className="w-8 h-8 text-red-500" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Tabs */}
-        <Tabs defaultValue="tickets" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="tickets" className="flex items-center gap-2">
-              <Ticket className="w-4 h-4" />
-              مدیریت تیکت‌ها
-            </TabsTrigger>
-            <TabsTrigger value="categories" className="flex items-center gap-2">
-              <Layers className="w-4 h-4" />
-              دسته‌بندی‌ها
-            </TabsTrigger>
-            <TabsTrigger value="assignment" className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              تعیین تکنسین
-            </TabsTrigger>
-            <TabsTrigger value="auto-assignment" className="flex items-center gap-2">
-              <Target className="w-4 h-4" />
-              تعیین خودکار
-            </TabsTrigger>
-            <TabsTrigger value="enhanced-auto" className="flex items-center gap-2">
-              <Brain className="w-4 h-4" />
-              تعیین هوشمند
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
-              گزارشات
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="tickets" className="mt-6">
-            <AdminTicketManagement tickets={safeTickets} onTicketUpdate={onTicketUpdate} />
-          </TabsContent>
-
-          <TabsContent value="categories" className="mt-6">
-            <CategoryManagement categories={safeCategories} onCategoriesUpdate={onCategoriesUpdate} />
-          </TabsContent>
-
-          <TabsContent value="assignment" className="mt-6">
-            <AdminTechnicianAssignment tickets={safeTickets} onTicketUpdate={onTicketUpdate} />
-          </TabsContent>
-
-          <TabsContent value="auto-assignment" className="mt-6">
-            <AutoAssignmentSettings tickets={safeTickets} onTicketUpdate={onTicketUpdate} />
-          </TabsContent>
-
-          <TabsContent value="enhanced-auto" className="mt-6">
-            <EnhancedAutoAssignment tickets={safeTickets} onTicketUpdate={onTicketUpdate} />
-          </TabsContent>
-
-          <TabsContent value="analytics" className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-right flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5" />
-                    روند تیکت‌ها
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span>امروز</span>
-                      <Badge variant="outline">+{Math.floor(Math.random() * 10) + 1}</Badge>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>این هفته</span>
-                      <Badge variant="outline">+{Math.floor(Math.random() * 50) + 20}</Badge>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>این ماه</span>
-                      <Badge variant="outline">+{Math.floor(Math.random() * 200) + 100}</Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-right flex items-center gap-2">
-                    <Activity className="w-5 h-5" />
-                    عملکرد سیستم
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span>میانگین زمان پاسخ</span>
-                      <Badge variant="secondary">2.3 ساعت</Badge>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>نرخ حل مسئله</span>
-                      <Badge variant="secondary">94.2%</Badge>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>رضایت مشتریان</span>
-                      <Badge variant="secondary">4.7/5</Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <AlertTriangle className="h-8 w-8 text-red-600" />
             </div>
-          </TabsContent>
-        </Tabs>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">در حال انجام</p>
+                <p className="text-2xl font-bold text-yellow-600">{stats.inProgress}</p>
+              </div>
+              <Clock className="h-8 w-8 text-yellow-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">حل شده</p>
+                <p className="text-2xl font-bold text-green-600">{stats.resolved}</p>
+              </div>
+              <CheckCircle className="h-8 w-8 text-green-600" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+      {/* Priority Statistics */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-right flex items-center gap-2">
+            <BarChart3 className="w-5 h-5" />
+            آمار اولویت‌ها
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-red-600">{stats.urgent}</div>
+              <div className="text-sm text-muted-foreground">فوری</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-orange-600">{stats.high}</div>
+              <div className="text-sm text-muted-foreground">بالا</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-yellow-600">{stats.medium}</div>
+              <div className="text-sm text-muted-foreground">متوسط</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">{stats.low}</div>
+              <div className="text-sm text-muted-foreground">پایین</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Main Tabs */}
+      <Tabs defaultValue="tickets" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="tickets">مدیریت تیکت‌ها</TabsTrigger>
+          <TabsTrigger value="technicians">تکنسین‌ها</TabsTrigger>
+          <TabsTrigger value="categories">دسته‌بندی‌ها</TabsTrigger>
+          <TabsTrigger value="assignment">تخصیص خودکار</TabsTrigger>
+          <TabsTrigger value="analytics">گزارشات</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="tickets">
+          <AdminTicketManagement
+            tickets={safeTickets}
+            onTicketUpdate={onTicketUpdate}
+            onTicketPreview={handleTicketPreview}
+          />
+        </TabsContent>
+
+        <TabsContent value="technicians">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-right flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  مدیریت تکنسین‌ها
+                </CardTitle>
+                <Dialog open={newTechnicianDialog} onOpenChange={setNewTechnicianDialog}>
+                  <DialogTrigger asChild>
+                    <Button className="gap-2">
+                      <UserPlus className="w-4 h-4" />
+                      تکنسین جدید
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[500px]" dir="rtl">
+                    <form action={handleAddTechnician}>
+                      <DialogHeader>
+                        <DialogTitle className="text-right">افزودن تکنسین جدید</DialogTitle>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="name">نام و نام خانوادگی</Label>
+                          <Input id="name" name="name" placeholder="نام تکنسین" required />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="email">ایمیل</Label>
+                          <Input id="email" name="email" type="email" placeholder="email@company.com" required />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="specialties">تخصص‌ها (با کاما جدا کنید)</Label>
+                          <Input
+                            id="specialties"
+                            name="specialties"
+                            placeholder="network, hardware, software"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="skills">مهارت‌ها (با کاما جدا کنید)</Label>
+                          <Input id="skills" name="skills" placeholder="شبکه, سخت‌افزار, ویندوز" required />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="experience">سابقه کار</Label>
+                          <Input id="experience" name="experience" placeholder="5 سال" required />
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button type="button" variant="outline" onClick={() => setNewTechnicianDialog(false)}>
+                          انصراف
+                        </Button>
+                        <Button type="submit">افزودن</Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <AdminTechnicianAssignment
+                technicians={technicians}
+                tickets={safeTickets}
+                onTechnicianUpdate={handleTechnicianUpdate}
+                onTechnicianDelete={handleTechnicianDelete}
+                onTicketUpdate={onTicketUpdate}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="categories">
+          <CategoryManagement categories={safeCategories} onCategoriesUpdate={onCategoryUpdate} />
+        </TabsContent>
+
+        <TabsContent value="assignment">
+          <AutoAssignmentSettings categories={safeCategories} technicians={technicians} />
+        </TabsContent>
+
+        <TabsContent value="analytics">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-right flex items-center gap-2">
+                <BarChart3 className="w-5 h-5" />
+                گزارشات و آمار
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-right">آمار کلی</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>میانگین زمان حل مسئله:</span>
+                      <span className="font-semibold">2.5 روز</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>نرخ رضایت کاربران:</span>
+                      <span className="font-semibold">85%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>تیکت‌های حل شده امروز:</span>
+                      <span className="font-semibold">{Math.floor(stats.resolved * 0.1)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-right">عملکرد تکنسین‌ها</h3>
+                  <div className="space-y-2">
+                    {technicians
+                      .filter((t) => t.isActive)
+                      .map((tech) => (
+                        <div key={tech.id} className="flex justify-between items-center">
+                          <span>{tech.name}</span>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline">{tech.workload} تیکت</Badge>
+                            <Badge variant={tech.workload > 2 ? "destructive" : "default"}>
+                              {tech.workload > 2 ? "پرکار" : "عادی"}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Ticket Preview Dialog */}
+      <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right">پیش‌نمایش تیکت</DialogTitle>
+          </DialogHeader>
+          {selectedTicket && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>شماره تیکت</Label>
+                  <p className="font-semibold">{selectedTicket.id}</p>
+                </div>
+                <div>
+                  <Label>وضعیت</Label>
+                  <Badge
+                    variant={
+                      selectedTicket.status === "resolved"
+                        ? "default"
+                        : selectedTicket.status === "in-progress"
+                          ? "secondary"
+                          : "destructive"
+                    }
+                  >
+                    {selectedTicket.status === "open"
+                      ? "باز"
+                      : selectedTicket.status === "in-progress"
+                        ? "در حال انجام"
+                        : "حل شده"}
+                  </Badge>
+                </div>
+              </div>
+
+              <div>
+                <Label>عنوان</Label>
+                <p className="font-semibold">{selectedTicket.title}</p>
+              </div>
+
+              <div>
+                <Label>توضیحات</Label>
+                <p className="text-sm text-muted-foreground">{selectedTicket.description}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>اولویت</Label>
+                  <Badge
+                    variant={
+                      selectedTicket.priority === "urgent"
+                        ? "destructive"
+                        : selectedTicket.priority === "high"
+                          ? "secondary"
+                          : "outline"
+                    }
+                  >
+                    {selectedTicket.priority === "urgent"
+                      ? "فوری"
+                      : selectedTicket.priority === "high"
+                        ? "بالا"
+                        : selectedTicket.priority === "medium"
+                          ? "متوسط"
+                          : "پایین"}
+                  </Badge>
+                </div>
+                <div>
+                  <Label>دسته‌بندی</Label>
+                  <p>{selectedTicket.category}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>درخواست‌کننده</Label>
+                  <p>{selectedTicket.clientName}</p>
+                </div>
+                <div>
+                  <Label>تکنسین مسئول</Label>
+                  <p>{selectedTicket.assignedTechnicianName || "تخصیص نیافته"}</p>
+                </div>
+              </div>
+
+              <div>
+                <Label>تاریخ ایجاد</Label>
+                <p>{new Date(selectedTicket.createdAt).toLocaleDateString("fa-IR")}</p>
+              </div>
+
+              {selectedTicket.responses && selectedTicket.responses.length > 0 && (
+                <div>
+                  <Label>پاسخ‌ها</Label>
+                  <div className="space-y-2 mt-2">
+                    {selectedTicket.responses.map((response: any) => (
+                      <div key={response.id} className="p-3 bg-muted rounded-lg">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-semibold">{response.author}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {new Date(response.timestamp).toLocaleDateString("fa-IR")}
+                          </span>
+                        </div>
+                        <p className="text-sm">{response.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
