@@ -54,26 +54,30 @@ export function UserMenu() {
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56" align="end" forceMount dir="rtl">
-          <DropdownMenuLabel className="font-normal text-right">
-            <div className="flex flex-col space-y-1">
+        <DropdownMenuContent className="w-56" align="end" alignOffset={-40} forceMount dir="rtl">
+          <DropdownMenuLabel className="font-normal text-right p-4" dir="rtl">
+            <div className="flex flex-col space-y-1 text-right">
               <p className="text-sm font-medium leading-none text-right">{user.name}</p>
               <p className="text-xs leading-none text-muted-foreground text-right">{user.email}</p>
               <div className="flex items-center gap-2 mt-1 justify-end">
-                {getRoleIcon(user.role)}
                 <span className="text-xs text-muted-foreground">{getRoleLabel(user.role)}</span>
+                {getRoleIcon(user.role)}
               </div>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setSettingsOpen(true)} className="cursor-pointer text-right justify-end">
-            <span>تنظیمات</span>
-            <Settings className="ml-2 h-4 w-4" />
+          <DropdownMenuItem
+            onClick={() => setSettingsOpen(true)}
+            className="cursor-pointer text-right justify-end"
+            dir="rtl"
+          >
+            <span className="ml-2">تنظیمات</span>
+            <Settings className="h-4 w-4" />
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={logout} className="cursor-pointer text-right justify-end">
-            <span>خروج</span>
-            <LogOut className="ml-2 h-4 w-4" />
+          <DropdownMenuItem onClick={logout} className="cursor-pointer text-right justify-end" dir="rtl">
+            <span className="ml-2">خروج</span>
+            <LogOut className="h-4 w-4" />
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

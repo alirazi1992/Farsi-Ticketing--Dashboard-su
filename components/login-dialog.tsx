@@ -173,194 +173,78 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
-          <TabsList className="grid w-full grid-cols-3" dir="rtl">
-            <TabsTrigger value="login" className="text-right">
-              ورود
-            </TabsTrigger>
-            <TabsTrigger value="register" className="text-right">
-              ثبت‌نام
-            </TabsTrigger>
-            <TabsTrigger value="demo" className="text-right">
-              ورود سریع
-            </TabsTrigger>
-          </TabsList>
+        <div dir="rtl">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
+            <TabsList className="grid w-full grid-cols-3" dir="rtl">
+              <TabsTrigger value="login" className="text-right">
+                ورود
+              </TabsTrigger>
+              <TabsTrigger value="register" className="text-right">
+                ثبت‌نام
+              </TabsTrigger>
+              <TabsTrigger value="demo" className="text-right">
+                ورود سریع
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="login" className="space-y-4" dir="rtl">
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-right block">
-                  ایمیل
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="example@company.com"
-                  className="text-right"
-                  dir="rtl"
-                  value={loginForm.email}
-                  onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-right block">
-                  رمز عبور
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="رمز عبور خود را وارد کنید"
-                    className="text-right pl-10"
-                    dir="rtl"
-                    value={loginForm.password}
-                    onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute left-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-gray-400" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="role" className="text-right block">
-                  نقش کاربری
-                </Label>
-                <Select
-                  value={loginForm.role}
-                  onValueChange={(value) => setLoginForm({ ...loginForm, role: value })}
-                  dir="rtl"
-                >
-                  <SelectTrigger className="text-right" dir="rtl">
-                    <SelectValue placeholder="نقش خود را انتخاب کنید" />
-                  </SelectTrigger>
-                  <SelectContent dir="rtl">
-                    <SelectItem value="client" className="text-right">
-                      کاربر
-                    </SelectItem>
-                    <SelectItem value="technician" className="text-right">
-                      تکنسین
-                    </SelectItem>
-                    <SelectItem value="admin" className="text-right">
-                      مدیر
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    در حال ورود...
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <LogIn className="w-4 h-4" />
-                    ورود
-                  </div>
-                )}
-              </Button>
-            </form>
-          </TabsContent>
-
-          <TabsContent value="register" className="space-y-4" dir="rtl">
-            <form onSubmit={handleRegister} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <TabsContent value="login" className="space-y-4" dir="rtl">
+              <form onSubmit={handleLogin} className="space-y-4" dir="rtl">
                 <div className="space-y-2">
-                  <Label htmlFor="name" className="text-right block">
-                    نام و نام خانوادگی
+                  <Label htmlFor="email" className="text-right block">
+                    ایمیل
                   </Label>
                   <Input
-                    id="name"
-                    placeholder="نام کامل"
+                    id="email"
+                    type="email"
+                    placeholder="example@company.com"
                     className="text-right"
                     dir="rtl"
-                    value={registerForm.name}
-                    onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
+                    value={loginForm.email}
+                    onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
                   />
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="phone" className="text-right block">
-                    شماره تماس
+                  <Label htmlFor="password" className="text-right block">
+                    رمز عبور
                   </Label>
-                  <Input
-                    id="phone"
-                    placeholder="09123456789"
-                    className="text-right"
-                    dir="rtl"
-                    value={registerForm.phone}
-                    onChange={(e) => setRegisterForm({ ...registerForm, phone: e.target.value })}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="رمز عبور خود را وارد کنید"
+                      className="text-right pl-10"
+                      dir="rtl"
+                      value={loginForm.password}
+                      onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute left-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-gray-400" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-gray-400" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="reg-email" className="text-right block">
-                  ایمیل
-                </Label>
-                <Input
-                  id="reg-email"
-                  type="email"
-                  placeholder="example@company.com"
-                  className="text-right"
-                  dir="rtl"
-                  value={registerForm.email}
-                  onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="department" className="text-right block">
-                    بخش
+                  <Label htmlFor="role" className="text-right block">
+                    نقش کاربری
                   </Label>
                   <Select
-                    value={registerForm.department}
-                    onValueChange={(value) => setRegisterForm({ ...registerForm, department: value })}
+                    value={loginForm.role}
+                    onValueChange={(value) => setLoginForm({ ...loginForm, role: value })}
                     dir="rtl"
                   >
                     <SelectTrigger className="text-right" dir="rtl">
-                      <SelectValue placeholder="بخش" />
-                    </SelectTrigger>
-                    <SelectContent dir="rtl">
-                      <SelectItem value="IT" className="text-right">
-                        فناوری اطلاعات
-                      </SelectItem>
-                      <SelectItem value="HR" className="text-right">
-                        منابع انسانی
-                      </SelectItem>
-                      <SelectItem value="Finance" className="text-right">
-                        مالی
-                      </SelectItem>
-                      <SelectItem value="Operations" className="text-right">
-                        عملیات
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="reg-role" className="text-right block">
-                    نقش
-                  </Label>
-                  <Select
-                    value={registerForm.role}
-                    onValueChange={(value) => setRegisterForm({ ...registerForm, role: value })}
-                    dir="rtl"
-                  >
-                    <SelectTrigger className="text-right" dir="rtl">
-                      <SelectValue placeholder="نقش" />
+                      <SelectValue placeholder="نقش خود را انتخاب کنید" className="text-right" />
                     </SelectTrigger>
                     <SelectContent dir="rtl">
                       <SelectItem value="client" className="text-right">
@@ -375,88 +259,204 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="reg-password" className="text-right block">
-                    رمز عبور
-                  </Label>
-                  <Input
-                    id="reg-password"
-                    type="password"
-                    placeholder="رمز عبور"
-                    className="text-right"
-                    dir="rtl"
-                    value={registerForm.password}
-                    onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-password" className="text-right block">
-                    تکرار رمز عبور
-                  </Label>
-                  <Input
-                    id="confirm-password"
-                    type="password"
-                    placeholder="تکرار رمز عبور"
-                    className="text-right"
-                    dir="rtl"
-                    value={registerForm.confirmPassword}
-                    onChange={(e) => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    در حال ثبت‌نام...
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <UserPlus className="w-4 h-4" />
-                    ثبت‌نام
-                  </div>
-                )}
-              </Button>
-            </form>
-          </TabsContent>
-
-          <TabsContent value="demo" className="space-y-4" dir="rtl">
-            <div className="text-center mb-4">
-              <h3 className="text-lg font-semibold mb-2">ورود سریع برای تست</h3>
-              <p className="text-sm text-muted-foreground">برای تست سیستم، از حساب‌های آماده استفاده کنید</p>
-            </div>
-
-            <div className="space-y-3">
-              {quickLoginOptions.map((option) => (
-                <Button
-                  key={option.role}
-                  variant="outline"
-                  className="w-full justify-between h-auto p-4 bg-transparent"
-                  onClick={() => handleQuickLogin(option.email, option.password, option.role)}
-                  disabled={isLoading}
-                  dir="rtl"
-                >
-                  <div className="flex items-center gap-3">
-                    <LogIn className="w-4 h-4" />
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <div className="font-medium">{option.name}</div>
-                      <div className="text-sm text-muted-foreground">{option.email}</div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      در حال ورود...
                     </div>
-                    <div className={`w-8 h-8 rounded-full ${option.color} flex items-center justify-center`}>
-                      <option.icon className="w-4 h-4 text-white" />
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <LogIn className="w-4 h-4" />
+                      ورود
                     </div>
-                  </div>
+                  )}
                 </Button>
-              ))}
-            </div>
-          </TabsContent>
-        </Tabs>
+              </form>
+            </TabsContent>
+
+            <TabsContent value="register" className="space-y-4" dir="rtl">
+              <form onSubmit={handleRegister} className="space-y-4" dir="rtl">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="text-right block">
+                      نام و نام خانوادگی
+                    </Label>
+                    <Input
+                      id="name"
+                      placeholder="نام کامل"
+                      className="text-right"
+                      dir="rtl"
+                      value={registerForm.name}
+                      onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="text-right block">
+                      شماره تماس
+                    </Label>
+                    <Input
+                      id="phone"
+                      placeholder="09123456789"
+                      className="text-right"
+                      dir="rtl"
+                      value={registerForm.phone}
+                      onChange={(e) => setRegisterForm({ ...registerForm, phone: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="reg-email" className="text-right block">
+                    ایمیل
+                  </Label>
+                  <Input
+                    id="reg-email"
+                    type="email"
+                    placeholder="example@company.com"
+                    className="text-right"
+                    dir="rtl"
+                    value={registerForm.email}
+                    onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="department" className="text-right block">
+                      بخش
+                    </Label>
+                    <Select
+                      value={registerForm.department}
+                      onValueChange={(value) => setRegisterForm({ ...registerForm, department: value })}
+                      dir="rtl"
+                    >
+                      <SelectTrigger className="text-right" dir="rtl">
+                        <SelectValue placeholder="بخش" className="text-right" />
+                      </SelectTrigger>
+                      <SelectContent dir="rtl">
+                        <SelectItem value="IT" className="text-right">
+                          فناوری اطلاعات
+                        </SelectItem>
+                        <SelectItem value="HR" className="text-right">
+                          منابع انسانی
+                        </SelectItem>
+                        <SelectItem value="Finance" className="text-right">
+                          مالی
+                        </SelectItem>
+                        <SelectItem value="Operations" className="text-right">
+                          عملیات
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-role" className="text-right block">
+                      نقش
+                    </Label>
+                    <Select
+                      value={registerForm.role}
+                      onValueChange={(value) => setRegisterForm({ ...registerForm, role: value })}
+                      dir="rtl"
+                    >
+                      <SelectTrigger className="text-right" dir="rtl">
+                        <SelectValue placeholder="نقش" className="text-right" />
+                      </SelectTrigger>
+                      <SelectContent dir="rtl">
+                        <SelectItem value="client" className="text-right">
+                          کاربر
+                        </SelectItem>
+                        <SelectItem value="technician" className="text-right">
+                          تکنسین
+                        </SelectItem>
+                        <SelectItem value="admin" className="text-right">
+                          مدیر
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-password" className="text-right block">
+                      رمز عبور
+                    </Label>
+                    <Input
+                      id="reg-password"
+                      type="password"
+                      placeholder="رمز عبور"
+                      className="text-right"
+                      dir="rtl"
+                      value={registerForm.password}
+                      onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-password" className="text-right block">
+                      تکرار رمز عبور
+                    </Label>
+                    <Input
+                      id="confirm-password"
+                      type="password"
+                      placeholder="تکرار رمز عبور"
+                      className="text-right"
+                      dir="rtl"
+                      value={registerForm.confirmPassword}
+                      onChange={(e) => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      در حال ثبت‌نام...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <UserPlus className="w-4 h-4" />
+                      ثبت‌نام
+                    </div>
+                  )}
+                </Button>
+              </form>
+            </TabsContent>
+
+            <TabsContent value="demo" className="space-y-4" dir="rtl">
+              <div className="text-center mb-4">
+                <h3 className="text-lg font-semibold mb-2">ورود سریع برای تست</h3>
+                <p className="text-sm text-muted-foreground">برای تست سیستم، از حساب‌های آماده استفاده کنید</p>
+              </div>
+
+              <div className="space-y-3">
+                {quickLoginOptions.map((option) => (
+                  <Button
+                    key={option.role}
+                    variant="outline"
+                    className="w-full justify-between h-auto p-4 bg-transparent text-right"
+                    onClick={() => handleQuickLogin(option.email, option.password, option.role)}
+                    disabled={isLoading}
+                    dir="rtl"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <div className="font-medium">{option.name}</div>
+                        <div className="text-sm text-muted-foreground">{option.email}</div>
+                      </div>
+                      <div className={`w-8 h-8 rounded-full ${option.color} flex items-center justify-center`}>
+                        <option.icon className="w-4 h-4 text-white" />
+                      </div>
+                    </div>
+                  </Button>
+                ))}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   )

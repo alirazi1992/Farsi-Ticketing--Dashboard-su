@@ -1,255 +1,231 @@
 "use client"
 
-import { useState, useCallback } from "react"
-import { useDropzone } from "react-dropzone"
+import type React from "react"
+
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { toast } from "@/hooks/use-toast"
-import { Upload, X, File, ImageIcon, FileText } from "lucide-react"
-
-// File validation and upload utilities
-export const validateFile = (file: File): string | null => {
-  const maxSize = 10 * 1024 * 1024 // 10MB
-  const allowedTypes = [
-    "image/jpeg",
-    "image/png",
-    "image/gif",
-    "application/pdf",
-    "text/plain",
-    "application/msword",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "application/vnd.ms-excel",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  ]
-
-  if (file.size > maxSize) {
-    return "حجم فایل نباید بیشتر از ۱۰ مگابایت باشد"
-  }
-
-  if (!allowedTypes.includes(file.type)) {
-    return "نوع فایل مجاز نیست"
-  }
-
-  return null
-}
-
-export const uploadFile = async (file: File): Promise<UploadedFile> => {
-  // Simulate file upload
-  await new Promise((resolve) => setTimeout(resolve, 1000))
-
-  return {
-    id: Math.random().toString(36).substr(2, 9),
-    name: file.name,
-    size: file.size,
-    type: file.type,
-    url: URL.createObjectURL(file),
-    uploadedAt: new Date().toISOString(),
-  }
-}
-
-export const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return "0 بایت"
-
-  const k = 1024
-  const sizes = ["بایت", "کیلوبایت", "مگابایت", "گیگابایت"]
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-
-  return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
-}
-
-export interface UploadedFile {
-  id: string
-  name: string
-  size: number
-  type: string
-  url: string
-  uploadedAt: string
-}
+import { Upload, File, X, AlertCircle } from "lucide-react"
+import type { UploadedFile } from "@/lib/file-upload"
+import { formatFileSize, validateFileType, validateFileSize, uploadFile } from "@/lib/file-upload"
 
 interface FileUploadProps {
   onFilesChange: (files: UploadedFile[]) => void
   maxFiles?: number
+  maxSizeInMB?: number
+  allowedTypes?: string[]
   className?: string
 }
 
-export function FileUpload({ onFilesChange, maxFiles = 5, className }: FileUploadProps) {
+export function FileUpload({
+  onFilesChange,
+  maxFiles = 5,
+  maxSizeInMB = 10,
+  allowedTypes = ["image/*", "application/pdf", "text/*", ".doc", ".docx", ".xls", ".xlsx"],
+  className,
+}: FileUploadProps) {
   const [files, setFiles] = useState<UploadedFile[]>([])
-  const [uploading, setUploading] = useState<string[]>([])
-  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const onDrop = useCallback(
-    async (acceptedFiles: File[]) => {
-      if (files.length + acceptedFiles.length > maxFiles) {
+  const handleFileSelect = async (selectedFiles: FileList | null) => {
+    if (!selectedFiles) return
+
+    const fileArray = Array.from(selectedFiles)
+
+    // Check if adding these files exceeds the maximum
+    if (files.length + fileArray.length > maxFiles) {
+      toast({
+        title: "تعداد فایل‌ها زیاد است",
+        description: `حداکثر ${maxFiles} فایل می‌توانید آپلود کنید`,
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsUploading(true)
+    setUploadProgress(0)
+
+    const newFiles: UploadedFile[] = []
+
+    for (let i = 0; i < fileArray.length; i++) {
+      const file = fileArray[i]
+
+      // Validate file type
+      if (!validateFileType(file, allowedTypes)) {
         toast({
-          title: "تعداد فایل‌ها زیاد است",
-          description: `حداکثر ${maxFiles} فایل مجاز است`,
+          title: "نوع فایل نامعتبر",
+          description: `فایل ${file.name} نوع مجاز نیست`,
           variant: "destructive",
         })
-        return
+        continue
       }
 
-      for (const file of acceptedFiles) {
-        const error = validateFile(file)
-        if (error) {
-          toast({
-            title: "خطا در فایل",
-            description: `${file.name}: ${error}`,
-            variant: "destructive",
-          })
-          continue
-        }
-
-        const tempId = Math.random().toString(36).substr(2, 9)
-        setUploading((prev) => [...prev, tempId])
-        setUploadProgress((prev) => ({ ...prev, [tempId]: 0 }))
-
-        // Simulate upload progress
-        const progressInterval = setInterval(() => {
-          setUploadProgress((prev) => {
-            const currentProgress = prev[tempId] || 0
-            if (currentProgress >= 90) {
-              clearInterval(progressInterval)
-              return prev
-            }
-            return { ...prev, [tempId]: currentProgress + 10 }
-          })
-        }, 100)
-
-        try {
-          const uploadedFile = await uploadFile(file)
-          setFiles((prev) => {
-            const newFiles = [...prev, uploadedFile]
-            onFilesChange(newFiles)
-            return newFiles
-          })
-          setUploadProgress((prev) => ({ ...prev, [tempId]: 100 }))
-
-          setTimeout(() => {
-            setUploading((prev) => prev.filter((id) => id !== tempId))
-            setUploadProgress((prev) => {
-              const { [tempId]: _, ...rest } = prev
-              return rest
-            })
-          }, 500)
-
-          toast({
-            title: "فایل آپلود شد",
-            description: `${file.name} با موفقیت آپلود شد`,
-          })
-        } catch (error) {
-          setUploading((prev) => prev.filter((id) => id !== tempId))
-          setUploadProgress((prev) => {
-            const { [tempId]: _, ...rest } = prev
-            return rest
-          })
-          toast({
-            title: "خطا در آپلود",
-            description: `خطا در آپلود ${file.name}`,
-            variant: "destructive",
-          })
-        }
+      // Validate file size
+      if (!validateFileSize(file, maxSizeInMB)) {
+        toast({
+          title: "حجم فایل زیاد است",
+          description: `فایل ${file.name} بیش از ${maxSizeInMB}MB است`,
+          variant: "destructive",
+        })
+        continue
       }
-    },
-    [files.length, maxFiles, onFilesChange],
-  )
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    multiple: true,
-    disabled: files.length >= maxFiles,
-  })
+      try {
+        const uploadedFile = await uploadFile(file)
+        newFiles.push(uploadedFile)
+        setUploadProgress(((i + 1) / fileArray.length) * 100)
+      } catch (error) {
+        toast({
+          title: "خطا در آپلود",
+          description: `آپلود فایل ${file.name} با خطا مواجه شد`,
+          variant: "destructive",
+        })
+      }
+    }
 
-  const removeFile = (fileId: string) => {
-    setFiles((prev) => {
-      const newFiles = prev.filter((f) => f.id !== fileId)
-      onFilesChange(newFiles)
-      return newFiles
-    })
+    const updatedFiles = [...files, ...newFiles]
+    setFiles(updatedFiles)
+    onFilesChange(updatedFiles)
+
+    setIsUploading(false)
+    setUploadProgress(0)
+
+    if (newFiles.length > 0) {
+      toast({
+        title: "فایل‌ها آپلود شدند",
+        description: `${newFiles.length} فایل با موفقیت آپلود شد`,
+      })
+    }
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }
+
+  const handleRemoveFile = (fileId: string) => {
+    const updatedFiles = files.filter((file) => file.id !== fileId)
+    setFiles(updatedFiles)
+    onFilesChange(updatedFiles)
+
     toast({
       title: "فایل حذف شد",
       description: "فایل از لیست پیوست‌ها حذف شد",
     })
   }
 
-  const getFileIcon = (type: string) => {
-    if (type.startsWith("image/")) return <ImageIcon className="w-4 h-4" />
-    if (type.includes("pdf") || type.includes("document")) return <FileText className="w-4 h-4" />
-    return <File className="w-4 h-4" />
+  const handleButtonClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const droppedFiles = e.dataTransfer.files
+    handleFileSelect(droppedFiles)
   }
 
   return (
-    <div className={`space-y-4 ${className}`} dir="rtl">
+    <div className={className} dir="rtl">
+      {/* Upload Area */}
       <div
-        {...getRootProps()}
-        className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-          isDragActive
-            ? "border-primary bg-primary/5"
-            : files.length >= maxFiles
-              ? "border-muted-foreground/25 bg-muted/50 cursor-not-allowed"
-              : "border-muted-foreground/25 hover:border-primary hover:bg-primary/5"
-        }`}
+        className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors cursor-pointer"
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        onClick={handleButtonClick}
       >
-        <input {...getInputProps()} />
-        <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-        {files.length >= maxFiles ? (
-          <p className="text-sm text-muted-foreground">حداکثر تعداد فایل ({maxFiles}) آپلود شده است</p>
-        ) : isDragActive ? (
-          <p className="text-sm text-muted-foreground">فایل‌ها را اینجا رها کنید...</p>
-        ) : (
-          <div>
-            <p className="text-sm text-muted-foreground mb-2">فایل‌های مربوط به مشکل را اینجا بکشید یا کلیک کنید</p>
-            <Button variant="outline" size="sm" type="button">
-              انتخاب فایل
-            </Button>
-            <p className="text-xs text-muted-foreground mt-2">حداکثر {maxFiles} فایل، هر کدام تا ۱۰ مگابایت</p>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+            <Upload className="w-6 h-6 text-gray-600" />
           </div>
-        )}
+          <div className="text-right">
+            <p className="text-lg font-medium text-gray-700">فایل‌های خود را اینجا رها کنید</p>
+            <p className="text-sm text-gray-500 mt-1">یا کلیک کنید تا فایل انتخاب کنید</p>
+          </div>
+          <Button type="button" variant="outline" disabled={isUploading} className="gap-2 bg-transparent">
+            <Upload className="w-4 h-4" />
+            {isUploading ? "در حال آپلود..." : "انتخاب فایل"}
+          </Button>
+        </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={(e) => handleFileSelect(e.target.files)}
+          accept={allowedTypes.join(",")}
+        />
       </div>
 
       {/* Upload Progress */}
-      {uploading.length > 0 && (
-        <div className="space-y-2">
-          {uploading.map((tempId) => (
-            <div key={tempId} className="space-y-1">
-              <div className="flex justify-between text-sm">
-                <span>در حال آپلود...</span>
-                <span>{uploadProgress[tempId] || 0}%</span>
-              </div>
-              <Progress value={uploadProgress[tempId] || 0} className="h-2" />
-            </div>
-          ))}
+      {isUploading && (
+        <div className="mt-4">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm text-gray-600">در حال آپلود...</span>
+            <span className="text-sm font-medium">{Math.round(uploadProgress)}%</span>
+          </div>
+          <Progress value={uploadProgress} className="w-full" />
         </div>
       )}
 
-      {/* Uploaded Files */}
+      {/* File List */}
       {files.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium text-right">فایل‌های پیوست شده:</h4>
+        <div className="mt-4">
+          <h4 className="text-sm font-medium text-gray-700 mb-3 text-right">فایل‌های پیوست شده:</h4>
           <div className="space-y-2">
             {files.map((file) => (
-              <div key={file.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/50">
-                <div className="flex items-center gap-2">
-                  {getFileIcon(file.type)}
-                  <div>
-                    <p className="text-sm font-medium text-right">{file.name}</p>
-                    <p className="text-xs text-muted-foreground text-right">
-                      {formatFileSize(file.size)} • {new Date(file.uploadedAt).toLocaleTimeString("fa-IR")}
-                    </p>
+              <div
+                key={file.id}
+                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border text-right"
+                dir="rtl"
+              >
+                <div className="flex items-center gap-3">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveFile(file.id)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-gray-900">{file.name}</p>
+                    <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removeFile(file.id)}
-                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  <File className="w-4 h-4 text-gray-400" />
+                </div>
               </div>
             ))}
           </div>
         </div>
       )}
+
+      {/* File Upload Info */}
+      <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg" dir="rtl">
+        <div className="flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div className="text-sm text-blue-800 text-right">
+            <p className="font-medium mb-1">راهنمای آپلود فایل:</p>
+            <ul className="list-disc list-inside space-y-1 text-right">
+              <li>حداکثر {maxFiles} فایل می‌توانید آپلود کنید</li>
+              <li>حداکثر حجم هر فایل: {maxSizeInMB}MB</li>
+              <li>فرمت‌های مجاز: تصاویر، PDF، اسناد Word و Excel</li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

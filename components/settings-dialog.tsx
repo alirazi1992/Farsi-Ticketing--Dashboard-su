@@ -164,7 +164,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     label: string
     description?: string
   }) => (
-    <div className="flex items-center justify-between py-3 px-1" dir="rtl">
+    <div className="flex items-center justify-between py-3 px-1">
       <div className="flex-1 text-right">
         <div className="text-sm font-medium">{label}</div>
         {description && <div className="text-xs text-muted-foreground mt-1">{description}</div>}
@@ -174,7 +174,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         variant={active ? "default" : "outline"}
         size="sm"
         onClick={onToggle}
-        className="w-16 h-8 flex-shrink-0 ml-4"
+        className="w-16 h-8 flex-shrink-0 mr-4"
       >
         {active ? "فعال" : "غیرفعال"}
       </Button>
@@ -183,8 +183,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
   // Theme Selection Component
   const ThemeSelector = () => (
-    <div className="space-y-3" dir="rtl">
-      <Label className="text-sm font-medium text-right block">تم ظاهری</Label>
+    <div className="space-y-3">
+      <Label className="text-sm font-medium">تم ظاهری</Label>
       <div className="grid grid-cols-3 gap-2">
         {[
           { value: "light", label: "روشن", icon: Sun },
@@ -209,8 +209,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
   // Font Size Selector
   const FontSizeSelector = () => (
-    <div className="space-y-3" dir="rtl">
-      <Label className="text-sm font-medium text-right block">اندازه فونت</Label>
+    <div className="space-y-3">
+      <Label className="text-sm font-medium">اندازه فونت</Label>
       <div className="grid grid-cols-3 gap-2">
         {[
           { value: "small", label: "کوچک" },
@@ -402,7 +402,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="profile" className="space-y-4" dir="rtl">
+            <TabsContent value="profile" className="space-y-4">
               <Card dir="rtl">
                 <CardHeader className="text-right">
                   <CardTitle className="text-right">اطلاعات شخصی</CardTitle>
@@ -411,7 +411,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 <CardContent className="space-y-6" dir="rtl">
                   <div className="flex items-center gap-4 justify-end">
                     <div className="space-y-2 text-right">
-                      <Label htmlFor="avatar-upload" className="text-right block">
+                      <Label htmlFor="avatar-upload" className="text-right">
                         تصویر پروفایل
                       </Label>
                       <div className="flex gap-2 justify-end">
@@ -473,7 +473,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                         type="button"
                         variant="secondary"
                         size="sm"
-                        className="absolute -bottom-2 -left-2 h-8 w-8 rounded-full p-0"
+                        className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0"
                         onClick={triggerFileInput}
                         disabled={isUploadingAvatar}
                       >
@@ -485,7 +485,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                   <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4" dir="rtl">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2 text-right">
-                        <Label htmlFor="name" className="text-right block">
+                        <Label htmlFor="name" className="text-right">
                           نام و نام خانوادگی
                         </Label>
                         <Controller
@@ -507,7 +507,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                       </div>
 
                       <div className="space-y-2 text-right">
-                        <Label htmlFor="email" className="text-right block">
+                        <Label htmlFor="email" className="text-right">
                           ایمیل
                         </Label>
                         <Controller
@@ -527,7 +527,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2 text-right">
-                        <Label htmlFor="phone" className="text-right block">
+                        <Label htmlFor="phone" className="text-right">
                           شماره تماس
                         </Label>
                         <Controller
@@ -546,7 +546,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                       </div>
 
                       <div className="space-y-2 text-right">
-                        <Label htmlFor="department" className="text-right block">
+                        <Label htmlFor="department" className="text-right">
                           بخش
                         </Label>
                         <Controller
@@ -575,7 +575,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               </Card>
             </TabsContent>
 
-            <TabsContent value="security" className="space-y-4" dir="rtl">
+            <TabsContent value="security" className="space-y-4">
               <Card dir="rtl">
                 <CardHeader className="text-right">
                   <CardTitle className="text-right">تغییر رمز عبور</CardTitle>
@@ -584,7 +584,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 <CardContent dir="rtl">
                   <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4" dir="rtl">
                     <div className="space-y-2 text-right">
-                      <Label htmlFor="currentPassword" className="text-right block">
+                      <Label htmlFor="currentPassword" className="text-right">
                         رمز عبور فعلی
                       </Label>
                       <div className="relative">
@@ -596,7 +596,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                               {...field}
                               type={showPasswords.current ? "text" : "password"}
                               disabled={isLoading}
-                              className="text-right pl-10"
+                              className="text-right pr-10"
                               dir="rtl"
                             />
                           )}
@@ -605,7 +605,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="absolute left-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                           onClick={() => setShowPasswords((prev) => ({ ...prev, current: !prev.current }))}
                         >
                           {showPasswords.current ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -619,7 +619,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                     </div>
 
                     <div className="space-y-2 text-right">
-                      <Label htmlFor="newPassword" className="text-right block">
+                      <Label htmlFor="newPassword" className="text-right">
                         رمز عبور جدید
                       </Label>
                       <div className="relative">
@@ -631,7 +631,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                               {...field}
                               type={showPasswords.new ? "text" : "password"}
                               disabled={isLoading}
-                              className="text-right pl-10"
+                              className="text-right pr-10"
                               dir="rtl"
                             />
                           )}
@@ -640,7 +640,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="absolute left-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                           onClick={() => setShowPasswords((prev) => ({ ...prev, new: !prev.new }))}
                         >
                           {showPasswords.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -654,7 +654,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                     </div>
 
                     <div className="space-y-2 text-right">
-                      <Label htmlFor="confirmPassword" className="text-right block">
+                      <Label htmlFor="confirmPassword" className="text-right">
                         تکرار رمز عبور جدید
                       </Label>
                       <div className="relative">
@@ -666,7 +666,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                               {...field}
                               type={showPasswords.confirm ? "text" : "password"}
                               disabled={isLoading}
-                              className="text-right pl-10"
+                              className="text-right pr-10"
                               dir="rtl"
                             />
                           )}
@@ -675,7 +675,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="absolute left-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                           onClick={() => setShowPasswords((prev) => ({ ...prev, confirm: !prev.confirm }))}
                         >
                           {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -698,7 +698,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               </Card>
             </TabsContent>
 
-            <TabsContent value="notifications" className="space-y-4" dir="rtl">
+            <TabsContent value="notifications" className="space-y-4">
               <Card dir="rtl">
                 <CardHeader className="text-right">
                   <CardTitle className="text-right flex items-center gap-2 justify-end">
@@ -739,7 +739,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               </Card>
             </TabsContent>
 
-            <TabsContent value="appearance" className="space-y-4" dir="rtl">
+            <TabsContent value="appearance" className="space-y-4">
               <Card dir="rtl">
                 <CardHeader className="text-right">
                   <CardTitle className="text-right flex items-center gap-2 justify-end">
@@ -754,7 +754,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                   <FontSizeSelector />
                   <Separator />
                   <div className="space-y-3">
-                    <Label className="text-sm font-medium text-right block">زبان سیستم</Label>
+                    <Label className="text-sm font-medium">زبان سیستم</Label>
                     <div className="grid grid-cols-2 gap-2">
                       <Button
                         type="button"
@@ -782,7 +782,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               </Card>
             </TabsContent>
 
-            <TabsContent value="system" className="space-y-4" dir="rtl">
+            <TabsContent value="system" className="space-y-4">
               <div className="grid gap-4">
                 <Card dir="rtl">
                   <CardHeader className="text-right">

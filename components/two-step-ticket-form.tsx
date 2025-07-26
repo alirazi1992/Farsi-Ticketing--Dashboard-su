@@ -155,12 +155,12 @@ export function TwoStepTicketForm({ onSubmit, onCancel }: TwoStepTicketFormProps
 
       {/* Step 1: Basic Information */}
       {currentStep === 1 && (
-        <Card>
+        <Card dir="rtl">
           <CardHeader>
             <CardTitle className="text-right">مرحله اول: اطلاعات اولیه</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={step1Form.handleSubmit(handleStep1Submit)} className="space-y-6">
+            <form onSubmit={step1Form.handleSubmit(handleStep1Submit)} className="space-y-6" dir="rtl">
               {/* Contact Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-medium text-right">اطلاعات تماس</h3>
@@ -172,7 +172,7 @@ export function TwoStepTicketForm({ onSubmit, onCancel }: TwoStepTicketFormProps
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-right">نام و نام خانوادگی *</label>
+                    <label className="text-sm font-medium text-right block">نام و نام خانوادگی *</label>
                     <input
                       {...step1Form.register("clientName")}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md text-right bg-gray-50"
@@ -185,7 +185,7 @@ export function TwoStepTicketForm({ onSubmit, onCancel }: TwoStepTicketFormProps
                     )}
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-right">ایمیل *</label>
+                    <label className="text-sm font-medium text-right block">ایمیل *</label>
                     <input
                       {...step1Form.register("clientEmail")}
                       type="email"
@@ -202,7 +202,7 @@ export function TwoStepTicketForm({ onSubmit, onCancel }: TwoStepTicketFormProps
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-right">شماره تماس *</label>
+                  <label className="text-sm font-medium text-right block">شماره تماس *</label>
                   <input
                     {...step1Form.register("clientPhone")}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-right"
@@ -222,7 +222,7 @@ export function TwoStepTicketForm({ onSubmit, onCancel }: TwoStepTicketFormProps
               <div className="space-y-4">
                 <h3 className="text-lg font-medium text-right">انتخاب مشکل</h3>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-right">اولویت *</label>
+                  <label className="text-sm font-medium text-right block">اولویت *</label>
                   <select
                     {...step1Form.register("priority")}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-right"
@@ -235,7 +235,7 @@ export function TwoStepTicketForm({ onSubmit, onCancel }: TwoStepTicketFormProps
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-right">دسته اصلی مشکل *</label>
+                  <label className="text-sm font-medium text-right block">دسته اصلی مشکل *</label>
                   <select
                     {...step1Form.register("mainIssue")}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-right"
@@ -256,7 +256,7 @@ export function TwoStepTicketForm({ onSubmit, onCancel }: TwoStepTicketFormProps
                   )}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-right">مشکل دقیق *</label>
+                  <label className="text-sm font-medium text-right block">مشکل دقیق *</label>
                   <select
                     {...step1Form.register("subIssue")}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-right"
@@ -302,9 +302,9 @@ export function TwoStepTicketForm({ onSubmit, onCancel }: TwoStepTicketFormProps
 
       {/* Step 2: Details */}
       {currentStep === 2 && (
-        <div className="space-y-6">
+        <div className="space-y-6" dir="rtl">
           {/* Summary of Step 1 */}
-          <Card>
+          <Card dir="rtl">
             <CardHeader>
               <CardTitle className="text-right">خلاصه اطلاعات انتخاب شده</CardTitle>
             </CardHeader>
@@ -331,7 +331,7 @@ export function TwoStepTicketForm({ onSubmit, onCancel }: TwoStepTicketFormProps
           </Card>
 
           {/* Step 2 Form */}
-          <form onSubmit={step2Form.handleSubmit(handleStep2Submit)}>
+          <form onSubmit={step2Form.handleSubmit(handleStep2Submit)} dir="rtl">
             <TicketFormStep2
               control={step2Form.control}
               errors={step2Form.formState.errors}

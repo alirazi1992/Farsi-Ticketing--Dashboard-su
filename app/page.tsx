@@ -10,195 +10,252 @@ import { AdminDashboard } from "@/components/admin-dashboard"
 import { UserMenu } from "@/components/user-menu"
 import { useAuth } from "@/lib/auth-context"
 import { TicketProvider } from "@/lib/ticket-context"
-import { LogIn, Shield, Wrench, User, Ticket, Clock, CheckCircle } from "lucide-react"
+import { Shield, Wrench, User, Headphones, LogIn, Globe } from "lucide-react"
 
 export default function HomePage() {
   const { user, logout } = useAuth()
   const [showLoginDialog, setShowLoginDialog] = useState(false)
 
-  const handleLogin = () => {
-    setShowLoginDialog(true)
-  }
-
-  const handleLogout = () => {
-    logout()
-  }
-
-  // If user is logged in, show appropriate dashboard
   if (user) {
     return (
       <TicketProvider>
-        <div className="min-h-screen" dir="rtl">
+        <div dir="rtl" className="min-h-screen bg-gray-50">
           {/* Top Navigation */}
           <nav className="bg-white shadow-sm border-b" dir="rtl">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex justify-between h-16">
-                <div className="flex items-center">
-                  <UserMenu />
+              <div className="flex justify-between items-center h-16">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Headphones className="w-8 h-8 text-blue-600" />
+                    <div className="text-right">
+                      <h1 className="text-lg font-bold text-gray-900">سیستم مدیریت خدمات IT</h1>
+                      <p className="text-xs text-gray-500">
+                        {user.role === "admin" && "پنل مدیریت"}
+                        {user.role === "technician" && "پنل تکنسین"}
+                        {user.role === "client" && "پنل کاربری"}
+                      </p>
+                    </div>
+                  </div>
                 </div>
+
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <h1 className="text-lg font-semibold">سیستم مدیریت خدمات IT</h1>
-                    <p className="text-sm text-gray-600">خوش آمدید، {user.name}</p>
+                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                    <p className="text-xs text-gray-500 flex items-center gap-1">
+                      {user.role === "admin" && <Shield className="w-3 h-3" />}
+                      {user.role === "technician" && <Wrench className="w-3 h-3" />}
+                      {user.role === "client" && <User className="w-3 h-3" />}
+                      {user.role === "admin" && "مدیر سیستم"}
+                      {user.role === "technician" && "تکنسین"}
+                      {user.role === "client" && "کاربر"}
+                    </p>
                   </div>
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    {user.role === "admin" && <Shield className="w-5 h-5 text-blue-600" />}
-                    {user.role === "technician" && <Wrench className="w-5 h-5 text-green-600" />}
-                    {user.role === "client" && <User className="w-5 h-5 text-gray-600" />}
-                  </div>
+                  <UserMenu />
                 </div>
               </div>
             </div>
           </nav>
 
           {/* Dashboard Content */}
-          {user.role === "client" && <ClientDashboard />}
-          {user.role === "technician" && <TechnicianDashboard onLogout={handleLogout} />}
-          {user.role === "admin" && <AdminDashboard onLogout={handleLogout} />}
+          <main dir="rtl">
+            {user.role === "admin" && <AdminDashboard onLogout={logout} />}
+            {user.role === "technician" && <TechnicianDashboard onLogout={logout} />}
+            {user.role === "client" && <ClientDashboard />}
+          </main>
         </div>
       </TicketProvider>
     )
   }
 
-  // Landing page for non-authenticated users
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100" dir="rtl">
-      <div className="container mx-auto px-4 py-16">
-        {/* Header */}
-        <div className="text-center mb-16">
-          <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center">
-              <Ticket className="w-10 h-10 text-white" />
+    <div dir="rtl" className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      {/* Header */}
+      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50" dir="rtl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                <Headphones className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-right">
+                <h1 className="text-xl font-bold text-gray-900">سیستم مدیریت خدمات IT</h1>
+                <p className="text-sm text-gray-600">پلتفرم جامع پشتیبانی فنی</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Globe className="w-4 h-4" />
+                <span>فارسی</span>
+              </div>
+              <Button onClick={() => setShowLoginDialog(true)} className="gap-2">
+                <LogIn className="w-4 h-4" />
+                ورود به سیستم
+              </Button>
             </div>
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">سیستم مدیریت خدمات IT</h1>
-          <p className="text-xl text-gray-600 mb-8">پلتفرم جامع مدیریت تیکت‌های پشتیبانی فنی</p>
-          <Button onClick={handleLogin} size="lg" className="gap-2 bg-blue-600 hover:bg-blue-700">
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12" dir="rtl">
+        <div className="text-center mb-12">
+          <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Headphones className="w-10 h-10 text-white" />
+          </div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">به سیستم مدیریت خدمات IT خوش آمدید</h1>
+          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            پلتفرم جامع برای مدیریت تیکت‌های پشتیبانی، ارتباط با تکنسین‌ها و پیگیری درخواست‌های فنی
+          </p>
+          <Button onClick={() => setShowLoginDialog(true)} size="lg" className="gap-2">
             <LogIn className="w-5 h-5" />
-            ورود به سیستم
+            شروع کار با سیستم
           </Button>
         </div>
 
         {/* Features */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-          <Card className="text-center" dir="rtl">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+          <Card className="text-center hover:shadow-lg transition-shadow" dir="rtl">
             <CardHeader>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <User className="w-6 h-6 text-blue-600" />
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <User className="w-8 h-8 text-white" />
               </div>
               <CardTitle className="text-right">پنل کاربری</CardTitle>
               <CardDescription className="text-right">
-                ثبت و پیگیری تیکت‌های پشتیبانی با رابط کاربری ساده و کاربردی
+                ثبت تیکت، پیگیری درخواست‌ها و ارتباط با تیم پشتیبانی
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <ul className="text-sm text-gray-600 space-y-2 text-right">
-                <li>• ثبت تیکت جدید</li>
-                <li>• پیگیری وضعیت درخواست‌ها</li>
-                <li>• ارتباط با تکنسین‌ها</li>
-                <li>• مشاهده تاریخچه تیکت‌ها</li>
+            <CardContent className="text-right">
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li className="flex items-center gap-2 justify-end">
+                  <span>ثبت تیکت‌های پشتیبانی</span>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                </li>
+                <li className="flex items-center gap-2 justify-end">
+                  <span>پیگیری وضعیت درخواست‌ها</span>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                </li>
+                <li className="flex items-center gap-2 justify-end">
+                  <span>ارتباط مستقیم با تکنسین‌ها</span>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                </li>
               </ul>
             </CardContent>
           </Card>
 
-          <Card className="text-center" dir="rtl">
+          <Card className="text-center hover:shadow-lg transition-shadow" dir="rtl">
             <CardHeader>
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Wrench className="w-6 h-6 text-green-600" />
+              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Wrench className="w-8 h-8 text-white" />
               </div>
               <CardTitle className="text-right">پنل تکنسین</CardTitle>
-              <CardDescription className="text-right">
-                ابزارهای حرفه‌ای برای مدیریت و حل تیکت‌های واگذار شده
-              </CardDescription>
+              <CardDescription className="text-right">مدیریت تیکت‌های واگذار شده و ارائه پشتیبانی فنی</CardDescription>
             </CardHeader>
-            <CardContent>
-              <ul className="text-sm text-gray-600 space-y-2 text-right">
-                <li>• مدیریت صف کاری</li>
-                <li>• ردیابی زمان کار</li>
-                <li>• ارتباط با مشتریان</li>
-                <li>• گزارش‌گیری عملکرد</li>
+            <CardContent className="text-right">
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li className="flex items-center gap-2 justify-end">
+                  <span>صف کاری هوشمند</span>
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                </li>
+                <li className="flex items-center gap-2 justify-end">
+                  <span>سیستم زمان‌سنجی</span>
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                </li>
+                <li className="flex items-center gap-2 justify-end">
+                  <span>دانش‌نامه فنی</span>
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                </li>
               </ul>
             </CardContent>
           </Card>
 
-          <Card className="text-center" dir="rtl">
+          <Card className="text-center hover:shadow-lg transition-shadow" dir="rtl">
             <CardHeader>
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Shield className="w-6 h-6 text-purple-600" />
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Shield className="w-8 h-8 text-white" />
               </div>
               <CardTitle className="text-right">پنل مدیریت</CardTitle>
-              <CardDescription className="text-right">نظارت کامل بر سیستم و مدیریت تیم پشتیبانی</CardDescription>
+              <CardDescription className="text-right">نظارت بر سیستم، تحلیل عملکرد و مدیریت تیم</CardDescription>
             </CardHeader>
-            <CardContent>
-              <ul className="text-sm text-gray-600 space-y-2 text-right">
-                <li>• تخصیص هوشمند تیکت‌ها</li>
-                <li>• آمار و گزارش‌های جامع</li>
-                <li>• مدیریت تکنسین‌ها</li>
-                <li>• تنظیمات سیستم</li>
+            <CardContent className="text-right">
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li className="flex items-center gap-2 justify-end">
+                  <span>داشبورد تحلیلی</span>
+                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                </li>
+                <li className="flex items-center gap-2 justify-end">
+                  <span>تعیین خودکار تکنسین</span>
+                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                </li>
+                <li className="flex items-center gap-2 justify-end">
+                  <span>گزارش‌گیری پیشرفته</span>
+                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                </li>
               </ul>
             </CardContent>
           </Card>
         </div>
 
-        {/* Statistics */}
-        <div className="bg-white rounded-lg shadow-lg p-8 mb-16" dir="rtl">
-          <h2 className="text-2xl font-bold text-center mb-8">آمار سیستم</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Ticket className="w-8 h-8 text-blue-600" />
-              </div>
-              <div className="text-3xl font-bold text-blue-600 mb-2">1,247</div>
-              <div className="text-gray-600">تیکت‌های پردازش شده</div>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-green-600" />
-              </div>
-              <div className="text-3xl font-bold text-green-600 mb-2">94%</div>
-              <div className="text-gray-600">نرخ رضایت مشتریان</div>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Clock className="w-8 h-8 text-orange-600" />
-              </div>
-              <div className="text-3xl font-bold text-orange-600 mb-2">2.3</div>
-              <div className="text-gray-600">ساعت متوسط پاسخ</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Demo Accounts */}
-        <Card className="max-w-2xl mx-auto" dir="rtl">
-          <CardHeader className="text-center">
-            <CardTitle>حساب‌های نمونه برای تست</CardTitle>
-            <CardDescription>برای آشنایی با سیستم، از حساب‌های زیر استفاده کنید</CardDescription>
+        {/* Demo Information */}
+        <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200" dir="rtl">
+          <CardHeader>
+            <CardTitle className="text-center text-blue-900">حساب‌های نمونه برای تست سیستم</CardTitle>
+            <CardDescription className="text-center text-blue-700">
+              برای آشنایی با امکانات سیستم، از حساب‌های زیر استفاده کنید
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 border rounded-lg text-center">
-                <User className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-                <h3 className="font-semibold">کاربر</h3>
-                <p className="text-sm text-gray-600 mb-2">ahmad@company.com</p>
-                <p className="text-xs text-gray-500">رمز: 123456</p>
+              <div className="bg-white rounded-lg p-4 border border-gray-200 text-right">
+                <div className="flex items-center gap-2 justify-end mb-2">
+                  <span className="font-semibold text-gray-900">کاربر عادی</span>
+                  <User className="w-5 h-5 text-gray-600" />
+                </div>
+                <div className="space-y-1 text-sm text-gray-600">
+                  <p>
+                    <strong>ایمیل:</strong> ahmad@company.com
+                  </p>
+                  <p>
+                    <strong>رمز عبور:</strong> 123456
+                  </p>
+                </div>
               </div>
-              <div className="p-4 border rounded-lg text-center">
-                <Wrench className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                <h3 className="font-semibold">تکنسین</h3>
-                <p className="text-sm text-gray-600 mb-2">ali@company.com</p>
-                <p className="text-xs text-gray-500">رمز: 123456</p>
+
+              <div className="bg-white rounded-lg p-4 border border-gray-200 text-right">
+                <div className="flex items-center gap-2 justify-end mb-2">
+                  <span className="font-semibold text-gray-900">تکنسین</span>
+                  <Wrench className="w-5 h-5 text-green-600" />
+                </div>
+                <div className="space-y-1 text-sm text-gray-600">
+                  <p>
+                    <strong>ایمیل:</strong> ali@company.com
+                  </p>
+                  <p>
+                    <strong>رمز عبور:</strong> 123456
+                  </p>
+                </div>
               </div>
-              <div className="p-4 border rounded-lg text-center">
-                <Shield className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                <h3 className="font-semibold">مدیر</h3>
-                <p className="text-sm text-gray-600 mb-2">admin@company.com</p>
-                <p className="text-xs text-gray-500">رمز: 123456</p>
+
+              <div className="bg-white rounded-lg p-4 border border-gray-200 text-right">
+                <div className="flex items-center gap-2 justify-end mb-2">
+                  <span className="font-semibold text-gray-900">مدیر سیستم</span>
+                  <Shield className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="space-y-1 text-sm text-gray-600">
+                  <p>
+                    <strong>ایمیل:</strong> admin@company.com
+                  </p>
+                  <p>
+                    <strong>رمز عبور:</strong> 123456
+                  </p>
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
-      </div>
+      </main>
 
+      {/* Login Dialog */}
       <LoginDialog open={showLoginDialog} onOpenChange={setShowLoginDialog} />
     </div>
   )

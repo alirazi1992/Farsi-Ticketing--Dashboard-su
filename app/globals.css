@@ -2,130 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-/* RTL Support for Farsi */
-html[dir="rtl"] {
-  direction: rtl;
-}
-
 body {
-  font-family: "Vazir", "Tahoma", Arial, sans-serif;
-  direction: rtl;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
-/* RTL-specific utilities */
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
-
-  /* RTL-specific classes */
-  .rtl\:text-right {
-    text-align: right;
-  }
-
-  .rtl\:text-left {
-    text-align: left;
-  }
-
-  .rtl\:mr-auto {
-    margin-right: auto;
-  }
-
-  .rtl\:ml-auto {
-    margin-left: auto;
-  }
-
-  /* Fix for dropdowns and popups */
-  .rtl\:origin-top-right {
-    transform-origin: top right;
-  }
-
-  .rtl\:origin-top-left {
-    transform-origin: top left;
-  }
-}
-
-/* Override default LTR styles for RTL */
-* {
-  direction: inherit;
-}
-
-/* Fix for select dropdowns */
-select {
-  direction: rtl;
-  text-align: right;
-}
-
-/* Fix for input fields */
-input[type="text"],
-input[type="email"],
-input[type="password"],
-input[type="tel"],
-textarea {
-  direction: rtl;
-  text-align: right;
-}
-
-/* Fix for buttons with icons */
-.btn-rtl {
-  flex-direction: row-reverse;
-}
-
-/* Fix for navigation and menus */
-.nav-rtl {
-  direction: rtl;
-}
-
-.nav-rtl ul {
-  direction: rtl;
-}
-
-.nav-rtl li {
-  direction: rtl;
-}
-
-/* Fix for tables */
-table {
-  direction: rtl;
-}
-
-th,
-td {
-  text-align: right;
-}
-
-/* Fix for forms */
-form {
-  direction: rtl;
-}
-
-label {
-  text-align: right;
-}
-
-/* Fix for cards and containers */
-.card-rtl {
-  direction: rtl;
-  text-align: right;
-}
-
-/* Fix for dialogs and modals */
-.dialog-rtl {
-  direction: rtl;
-}
-
-.dialog-rtl .dialog-content {
-  text-align: right;
-}
-
-/* Fix for dropdowns */
-.dropdown-rtl {
-  direction: rtl;
-}
-
-.dropdown-rtl .dropdown-content {
-  right: 0;
-  left: auto;
 }
 
 @layer base {
@@ -206,6 +90,5 @@ label {
   }
   body {
     @apply bg-background text-foreground;
-    direction: rtl;
   }
 }
