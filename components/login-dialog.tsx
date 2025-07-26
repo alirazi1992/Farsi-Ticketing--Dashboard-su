@@ -7,30 +7,33 @@ import * as yup from "yup"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/hooks/use-toast"
+import { Eye, EyeOff, LogIn, UserPlus, Shield, Wrench, User } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
-import { User, Settings, Eye, EyeOff, UserPlus, LogIn } from "lucide-react"
 
+// Validation schemas
 const loginSchema = yup.object({
-  email: yup.string().email("ایمیل معتبر وارد کنید").required("ایمیل الزامی است"),
-  password: yup.string().min(6, "رمز عبور باید حداقل ۶ کاراکتر باشد").required("رمز عبور الزامی است"),
+  email: yup.string().required("ایمیل الزامی است").email("فرمت ایمیل صحیح نیست"),
+  password: yup.string().required("رمز عبور الزامی است").min(6, "رمز عبور باید حداقل ۶ کاراکتر باشد"),
 })
 
 const signupSchema = yup.object({
-  name: yup.string().required("نام و نام خانوادگی الزامی است"),
-  email: yup.string().email("ایمیل معتبر وارد کنید").required("ایمیل الزامی است"),
-  password: yup.string().min(6, "رمز عبور باید حداقل ۶ کاراکتر باشد").required("رمز عبور الزامی است"),
+  name: yup.string().required("نام و نام خانوادگی الزامی است").min(2, "نام باید حداقل ۲ کاراکتر باشد"),
+  email: yup.string().required("ایمیل الزامی است").email("فرمت ایمیل صحیح نیست"),
+  phone: yup
+    .string()
+    .required("شماره تماس الزامی است")
+    .matches(/^(\+98|0)?9\d{9}$/, "شماره تماس معتبر نیست"),
+  department: yup.string().required("انتخاب بخش الزامی است"),
+  role: yup.string().required("انتخاب نقش الزامی است"),
+  password: yup.string().required("رمز عبور الزامی است").min(6, "رمز عبور باید حداقل ۶ کاراکتر باشد"),
   confirmPassword: yup
     .string()
-    .oneOf([yup.ref("password")], "تکرار رمز عبور مطابقت ندارد")
-    .required("تکرار رمز عبور الزامی است"),
-  phone: yup.string().required("شماره تماس الزامی است"),
-  department: yup.string().optional(),
-  role: yup.string().oneOf(["client"], "نقش معتبر انتخاب کنید").required("نقش الزامی است"),
+    .required("تکرار رمز عبور الزامی است")
+    .oneOf([yup.ref("password")], "رمزهای عبور مطابقت ندارند"),
 })
 
 interface LoginDialogProps {
@@ -39,12 +42,13 @@ interface LoginDialogProps {
 }
 
 export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
+  const { login, register } = useAuth()
   const [activeTab, setActiveTab] = useState("login")
   const [loginType, setLoginType] = useState("client")
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const { login, isLoading } = useAuth()
 
+  // Login form
   const loginForm = useForm({
     resolver: yupResolver(loginSchema),
     defaultValues: {
@@ -53,30 +57,30 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
     },
   })
 
+  // Signup form
   const signupForm = useForm({
     resolver: yupResolver(signupSchema),
     defaultValues: {
       name: "",
       email: "",
-      password: "",
-      confirmPassword: "",
       phone: "",
       department: "",
       role: "client",
+      password: "",
+      confirmPassword: "",
     },
   })
 
-  const onLoginSubmit = async (data: { email: string; password: string }) => {
+  const handleLogin = async (data: any) => {
     try {
-      const success = await login(data.email, data.password, loginType as "client" | "engineer")
-
+      const success = await login(data.email, data.password, loginType)
       if (success) {
         toast({
           title: "ورود موفق",
           description: "به سیستم خوش آمدید",
         })
-        loginForm.reset()
         onOpenChange(false)
+        loginForm.reset()
       } else {
         toast({
           title: "خطا در ورود",
@@ -87,492 +91,414 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
     } catch (error) {
       toast({
         title: "خطا در ورود",
-        description: "لطفاً دوباره تلاش کنید",
+        description: "مشکلی در سیستم رخ داده است",
         variant: "destructive",
       })
     }
   }
 
-  const onSignupSubmit = async (data: any) => {
+  const handleSignup = async (data: any) => {
     try {
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Here you would typically send the data to your backend
-      console.log("Signup data:", data)
-
-      toast({
-        title: "ثبت‌نام موفق",
-        description: "حساب کاربری شما با موفقیت ایجاد شد. لطفاً وارد شوید.",
+      const success = await register({
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        department: data.department,
+        role: data.role,
+        password: data.password,
       })
 
-      signupForm.reset()
-      setActiveTab("login")
+      if (success) {
+        toast({
+          title: "ثبت‌نام موفق",
+          description: "حساب شما با موفقیت ایجاد شد",
+        })
+        onOpenChange(false)
+        signupForm.reset()
+        setActiveTab("login")
+      } else {
+        toast({
+          title: "خطا در ثبت‌نام",
+          description: "این ایمیل قبلاً ثبت شده است",
+          variant: "destructive",
+        })
+      }
     } catch (error) {
       toast({
         title: "خطا در ثبت‌نام",
-        description: "لطفاً دوباره تلاش کنید",
+        description: "مشکلی در سیستم رخ داده است",
         variant: "destructive",
       })
     }
   }
 
-  const fillDemoCredentials = (role: "client" | "engineer" | "admin") => {
-    const credentials = {
-      client: { email: "ahmad@company.com", password: "123456" },
-      engineer: { email: "ali@company.com", password: "123456" },
-      admin: { email: "admin@company.com", password: "123456" },
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case "admin":
+        return <Shield className="w-4 h-4" />
+      case "technician":
+        return <Wrench className="w-4 h-4" />
+      default:
+        return <User className="w-4 h-4" />
     }
+  }
 
-    loginForm.reset(credentials[role])
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case "admin":
+        return "مدیر سیستم"
+      case "technician":
+        return "تکنسین"
+      default:
+        return "کاربر"
+    }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" dir="rtl">
-        <DialogHeader className="text-right">
+      <DialogContent className="sm:max-w-lg" dir="rtl">
+        <DialogHeader>
           <DialogTitle className="text-right">
             {activeTab === "login" ? "ورود به سیستم" : "ثبت‌نام در سیستم"}
           </DialogTitle>
           <DialogDescription className="text-right">
             {activeTab === "login"
-              ? "برای دسترسی به سیستم مدیریت خدمات IT وارد شوید"
-              : "برای ایجاد حساب کاربری جدید ثبت‌نام کنید"}
+              ? "برای دسترسی به سیستم، اطلاعات خود را وارد کنید"
+              : "برای ایجاد حساب کاربری جدید، فرم زیر را تکمیل کنید"}
           </DialogDescription>
         </DialogHeader>
 
-        <div dir="rtl">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
-            <TabsList className="grid w-full grid-cols-2" dir="rtl">
-              <TabsTrigger value="login" className="gap-2 flex-row-reverse">
-                <LogIn className="w-4 h-4" />
-                ورود
-              </TabsTrigger>
-              <TabsTrigger value="signup" className="gap-2 flex-row-reverse">
-                <UserPlus className="w-4 h-4" />
-                ثبت‌نام
-              </TabsTrigger>
-            </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="login" className="gap-2">
+              <LogIn className="w-4 h-4" />
+              ورود
+            </TabsTrigger>
+            <TabsTrigger value="signup" className="gap-2">
+              <UserPlus className="w-4 h-4" />
+              ثبت‌نام
+            </TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="login" className="space-y-4" dir="rtl">
-              <div className="space-y-4" dir="rtl">
-                <Tabs value={loginType} onValueChange={setLoginType} className="w-full" dir="rtl">
-                  <TabsList className="grid w-full grid-cols-2" dir="rtl">
-                    <TabsTrigger value="client" className="gap-2 flex-row-reverse">
-                      <User className="w-4 h-4" />
-                      کاربر
-                    </TabsTrigger>
-                    <TabsTrigger value="engineer" className="gap-2 flex-row-reverse">
-                      <Settings className="w-4 h-4" />
-                      تکنسین
-                    </TabsTrigger>
-                  </TabsList>
+          <TabsContent value="login" className="space-y-4">
+            {/* Role Selection for Login */}
+            <div className="space-y-2">
+              <Label className="text-right">نوع کاربری</Label>
+              <Tabs value={loginType} onValueChange={setLoginType} className="w-full" dir="rtl">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="client" className="gap-1 text-xs">
+                    <User className="w-3 h-3" />
+                    کاربر
+                  </TabsTrigger>
+                  <TabsTrigger value="technician" className="gap-1 text-xs">
+                    <Wrench className="w-3 h-3" />
+                    تکنسین
+                  </TabsTrigger>
+                  <TabsTrigger value="admin" className="gap-1 text-xs">
+                    <Shield className="w-3 h-3" />
+                    مدیر
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
 
-                  <TabsContent value="client" className="space-y-4" dir="rtl">
-                    <Card dir="rtl">
-                      <CardHeader className="pb-3 text-right">
-                        <CardTitle className="text-lg text-right">ورود کاربر</CardTitle>
-                        <CardDescription className="text-right">
-                          برای مشاهده و ایجاد تیکت‌های خود وارد شوید
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent dir="rtl">
-                        <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4" dir="rtl">
-                          <div className="space-y-2 text-right" dir="rtl">
-                            <Label htmlFor="email" className="text-right">
-                              ایمیل
-                            </Label>
-                            <Controller
-                              name="email"
-                              control={loginForm.control}
-                              render={({ field }) => (
-                                <Input
-                                  {...field}
-                                  type="email"
-                                  placeholder="user@company.com"
-                                  disabled={isLoading}
-                                  className="text-right"
-                                  dir="rtl"
-                                />
-                              )}
-                            />
-                            {loginForm.formState.errors.email && (
-                              <p className="text-sm text-red-500 text-right">
-                                {loginForm.formState.errors.email.message}
-                              </p>
-                            )}
-                          </div>
-
-                          <div className="space-y-2 text-right" dir="rtl">
-                            <Label htmlFor="password" className="text-right">
-                              رمز عبور
-                            </Label>
-                            <div className="relative" dir="rtl">
-                              <Controller
-                                name="password"
-                                control={loginForm.control}
-                                render={({ field }) => (
-                                  <Input
-                                    {...field}
-                                    type={showPassword ? "text" : "password"}
-                                    placeholder="رمز عبور"
-                                    disabled={isLoading}
-                                    className="text-right pr-10"
-                                    dir="rtl"
-                                  />
-                                )}
-                              />
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                                onClick={() => setShowPassword(!showPassword)}
-                              >
-                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                              </Button>
-                            </div>
-                            {loginForm.formState.errors.password && (
-                              <p className="text-sm text-red-500 text-right">
-                                {loginForm.formState.errors.password.message}
-                              </p>
-                            )}
-                          </div>
-
-                          <Button type="submit" className="w-full" disabled={isLoading}>
-                            {isLoading ? "در حال ورود..." : "ورود"}
-                          </Button>
-
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="w-full bg-transparent"
-                            onClick={() => fillDemoCredentials("client")}
-                          >
-                            استفاده از حساب نمونه
-                          </Button>
-                        </form>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-
-                  <TabsContent value="engineer" className="space-y-4" dir="rtl">
-                    <Card dir="rtl">
-                      <CardHeader className="pb-3 text-right">
-                        <CardTitle className="text-lg text-right">ورود تکنسین</CardTitle>
-                        <CardDescription className="text-right">
-                          برای مدیریت تیکت‌ها و پاسخ‌گویی وارد شوید
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent dir="rtl">
-                        <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4" dir="rtl">
-                          <div className="space-y-2 text-right" dir="rtl">
-                            <Label htmlFor="email" className="text-right">
-                              ایمیل
-                            </Label>
-                            <Controller
-                              name="email"
-                              control={loginForm.control}
-                              render={({ field }) => (
-                                <Input
-                                  {...field}
-                                  type="email"
-                                  placeholder="engineer@company.com"
-                                  disabled={isLoading}
-                                  className="text-right"
-                                  dir="rtl"
-                                />
-                              )}
-                            />
-                            {loginForm.formState.errors.email && (
-                              <p className="text-sm text-red-500 text-right">
-                                {loginForm.formState.errors.email.message}
-                              </p>
-                            )}
-                          </div>
-
-                          <div className="space-y-2 text-right" dir="rtl">
-                            <Label htmlFor="password" className="text-right">
-                              رمز عبور
-                            </Label>
-                            <div className="relative" dir="rtl">
-                              <Controller
-                                name="password"
-                                control={loginForm.control}
-                                render={({ field }) => (
-                                  <Input
-                                    {...field}
-                                    type={showPassword ? "text" : "password"}
-                                    placeholder="رمز عبور"
-                                    disabled={isLoading}
-                                    className="text-right pr-10"
-                                    dir="rtl"
-                                  />
-                                )}
-                              />
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                                onClick={() => setShowPassword(!showPassword)}
-                              >
-                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                              </Button>
-                            </div>
-                            {loginForm.formState.errors.password && (
-                              <p className="text-sm text-red-500 text-right">
-                                {loginForm.formState.errors.password.message}
-                              </p>
-                            )}
-                          </div>
-
-                          <Button type="submit" className="w-full" disabled={isLoading}>
-                            {isLoading ? "در حال ورود..." : "ورود"}
-                          </Button>
-
-                          <div className="grid grid-cols-2 gap-2">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => fillDemoCredentials("engineer")}
-                            >
-                              تکنسین نمونه
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => fillDemoCredentials("admin")}
-                            >
-                              مدیر نمونه
-                            </Button>
-                          </div>
-                        </form>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                </Tabs>
+            <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-right">
+                  ایمیل
+                </Label>
+                <Controller
+                  name="email"
+                  control={loginForm.control}
+                  render={({ field }) => (
+                    <Input {...field} type="email" placeholder="example@domain.com" className="text-right" dir="rtl" />
+                  )}
+                />
+                {loginForm.formState.errors.email && (
+                  <p className="text-sm text-red-500 text-right">{loginForm.formState.errors.email.message}</p>
+                )}
               </div>
-            </TabsContent>
 
-            <TabsContent value="signup" className="space-y-4" dir="rtl">
-              <Card dir="rtl">
-                <CardHeader className="pb-3 text-right">
-                  <CardTitle className="text-lg text-right">ایجاد حساب کاربری جدید</CardTitle>
-                  <CardDescription className="text-right">
-                    اطلاعات خود را برای ثبت‌نام در سیستم وارد کنید
-                  </CardDescription>
-                </CardHeader>
-                <CardContent dir="rtl">
-                  <form onSubmit={signupForm.handleSubmit(onSignupSubmit)} className="space-y-4" dir="rtl">
-                    <div className="space-y-2 text-right" dir="rtl">
-                      <Label htmlFor="name" className="text-right">
-                        نام و نام خانوادگی *
-                      </Label>
-                      <Controller
-                        name="name"
-                        control={signupForm.control}
-                        render={({ field }) => (
-                          <Input
-                            {...field}
-                            placeholder="نام کامل خود را وارد کنید"
-                            disabled={isLoading}
-                            className="text-right"
-                            dir="rtl"
-                          />
-                        )}
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-right">
+                  رمز عبور
+                </Label>
+                <div className="relative">
+                  <Controller
+                    name="password"
+                    control={loginForm.control}
+                    render={({ field }) => (
+                      <Input
+                        {...field}
+                        type={showPassword ? "text" : "password"}
+                        placeholder="رمز عبور خود را وارد کنید"
+                        className="text-right pl-10"
+                        dir="rtl"
                       />
-                      {signupForm.formState.errors.name && (
-                        <p className="text-sm text-red-500 text-right">{signupForm.formState.errors.name.message}</p>
-                      )}
-                    </div>
+                    )}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute left-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-400" />
+                    )}
+                  </Button>
+                </div>
+                {loginForm.formState.errors.password && (
+                  <p className="text-sm text-red-500 text-right">{loginForm.formState.errors.password.message}</p>
+                )}
+              </div>
 
-                    <div className="space-y-2 text-right" dir="rtl">
-                      <Label htmlFor="email" className="text-right">
-                        ایمیل *
-                      </Label>
-                      <Controller
-                        name="email"
-                        control={signupForm.control}
-                        render={({ field }) => (
-                          <Input
-                            {...field}
-                            type="email"
-                            placeholder="example@domain.com"
-                            disabled={isLoading}
-                            className="text-right"
-                            dir="rtl"
-                          />
-                        )}
+              <Button type="submit" className="w-full" disabled={loginForm.formState.isSubmitting}>
+                {loginForm.formState.isSubmitting ? "در حال ورود..." : "ورود"}
+              </Button>
+            </form>
+
+            {/* Demo Accounts */}
+            <div className="pt-4 border-t">
+              <p className="text-xs text-muted-foreground text-center mb-2">حساب‌های نمونه برای تست:</p>
+              <div className="space-y-1 text-xs text-muted-foreground">
+                <div className="flex justify-between items-center p-2 bg-muted/50 rounded">
+                  <span>کاربر: ahmad@company.com / 123456</span>
+                  <User className="w-3 h-3" />
+                </div>
+                <div className="flex justify-between items-center p-2 bg-muted/50 rounded">
+                  <span>تکنسین: ali@company.com / 123456</span>
+                  <Wrench className="w-3 h-3" />
+                </div>
+                <div className="flex justify-between items-center p-2 bg-muted/50 rounded">
+                  <span>مدیر: admin@company.com / 123456</span>
+                  <Shield className="w-3 h-3" />
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center text-sm text-muted-foreground">
+              <p>حساب کاربری ندارید؟</p>
+              <Button variant="link" className="p-0 h-auto text-primary" onClick={() => setActiveTab("signup")}>
+                ثبت‌نام کنید
+              </Button>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="signup" className="space-y-4">
+            <form onSubmit={signupForm.handleSubmit(handleSignup)} className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-right">
+                    نام و نام خانوادگی *
+                  </Label>
+                  <Controller
+                    name="name"
+                    control={signupForm.control}
+                    render={({ field }) => (
+                      <Input {...field} placeholder="نام کامل خود را وارد کنید" className="text-right" dir="rtl" />
+                    )}
+                  />
+                  {signupForm.formState.errors.name && (
+                    <p className="text-sm text-red-500 text-right">{signupForm.formState.errors.name.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-right">
+                    ایمیل *
+                  </Label>
+                  <Controller
+                    name="email"
+                    control={signupForm.control}
+                    render={({ field }) => (
+                      <Input
+                        {...field}
+                        type="email"
+                        placeholder="example@domain.com"
+                        className="text-right"
+                        dir="rtl"
                       />
-                      {signupForm.formState.errors.email && (
-                        <p className="text-sm text-red-500 text-right">{signupForm.formState.errors.email.message}</p>
-                      )}
-                    </div>
+                    )}
+                  />
+                  {signupForm.formState.errors.email && (
+                    <p className="text-sm text-red-500 text-right">{signupForm.formState.errors.email.message}</p>
+                  )}
+                </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2 text-right" dir="rtl">
-                        <Label htmlFor="phone" className="text-right">
-                          شماره تماس *
-                        </Label>
-                        <Controller
-                          name="phone"
-                          control={signupForm.control}
-                          render={({ field }) => (
-                            <Input
-                              {...field}
-                              placeholder="09123456789"
-                              disabled={isLoading}
-                              className="text-right"
-                              dir="rtl"
-                            />
-                          )}
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-right">
+                    شماره تماس *
+                  </Label>
+                  <Controller
+                    name="phone"
+                    control={signupForm.control}
+                    render={({ field }) => (
+                      <Input {...field} placeholder="09xxxxxxxxx" className="text-right" dir="rtl" />
+                    )}
+                  />
+                  {signupForm.formState.errors.phone && (
+                    <p className="text-sm text-red-500 text-right">{signupForm.formState.errors.phone.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="department" className="text-right">
+                    بخش *
+                  </Label>
+                  <Controller
+                    name="department"
+                    control={signupForm.control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                        <SelectTrigger className="text-right">
+                          <SelectValue placeholder="انتخاب بخش" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="it">فناوری اطلاعات</SelectItem>
+                          <SelectItem value="hr">منابع انسانی</SelectItem>
+                          <SelectItem value="finance">مالی</SelectItem>
+                          <SelectItem value="marketing">بازاریابی</SelectItem>
+                          <SelectItem value="operations">عملیات</SelectItem>
+                          <SelectItem value="accounting">حسابداری</SelectItem>
+                          <SelectItem value="sales">فروش</SelectItem>
+                          <SelectItem value="other">سایر</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {signupForm.formState.errors.department && (
+                    <p className="text-sm text-red-500 text-right">{signupForm.formState.errors.department.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="role" className="text-right">
+                    نقش *
+                  </Label>
+                  <Controller
+                    name="role"
+                    control={signupForm.control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                        <SelectTrigger className="text-right">
+                          <SelectValue placeholder="انتخاب نقش" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="client">
+                            <div className="flex items-center gap-2">
+                              <User className="w-4 h-4" />
+                              کاربر
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="engineer">
+                            <div className="flex items-center gap-2">
+                              <Wrench className="w-4 h-4" />
+                              تکنسین
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {signupForm.formState.errors.role && (
+                    <p className="text-sm text-red-500 text-right">{signupForm.formState.errors.role.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-right">
+                    رمز عبور *
+                  </Label>
+                  <div className="relative">
+                    <Controller
+                      name="password"
+                      control={signupForm.control}
+                      render={({ field }) => (
+                        <Input
+                          {...field}
+                          type={showPassword ? "text" : "password"}
+                          placeholder="حداقل ۶ کاراکتر"
+                          className="text-right pl-10"
+                          dir="rtl"
                         />
-                        {signupForm.formState.errors.phone && (
-                          <p className="text-sm text-red-500 text-right">{signupForm.formState.errors.phone.message}</p>
-                        )}
-                      </div>
-
-                      <div className="space-y-2 text-right" dir="rtl">
-                        <Label htmlFor="department" className="text-right">
-                          بخش
-                        </Label>
-                        <Controller
-                          name="department"
-                          control={signupForm.control}
-                          render={({ field }) => (
-                            <Input
-                              {...field}
-                              placeholder="نام بخش"
-                              disabled={isLoading}
-                              className="text-right"
-                              dir="rtl"
-                            />
-                          )}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 text-right" dir="rtl">
-                      <Label htmlFor="role" className="text-right">
-                        نقش *
-                      </Label>
-                      <Controller
-                        name="role"
-                        control={signupForm.control}
-                        render={({ field }) => (
-                          <Select value={field.value} onValueChange={field.onChange} dir="rtl">
-                            <SelectTrigger className="text-right">
-                              <SelectValue placeholder="نقش خود را انتخاب کنید" />
-                            </SelectTrigger>
-                            <SelectContent dir="rtl">
-                              <SelectItem value="client">کاربر</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                      {signupForm.formState.errors.role && (
-                        <p className="text-sm text-red-500 text-right">{signupForm.formState.errors.role.message}</p>
                       )}
-                    </div>
-
-                    <div className="space-y-2 text-right" dir="rtl">
-                      <Label htmlFor="password" className="text-right">
-                        رمز عبور *
-                      </Label>
-                      <div className="relative" dir="rtl">
-                        <Controller
-                          name="password"
-                          control={signupForm.control}
-                          render={({ field }) => (
-                            <Input
-                              {...field}
-                              type={showPassword ? "text" : "password"}
-                              placeholder="رمز عبور"
-                              disabled={isLoading}
-                              className="text-right pr-10"
-                              dir="rtl"
-                            />
-                          )}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                      {signupForm.formState.errors.password && (
-                        <p className="text-sm text-red-500 text-right">
-                          {signupForm.formState.errors.password.message}
-                        </p>
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute left-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-gray-400" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-gray-400" />
                       )}
-                    </div>
-
-                    <div className="space-y-2 text-right" dir="rtl">
-                      <Label htmlFor="confirmPassword" className="text-right">
-                        تکرار رمز عبور *
-                      </Label>
-                      <div className="relative" dir="rtl">
-                        <Controller
-                          name="confirmPassword"
-                          control={signupForm.control}
-                          render={({ field }) => (
-                            <Input
-                              {...field}
-                              type={showConfirmPassword ? "text" : "password"}
-                              placeholder="تکرار رمز عبور"
-                              disabled={isLoading}
-                              className="text-right pr-10"
-                              dir="rtl"
-                            />
-                          )}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        >
-                          {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                      {signupForm.formState.errors.confirmPassword && (
-                        <p className="text-sm text-red-500 text-right">
-                          {signupForm.formState.errors.confirmPassword.message}
-                        </p>
-                      )}
-                    </div>
-
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? "در حال ثبت‌نام..." : "ثبت‌نام"}
                     </Button>
+                  </div>
+                  {signupForm.formState.errors.password && (
+                    <p className="text-sm text-red-500 text-right">{signupForm.formState.errors.password.message}</p>
+                  )}
+                </div>
 
-                    <div className="text-center pt-2">
-                      <p className="text-sm text-muted-foreground">
-                        قبلاً حساب کاربری دارید؟{" "}
-                        <Button
-                          type="button"
-                          variant="link"
-                          className="p-0 h-auto text-primary"
-                          onClick={() => setActiveTab("login")}
-                        >
-                          وارد شوید
-                        </Button>
-                      </p>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="text-right">
+                    تکرار رمز عبور *
+                  </Label>
+                  <div className="relative">
+                    <Controller
+                      name="confirmPassword"
+                      control={signupForm.control}
+                      render={({ field }) => (
+                        <Input
+                          {...field}
+                          type={showConfirmPassword ? "text" : "password"}
+                          placeholder="رمز عبور را مجدداً وارد کنید"
+                          className="text-right pl-10"
+                          dir="rtl"
+                        />
+                      )}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute left-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-4 w-4 text-gray-400" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-gray-400" />
+                      )}
+                    </Button>
+                  </div>
+                  {signupForm.formState.errors.confirmPassword && (
+                    <p className="text-sm text-red-500 text-right">
+                      {signupForm.formState.errors.confirmPassword.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <Button type="submit" className="w-full" disabled={signupForm.formState.isSubmitting}>
+                {signupForm.formState.isSubmitting ? "در حال ثبت‌نام..." : "ثبت‌نام"}
+              </Button>
+            </form>
+
+            <div className="text-center text-sm text-muted-foreground">
+              <p>قبلاً ثبت‌نام کرده‌اید؟</p>
+              <Button variant="link" className="p-0 h-auto text-primary" onClick={() => setActiveTab("login")}>
+                وارد شوید
+              </Button>
+            </div>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   )

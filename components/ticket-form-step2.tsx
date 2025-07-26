@@ -7,1240 +7,1074 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { FileUpload } from "@/components/file-upload"
-import { FileText, Paperclip, HardDrive, Monitor, Wifi, Mail, Shield, Key } from "lucide-react"
+import {
+  FileText,
+  Paperclip,
+  AlertCircle,
+  Settings,
+  HardDrive,
+  Monitor,
+  Printer,
+  Wifi,
+  Shield,
+  Key,
+  GraduationCap,
+  Wrench,
+} from "lucide-react"
 import type { UploadedFile } from "@/lib/file-upload"
 
 interface TicketFormStep2Props {
   control: any
   errors: any
-  category: string
+  selectedIssue: string
+  selectedSubIssue: string
   attachedFiles: UploadedFile[]
   onFilesChange: (files: UploadedFile[]) => void
 }
 
-export function TicketFormStep2({ control, errors, category, attachedFiles, onFilesChange }: TicketFormStep2Props) {
-  const getCategoryIcon = (cat: string) => {
-    switch (cat) {
-      case "hardware":
-        return <HardDrive className="w-5 h-5" />
-      case "software":
-        return <Monitor className="w-5 h-5" />
-      case "network":
-        return <Wifi className="w-5 h-5" />
-      case "email":
-        return <Mail className="w-5 h-5" />
-      case "security":
-        return <Shield className="w-5 h-5" />
-      case "access":
-        return <Key className="w-5 h-5" />
-      default:
-        return <FileText className="w-5 h-5" />
+export function TicketFormStep2({
+  control,
+  errors,
+  selectedIssue,
+  selectedSubIssue,
+  attachedFiles,
+  onFilesChange,
+}: TicketFormStep2Props) {
+  // Dynamic fields based on selected issue and sub-issue
+  const renderDynamicFields = () => {
+    if (selectedIssue === "hardware") {
+      if (selectedSubIssue === "computer-not-working") {
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm text-right flex items-center gap-2">
+                <HardDrive className="w-4 h-4" />
+                اطلاعات تکمیلی رایانه (اختیاری)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="deviceBrand" className="text-right">
+                    برند رایانه
+                  </Label>
+                  <Controller
+                    name="deviceBrand"
+                    control={control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                        <SelectTrigger className="text-right">
+                          <SelectValue placeholder="انتخاب برند" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="dell">Dell</SelectItem>
+                          <SelectItem value="hp">HP</SelectItem>
+                          <SelectItem value="lenovo">Lenovo</SelectItem>
+                          <SelectItem value="asus">ASUS</SelectItem>
+                          <SelectItem value="acer">Acer</SelectItem>
+                          <SelectItem value="apple">Apple</SelectItem>
+                          <SelectItem value="other">سایر</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="deviceModel" className="text-right">
+                    مدل رایانه
+                  </Label>
+                  <Controller
+                    name="deviceModel"
+                    control={control}
+                    render={({ field }) => (
+                      <Input {...field} placeholder="مثال: OptiPlex 7090" className="text-right" dir="rtl" />
+                    )}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="powerStatus" className="text-right">
+                    وضعیت روشن شدن
+                  </Label>
+                  <Controller
+                    name="powerStatus"
+                    control={control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                        <SelectTrigger className="text-right">
+                          <SelectValue placeholder="انتخاب وضعیت" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="no-power">هیچ چراغی روشن نمی‌شود</SelectItem>
+                          <SelectItem value="power-but-no-display">چراغ روشن می‌شود اما صفحه سیاه است</SelectItem>
+                          <SelectItem value="starts-then-shuts">روشن می‌شود اما خاموش می‌شود</SelectItem>
+                          <SelectItem value="strange-sounds">صدای عجیب می‌دهد</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastWorking" className="text-right">
+                    آخرین بار کی کار می‌کرد؟
+                  </Label>
+                  <Controller
+                    name="lastWorking"
+                    control={control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                        <SelectTrigger className="text-right">
+                          <SelectValue placeholder="انتخاب زمان" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="today">امروز صبح</SelectItem>
+                          <SelectItem value="yesterday">دیروز</SelectItem>
+                          <SelectItem value="few-days">چند روز پیش</SelectItem>
+                          <SelectItem value="week">یک هفته پیش</SelectItem>
+                          <SelectItem value="longer">بیشتر از یک هفته</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )
+      }
+
+      if (selectedSubIssue === "printer-issues") {
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm text-right flex items-center gap-2">
+                <Printer className="w-4 h-4" />
+                اطلاعات تکمیلی چاپگر (اختیاری)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="printerBrand" className="text-right">
+                    برند چاپگر
+                  </Label>
+                  <Controller
+                    name="printerBrand"
+                    control={control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                        <SelectTrigger className="text-right">
+                          <SelectValue placeholder="انتخاب برند" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="hp">HP</SelectItem>
+                          <SelectItem value="canon">Canon</SelectItem>
+                          <SelectItem value="epson">Epson</SelectItem>
+                          <SelectItem value="brother">Brother</SelectItem>
+                          <SelectItem value="samsung">Samsung</SelectItem>
+                          <SelectItem value="other">سایر</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="printerType" className="text-right">
+                    نوع چاپگر
+                  </Label>
+                  <Controller
+                    name="printerType"
+                    control={control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                        <SelectTrigger className="text-right">
+                          <SelectValue placeholder="نوع چاپگر" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="inkjet">جوهرافشان</SelectItem>
+                          <SelectItem value="laser">لیزری</SelectItem>
+                          <SelectItem value="multifunction">چندکاره</SelectItem>
+                          <SelectItem value="dot-matrix">سوزنی</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="printerProblem" className="text-right">
+                  مشکل دقیق چاپگر
+                </Label>
+                <Controller
+                  name="printerProblem"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                      <SelectTrigger className="text-right">
+                        <SelectValue placeholder="انتخاب مشکل" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="no-print">اصلاً چاپ نمی‌کند</SelectItem>
+                        <SelectItem value="poor-quality">کیفیت چاپ ضعیف</SelectItem>
+                        <SelectItem value="paper-jam">کاغذ گیر می‌کند</SelectItem>
+                        <SelectItem value="ink-problem">مشکل جوهر یا تونر</SelectItem>
+                        <SelectItem value="connection-issue">مشکل اتصال</SelectItem>
+                        <SelectItem value="error-message">پیام خطا می‌دهد</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )
+      }
+
+      if (selectedSubIssue === "monitor-problems") {
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm text-right flex items-center gap-2">
+                <Monitor className="w-4 h-4" />
+                اطلاعات تکمیلی مانیتور (اختیاری)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="monitorSize" className="text-right">
+                    سایز مانیتور
+                  </Label>
+                  <Controller
+                    name="monitorSize"
+                    control={control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                        <SelectTrigger className="text-right">
+                          <SelectValue placeholder="انتخاب سایز" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="19">19 اینچ</SelectItem>
+                          <SelectItem value="21">21 اینچ</SelectItem>
+                          <SelectItem value="24">24 اینچ</SelectItem>
+                          <SelectItem value="27">27 اینچ</SelectItem>
+                          <SelectItem value="32">32 اینچ</SelectItem>
+                          <SelectItem value="other">سایر</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="connectionType" className="text-right">
+                    نوع اتصال
+                  </Label>
+                  <Controller
+                    name="connectionType"
+                    control={control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                        <SelectTrigger className="text-right">
+                          <SelectValue placeholder="نوع کابل" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="hdmi">HDMI</SelectItem>
+                          <SelectItem value="vga">VGA</SelectItem>
+                          <SelectItem value="dvi">DVI</SelectItem>
+                          <SelectItem value="displayport">DisplayPort</SelectItem>
+                          <SelectItem value="usb-c">USB-C</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="displayIssue" className="text-right">
+                  مشکل نمایش
+                </Label>
+                <Controller
+                  name="displayIssue"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                      <SelectTrigger className="text-right">
+                        <SelectValue placeholder="انتخاب مشکل" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="no-display">هیچ تصویری نمایش نمی‌دهد</SelectItem>
+                        <SelectItem value="flickering">تصویر چشمک می‌زند</SelectItem>
+                        <SelectItem value="color-problem">مشکل رنگ</SelectItem>
+                        <SelectItem value="resolution-issue">مشکل وضوح تصویر</SelectItem>
+                        <SelectItem value="lines-spots">خط یا لکه روی صفحه</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )
+      }
+
+      // Default hardware fields for other sub-issues
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm text-right flex items-center gap-2">
+              <Settings className="w-4 h-4" />
+              اطلاعات تکمیلی سخت‌افزار (اختیاری)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="deviceBrand" className="text-right">
+                  برند دستگاه
+                </Label>
+                <Controller
+                  name="deviceBrand"
+                  control={control}
+                  render={({ field }) => (
+                    <Input {...field} placeholder="مثال: HP, Dell, ..." className="text-right" dir="rtl" />
+                  )}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="deviceModel" className="text-right">
+                  مدل دستگاه
+                </Label>
+                <Controller
+                  name="deviceModel"
+                  control={control}
+                  render={({ field }) => (
+                    <Input {...field} placeholder="مدل دقیق دستگاه" className="text-right" dir="rtl" />
+                  )}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )
     }
-  }
 
-  const getCategoryTitle = (cat: string) => {
-    switch (cat) {
-      case "hardware":
-        return "مشکلات سخت‌افزاری"
-      case "software":
-        return "مشکلات نرم‌افزاری"
-      case "network":
-        return "مشکلات شبکه"
-      case "email":
-        return "مشکلات ایمیل"
-      case "security":
-        return "حوادث امنیتی"
-      case "access":
-        return "درخواست دسترسی"
-      default:
-        return "جزئیات تیکت"
+    if (selectedIssue === "software") {
+      if (selectedSubIssue === "os-issues") {
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm text-right flex items-center gap-2">
+                <Settings className="w-4 h-4" />
+                اطلاعات تکمیلی سیستم عامل (اختیاری)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="operatingSystem" className="text-right">
+                    سیستم عامل
+                  </Label>
+                  <Controller
+                    name="operatingSystem"
+                    control={control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                        <SelectTrigger className="text-right">
+                          <SelectValue placeholder="انتخاب سیستم عامل" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="windows-11">Windows 11</SelectItem>
+                          <SelectItem value="windows-10">Windows 10</SelectItem>
+                          <SelectItem value="windows-8">Windows 8</SelectItem>
+                          <SelectItem value="macos">macOS</SelectItem>
+                          <SelectItem value="linux">Linux</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="osVersion" className="text-right">
+                    نسخه سیستم عامل
+                  </Label>
+                  <Controller
+                    name="osVersion"
+                    control={control}
+                    render={({ field }) => (
+                      <Input {...field} placeholder="مثال: 22H2, Big Sur" className="text-right" dir="rtl" />
+                    )}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="osIssueType" className="text-right">
+                  نوع مشکل سیستم عامل
+                </Label>
+                <Controller
+                  name="osIssueType"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                      <SelectTrigger className="text-right">
+                        <SelectValue placeholder="انتخاب مشکل" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="boot-problem">مشکل راه‌اندازی</SelectItem>
+                        <SelectItem value="slow-performance">عملکرد کند</SelectItem>
+                        <SelectItem value="frequent-crashes">خرابی مکرر</SelectItem>
+                        <SelectItem value="update-issues">مشکل به‌روزرسانی</SelectItem>
+                        <SelectItem value="driver-problems">مشکل درایور</SelectItem>
+                        <SelectItem value="blue-screen">صفحه آبی مرگ</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )
+      }
+
+      if (selectedSubIssue === "application-problems") {
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm text-right flex items-center gap-2">
+                <Settings className="w-4 h-4" />
+                اطلاعات تکمیلی نرم‌افزار (اختیاری)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="softwareName" className="text-right">
+                    نام نرم‌افزار
+                  </Label>
+                  <Controller
+                    name="softwareName"
+                    control={control}
+                    render={({ field }) => (
+                      <Input {...field} placeholder="مثال: Microsoft Office" className="text-right" dir="rtl" />
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="softwareVersion" className="text-right">
+                    نسخه نرم‌افزار
+                  </Label>
+                  <Controller
+                    name="softwareVersion"
+                    control={control}
+                    render={({ field }) => (
+                      <Input {...field} placeholder="مثال: 2021, v3.5" className="text-right" dir="rtl" />
+                    )}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="applicationIssue" className="text-right">
+                  مشکل نرم‌افزار
+                </Label>
+                <Controller
+                  name="applicationIssue"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                      <SelectTrigger className="text-right">
+                        <SelectValue placeholder="انتخاب مشکل" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="wont-start">اجرا نمی‌شود</SelectItem>
+                        <SelectItem value="crashes-frequently">مکرراً خراب می‌شود</SelectItem>
+                        <SelectItem value="feature-not-working">قابلیت خاص کار نمی‌کند</SelectItem>
+                        <SelectItem value="slow-performance">عملکرد کند</SelectItem>
+                        <SelectItem value="error-messages">پیام خطا می‌دهد</SelectItem>
+                        <SelectItem value="file-corruption">فایل‌ها خراب می‌شوند</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )
+      }
+
+      // Default software fields
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm text-right flex items-center gap-2">
+              <Settings className="w-4 h-4" />
+              اطلاعات تکمیلی نرم‌افزار (اختیاری)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="softwareName" className="text-right">
+                نام نرم‌افزار
+              </Label>
+              <Controller
+                name="softwareName"
+                control={control}
+                render={({ field }) => (
+                  <Input {...field} placeholder="نام نرم‌افزار مورد نظر" className="text-right" dir="rtl" />
+                )}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )
     }
-  }
 
-  const renderHardwareFields = () => (
-    <div className="space-y-4" dir="rtl">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="deviceType" className="text-right">
-            نوع دستگاه *
-          </Label>
-          <Controller
-            name="deviceType"
-            control={control}
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                <SelectTrigger className="text-right">
-                  <SelectValue placeholder="انتخاب نوع دستگاه" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="desktop">رایانه رومیزی</SelectItem>
-                  <SelectItem value="laptop">لپ‌تاپ</SelectItem>
-                  <SelectItem value="printer">چاپگر</SelectItem>
-                  <SelectItem value="scanner">اسکنر</SelectItem>
-                  <SelectItem value="monitor">مانیتور</SelectItem>
-                  <SelectItem value="keyboard">کیبورد</SelectItem>
-                  <SelectItem value="mouse">ماوس</SelectItem>
-                  <SelectItem value="ups">یو پی اس</SelectItem>
-                  <SelectItem value="other">سایر</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {errors.deviceType && <p className="text-sm text-red-500 text-right">{errors.deviceType.message}</p>}
-        </div>
+    if (selectedIssue === "network") {
+      if (selectedSubIssue === "internet-connection") {
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm text-right flex items-center gap-2">
+                <Wifi className="w-4 h-4" />
+                اطلاعات تکمیلی اتصال اینترنت (اختیاری)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="connectionType" className="text-right">
+                    نوع اتصال
+                  </Label>
+                  <Controller
+                    name="connectionType"
+                    control={control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                        <SelectTrigger className="text-right">
+                          <SelectValue placeholder="نوع اتصال" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ethernet">اترنت (کابلی)</SelectItem>
+                          <SelectItem value="wifi">Wi-Fi (بی‌سیم)</SelectItem>
+                          <SelectItem value="mobile">اینترنت موبایل</SelectItem>
+                          <SelectItem value="adsl">ADSL</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="internetProvider" className="text-right">
+                    ارائه‌دهنده اینترنت
+                  </Label>
+                  <Controller
+                    name="internetProvider"
+                    control={control}
+                    render={({ field }) => (
+                      <Input {...field} placeholder="مثال: ایرانسل، شاتل" className="text-right" dir="rtl" />
+                    )}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="connectionIssue" className="text-right">
+                  مشکل اتصال
+                </Label>
+                <Controller
+                  name="connectionIssue"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                      <SelectTrigger className="text-right">
+                        <SelectValue placeholder="انتخاب مشکل" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="no-connection">اصلاً اتصال ندارم</SelectItem>
+                        <SelectItem value="intermittent">گاهی قطع می‌شود</SelectItem>
+                        <SelectItem value="very-slow">خیلی کند است</SelectItem>
+                        <SelectItem value="limited-access">دسترسی محدود</SelectItem>
+                        <SelectItem value="specific-sites">سایت‌های خاص باز نمی‌شود</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )
+      }
 
-        <div className="space-y-2">
-          <Label htmlFor="deviceBrand" className="text-right">
-            برند دستگاه *
-          </Label>
-          <Controller
-            name="deviceBrand"
-            control={control}
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                <SelectTrigger className="text-right">
-                  <SelectValue placeholder="انتخاب برند" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="dell">Dell</SelectItem>
-                  <SelectItem value="hp">HP</SelectItem>
-                  <SelectItem value="lenovo">Lenovo</SelectItem>
-                  <SelectItem value="asus">ASUS</SelectItem>
-                  <SelectItem value="acer">Acer</SelectItem>
-                  <SelectItem value="apple">Apple</SelectItem>
-                  <SelectItem value="samsung">Samsung</SelectItem>
-                  <SelectItem value="lg">LG</SelectItem>
-                  <SelectItem value="other">سایر</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {errors.deviceBrand && <p className="text-sm text-red-500 text-right">{errors.deviceBrand.message}</p>}
-        </div>
-      </div>
+      if (selectedSubIssue === "wifi-problems") {
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm text-right flex items-center gap-2">
+                <Wifi className="w-4 h-4" />
+                اطلاعات تکمیلی Wi-Fi (اختیاری)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="wifiNetwork" className="text-right">
+                    نام شبکه Wi-Fi
+                  </Label>
+                  <Controller
+                    name="wifiNetwork"
+                    control={control}
+                    render={({ field }) => (
+                      <Input {...field} placeholder="نام شبکه (SSID)" className="text-right" dir="rtl" />
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="deviceType" className="text-right">
+                    نوع دستگاه
+                  </Label>
+                  <Controller
+                    name="deviceType"
+                    control={control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                        <SelectTrigger className="text-right">
+                          <SelectValue placeholder="نوع دستگاه" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="laptop">لپ‌تاپ</SelectItem>
+                          <SelectItem value="desktop">رایانه رومیزی</SelectItem>
+                          <SelectItem value="mobile">موبایل</SelectItem>
+                          <SelectItem value="tablet">تبلت</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="wifiIssue" className="text-right">
+                  مشکل Wi-Fi
+                </Label>
+                <Controller
+                  name="wifiIssue"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                      <SelectTrigger className="text-right">
+                        <SelectValue placeholder="انتخاب مشکل" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cant-see-network">شبکه را نمی‌بینم</SelectItem>
+                        <SelectItem value="cant-connect">نمی‌توانم وصل شوم</SelectItem>
+                        <SelectItem value="weak-signal">سیگنال ضعیف</SelectItem>
+                        <SelectItem value="keeps-disconnecting">مدام قطع می‌شود</SelectItem>
+                        <SelectItem value="wrong-password">رمز عبور اشتباه است</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )
+      }
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="deviceModel" className="text-right">
-            مدل دستگاه *
-          </Label>
-          <Controller
-            name="deviceModel"
-            control={control}
-            render={({ field }) => (
-              <Input {...field} placeholder="مثال: OptiPlex 7090" className="text-right" dir="rtl" />
-            )}
-          />
-          {errors.deviceModel && <p className="text-sm text-red-500 text-right">{errors.deviceModel.message}</p>}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="serialNumber" className="text-right">
-            شماره سریال
-          </Label>
-          <Controller
-            name="serialNumber"
-            control={control}
-            render={({ field }) => (
-              <Input {...field} placeholder="شماره سریال دستگاه (اختیاری)" className="text-right" dir="rtl" />
-            )}
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="purchaseDate" className="text-right">
-            تاریخ خرید
-          </Label>
-          <Controller
-            name="purchaseDate"
-            control={control}
-            render={({ field }) => <Input {...field} type="date" className="text-right" dir="rtl" />}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="warrantyStatus" className="text-right">
-            وضعیت گارانتی *
-          </Label>
-          <Controller
-            name="warrantyStatus"
-            control={control}
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                <SelectTrigger className="text-right">
-                  <SelectValue placeholder="وضعیت گارانتی" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="under-warranty">تحت گارانتی</SelectItem>
-                  <SelectItem value="expired">گارانتی منقضی</SelectItem>
-                  <SelectItem value="unknown">نامشخص</SelectItem>
-                  <SelectItem value="no-warranty">بدون گارانتی</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {errors.warrantyStatus && <p className="text-sm text-red-500 text-right">{errors.warrantyStatus.message}</p>}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="problemType" className="text-right">
-            نوع مشکل *
-          </Label>
-          <Controller
-            name="problemType"
-            control={control}
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                <SelectTrigger className="text-right">
-                  <SelectValue placeholder="نوع مشکل" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="not-turning-on">روشن نمی‌شود</SelectItem>
-                  <SelectItem value="slow-performance">عملکرد کند</SelectItem>
-                  <SelectItem value="hardware-failure">خرابی سخت‌افزار</SelectItem>
-                  <SelectItem value="overheating">گرم شدن بیش از حد</SelectItem>
-                  <SelectItem value="noise">صدای غیرعادی</SelectItem>
-                  <SelectItem value="display-issue">مشکل نمایش</SelectItem>
-                  <SelectItem value="connectivity">مشکل اتصال</SelectItem>
-                  <SelectItem value="other">سایر</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {errors.problemType && <p className="text-sm text-red-500 text-right">{errors.problemType.message}</p>}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="problemFrequency" className="text-right">
-            تکرار مشکل *
-          </Label>
-          <Controller
-            name="problemFrequency"
-            control={control}
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                <SelectTrigger className="text-right">
-                  <SelectValue placeholder="تکرار مشکل" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="always">همیشه</SelectItem>
-                  <SelectItem value="frequently">اغلب اوقات</SelectItem>
-                  <SelectItem value="sometimes">گاهی اوقات</SelectItem>
-                  <SelectItem value="rarely">به ندرت</SelectItem>
-                  <SelectItem value="first-time">اولین بار</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {errors.problemFrequency && (
-            <p className="text-sm text-red-500 text-right">{errors.problemFrequency.message}</p>
-          )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="lastWorkingDate" className="text-right">
-            آخرین زمان کارکرد صحیح
-          </Label>
-          <Controller
-            name="lastWorkingDate"
-            control={control}
-            render={({ field }) => <Input {...field} type="date" className="text-right" dir="rtl" />}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="errorCodes" className="text-right">
-            کدهای خطا
-          </Label>
-          <Controller
-            name="errorCodes"
-            control={control}
-            render={({ field }) => (
-              <Input {...field} placeholder="کدهای خطای نمایش داده شده (اختیاری)" className="text-right" dir="rtl" />
-            )}
-          />
-        </div>
-      </div>
-    </div>
-  )
-
-  const renderSoftwareFields = () => (
-    <div className="space-y-4" dir="rtl">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="softwareName" className="text-right">
-            نام نرم‌افزار *
-          </Label>
-          <Controller
-            name="softwareName"
-            control={control}
-            render={({ field }) => (
-              <Input {...field} placeholder="مثال: Microsoft Office" className="text-right" dir="rtl" />
-            )}
-          />
-          {errors.softwareName && <p className="text-sm text-red-500 text-right">{errors.softwareName.message}</p>}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="softwareVersion" className="text-right">
-            نسخه نرم‌افزار
-          </Label>
-          <Controller
-            name="softwareVersion"
-            control={control}
-            render={({ field }) => <Input {...field} placeholder="مثال: 2021" className="text-right" dir="rtl" />}
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="operatingSystem" className="text-right">
-            سیستم عامل *
-          </Label>
-          <Controller
-            name="operatingSystem"
-            control={control}
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                <SelectTrigger className="text-right">
-                  <SelectValue placeholder="انتخاب سیستم عامل" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="windows-11">Windows 11</SelectItem>
-                  <SelectItem value="windows-10">Windows 10</SelectItem>
-                  <SelectItem value="windows-8">Windows 8</SelectItem>
-                  <SelectItem value="windows-7">Windows 7</SelectItem>
-                  <SelectItem value="macos">macOS</SelectItem>
-                  <SelectItem value="linux">Linux</SelectItem>
-                  <SelectItem value="other">سایر</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {errors.operatingSystem && (
-            <p className="text-sm text-red-500 text-right">{errors.operatingSystem.message}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="osVersion" className="text-right">
-            نسخه سیستم عامل *
-          </Label>
-          <Controller
-            name="osVersion"
-            control={control}
-            render={({ field }) => <Input {...field} placeholder="مثال: 22H2" className="text-right" dir="rtl" />}
-          />
-          {errors.osVersion && <p className="text-sm text-red-500 text-right">{errors.osVersion.message}</p>}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="installationType" className="text-right">
-            نوع نصب *
-          </Label>
-          <Controller
-            name="installationType"
-            control={control}
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                <SelectTrigger className="text-right">
-                  <SelectValue placeholder="نوع نصب" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="new-install">نصب جدید</SelectItem>
-                  <SelectItem value="update">به‌روزرسانی</SelectItem>
-                  <SelectItem value="reinstall">نصب مجدد</SelectItem>
-                  <SelectItem value="repair">تعمیر نصب</SelectItem>
-                  <SelectItem value="upgrade">ارتقاء</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {errors.installationType && (
-            <p className="text-sm text-red-500 text-right">{errors.installationType.message}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="licenseType" className="text-right">
-            نوع لایسنس *
-          </Label>
-          <Controller
-            name="licenseType"
-            control={control}
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                <SelectTrigger className="text-right">
-                  <SelectValue placeholder="نوع لایسنس" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="original">اصل</SelectItem>
-                  <SelectItem value="trial">آزمایشی</SelectItem>
-                  <SelectItem value="free">رایگان</SelectItem>
-                  <SelectItem value="educational">آموزشی</SelectItem>
-                  <SelectItem value="unknown">نامشخص</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {errors.licenseType && <p className="text-sm text-red-500 text-right">{errors.licenseType.message}</p>}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="problemOccurrence" className="text-right">
-          زمان بروز مشکل *
-        </Label>
-        <Controller
-          name="problemOccurrence"
-          control={control}
-          render={({ field }) => (
-            <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-              <SelectTrigger className="text-right">
-                <SelectValue placeholder="زمان بروز مشکل" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="startup">هنگام راه‌اندازی</SelectItem>
-                <SelectItem value="during-use">حین استفاده</SelectItem>
-                <SelectItem value="shutdown">هنگام خاموش کردن</SelectItem>
-                <SelectItem value="specific-function">عملکرد خاص</SelectItem>
-                <SelectItem value="random">تصادفی</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-        />
-        {errors.problemOccurrence && (
-          <p className="text-sm text-red-500 text-right">{errors.problemOccurrence.message}</p>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="errorMessage" className="text-right">
-          پیام خطا
-        </Label>
-        <Controller
-          name="errorMessage"
-          control={control}
-          render={({ field }) => (
-            <Textarea {...field} placeholder="متن کامل پیام خطا (اختیاری)" rows={3} className="text-right" dir="rtl" />
-          )}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="affectedFeatures" className="text-right">
-          قابلیت‌های تحت تأثیر
-        </Label>
-        <Controller
-          name="affectedFeatures"
-          control={control}
-          render={({ field }) => (
-            <Textarea
-              {...field}
-              placeholder="کدام قابلیت‌ها کار نمی‌کنند؟ (اختیاری)"
-              rows={2}
-              className="text-right"
-              dir="rtl"
-            />
-          )}
-        />
-      </div>
-    </div>
-  )
-
-  const renderNetworkFields = () => (
-    <div className="space-y-4" dir="rtl">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="connectionType" className="text-right">
-            نوع اتصال *
-          </Label>
-          <Controller
-            name="connectionType"
-            control={control}
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                <SelectTrigger className="text-right">
-                  <SelectValue placeholder="نوع اتصال" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ethernet">اترنت (کابلی)</SelectItem>
-                  <SelectItem value="wifi">Wi-Fi (بی‌سیم)</SelectItem>
-                  <SelectItem value="mobile">موبایل</SelectItem>
-                  <SelectItem value="vpn">VPN</SelectItem>
-                  <SelectItem value="dial-up">Dial-up</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {errors.connectionType && <p className="text-sm text-red-500 text-right">{errors.connectionType.message}</p>}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="networkLocation" className="text-right">
-            محل شبکه *
-          </Label>
-          <Controller
-            name="networkLocation"
-            control={control}
-            render={({ field }) => (
-              <Input {...field} placeholder="مثال: طبقه دوم، اتاق 205" className="text-right" dir="rtl" />
-            )}
-          />
-          {errors.networkLocation && (
-            <p className="text-sm text-red-500 text-right">{errors.networkLocation.message}</p>
-          )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="deviceCount" className="text-right">
-            تعداد دستگاه‌های متصل *
-          </Label>
-          <Controller
-            name="deviceCount"
-            control={control}
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                <SelectTrigger className="text-right">
-                  <SelectValue placeholder="تعداد دستگاه" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">۱ دستگاه</SelectItem>
-                  <SelectItem value="2-5">۲ تا ۵ دستگاه</SelectItem>
-                  <SelectItem value="6-10">۶ تا ۱۰ دستگاه</SelectItem>
-                  <SelectItem value="11-20">۱۱ تا ۲۰ دستگاه</SelectItem>
-                  <SelectItem value="20+">بیش از ۲۰ دستگاه</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {errors.deviceCount && <p className="text-sm text-red-500 text-right">{errors.deviceCount.message}</p>}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="internetProvider" className="text-right">
-            ارائه‌دهنده اینترنت *
-          </Label>
-          <Controller
-            name="internetProvider"
-            control={control}
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                <SelectTrigger className="text-right">
-                  <SelectValue placeholder="ارائه‌دهنده اینترنت" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="irancell">ایرانسل</SelectItem>
-                  <SelectItem value="hamrah-e-avval">همراه اول</SelectItem>
-                  <SelectItem value="rightel">رایتل</SelectItem>
-                  <SelectItem value="shatel">شاتل</SelectItem>
-                  <SelectItem value="pishgaman">پیشگامان</SelectItem>
-                  <SelectItem value="other">سایر</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {errors.internetProvider && (
-            <p className="text-sm text-red-500 text-right">{errors.internetProvider.message}</p>
-          )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="connectionSpeed" className="text-right">
-            سرعت اتصال
-          </Label>
-          <Controller
-            name="connectionSpeed"
-            control={control}
-            render={({ field }) => <Input {...field} placeholder="مثال: 100 Mbps" className="text-right" dir="rtl" />}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="ipConfiguration" className="text-right">
-            تنظیمات IP *
-          </Label>
-          <Controller
-            name="ipConfiguration"
-            control={control}
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                <SelectTrigger className="text-right">
-                  <SelectValue placeholder="تنظیمات IP" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="dhcp">خودکار (DHCP)</SelectItem>
-                  <SelectItem value="static">دستی (Static)</SelectItem>
-                  <SelectItem value="unknown">نامشخص</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {errors.ipConfiguration && (
-            <p className="text-sm text-red-500 text-right">{errors.ipConfiguration.message}</p>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="affectedServices" className="text-right">
-          سرویس‌های تحت تأثیر *
-        </Label>
-        <Controller
-          name="affectedServices"
-          control={control}
-          render={({ field }) => (
-            <Textarea
-              {...field}
-              placeholder="مثال: ایمیل، مرورگر وب، فایل سرور، ..."
-              rows={2}
-              className="text-right"
-              dir="rtl"
-            />
-          )}
-        />
-        {errors.affectedServices && (
-          <p className="text-sm text-red-500 text-right">{errors.affectedServices.message}</p>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="outageStartTime" className="text-right">
-            زمان شروع قطعی
-          </Label>
-          <Controller
-            name="outageStartTime"
-            control={control}
-            render={({ field }) => <Input {...field} type="datetime-local" className="text-right" dir="rtl" />}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="troubleshootingSteps" className="text-right">
-            اقدامات انجام شده
-          </Label>
-          <Controller
-            name="troubleshootingSteps"
-            control={control}
-            render={({ field }) => (
-              <Input {...field} placeholder="مثال: ریستارت مودم، تغییر کابل" className="text-right" dir="rtl" />
-            )}
-          />
-        </div>
-      </div>
-    </div>
-  )
-
-  const renderEmailFields = () => (
-    <div className="space-y-4" dir="rtl">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="emailProvider" className="text-right">
-            ارائه‌دهنده ایمیل *
-          </Label>
-          <Controller
-            name="emailProvider"
-            control={control}
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                <SelectTrigger className="text-right">
-                  <SelectValue placeholder="ارائه‌دهنده ایمیل" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="outlook">Outlook</SelectItem>
-                  <SelectItem value="gmail">Gmail</SelectItem>
-                  <SelectItem value="yahoo">Yahoo</SelectItem>
-                  <SelectItem value="exchange">Exchange Server</SelectItem>
-                  <SelectItem value="company">ایمیل شرکت</SelectItem>
-                  <SelectItem value="other">سایر</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {errors.emailProvider && <p className="text-sm text-red-500 text-right">{errors.emailProvider.message}</p>}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="emailAddress" className="text-right">
-            آدرس ایمیل *
-          </Label>
-          <Controller
-            name="emailAddress"
-            control={control}
-            render={({ field }) => (
-              <Input {...field} type="email" placeholder="user@company.com" className="text-right" dir="rtl" />
-            )}
-          />
-          {errors.emailAddress && <p className="text-sm text-red-500 text-right">{errors.emailAddress.message}</p>}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="emailClient" className="text-right">
-            کلاینت ایمیل *
-          </Label>
-          <Controller
-            name="emailClient"
-            control={control}
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                <SelectTrigger className="text-right">
-                  <SelectValue placeholder="کلاینت ایمیل" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="outlook-app">Outlook App</SelectItem>
-                  <SelectItem value="web-browser">مرورگر وب</SelectItem>
-                  <SelectItem value="thunderbird">Thunderbird</SelectItem>
-                  <SelectItem value="apple-mail">Apple Mail</SelectItem>
-                  <SelectItem value="mobile-app">اپلیکیشن موبایل</SelectItem>
-                  <SelectItem value="other">سایر</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {errors.emailClient && <p className="text-sm text-red-500 text-right">{errors.emailClient.message}</p>}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="accountType" className="text-right">
-            نوع حساب *
-          </Label>
-          <Controller
-            name="accountType"
-            control={control}
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                <SelectTrigger className="text-right">
-                  <SelectValue placeholder="نوع حساب" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="personal">شخصی</SelectItem>
-                  <SelectItem value="business">کسب‌وکار</SelectItem>
-                  <SelectItem value="educational">آموزشی</SelectItem>
-                  <SelectItem value="government">دولتی</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {errors.accountType && <p className="text-sm text-red-500 text-right">{errors.accountType.message}</p>}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="problemType" className="text-right">
-          نوع مشکل *
-        </Label>
-        <Controller
-          name="problemType"
-          control={control}
-          render={({ field }) => (
-            <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-              <SelectTrigger className="text-right">
-                <SelectValue placeholder="نوع مشکل" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="cannot-send">نمی‌توانم ایمیل ارسال کنم</SelectItem>
-                <SelectItem value="cannot-receive">ایمیل دریافت نمی‌کنم</SelectItem>
-                <SelectItem value="login-issue">مشکل ورود</SelectItem>
-                <SelectItem value="sync-issue">مشکل همگام‌سازی</SelectItem>
-                <SelectItem value="attachment-issue">مشکل پیوست</SelectItem>
-                <SelectItem value="spam-issue">مشکل اسپم</SelectItem>
-                <SelectItem value="storage-full">فضای ذخیره‌سازی پر</SelectItem>
-                <SelectItem value="other">سایر</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-        />
-        {errors.problemType && <p className="text-sm text-red-500 text-right">{errors.problemType.message}</p>}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="lastSuccessfulAccess" className="text-right">
-            آخرین دسترسی موفق
-          </Label>
-          <Controller
-            name="lastSuccessfulAccess"
-            control={control}
-            render={({ field }) => <Input {...field} type="datetime-local" className="text-right" dir="rtl" />}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="emailSize" className="text-right">
-            حجم ایمیل‌ها
-          </Label>
-          <Controller
-            name="emailSize"
-            control={control}
-            render={({ field }) => <Input {...field} placeholder="مثال: 2 GB" className="text-right" dir="rtl" />}
-          />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="serverSettings" className="text-right">
-          تنظیمات سرور
-        </Label>
-        <Controller
-          name="serverSettings"
-          control={control}
-          render={({ field }) => (
-            <Textarea
-              {...field}
-              placeholder="تنظیمات SMTP/POP3/IMAP (اختیاری)"
-              rows={2}
-              className="text-right"
-              dir="rtl"
-            />
-          )}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="errorDetails" className="text-right">
-          جزئیات خطا
-        </Label>
-        <Controller
-          name="errorDetails"
-          control={control}
-          render={({ field }) => (
-            <Textarea
-              {...field}
-              placeholder="پیام خطا یا جزئیات بیشتر (اختیاری)"
-              rows={3}
-              className="text-right"
-              dir="rtl"
-            />
-          )}
-        />
-      </div>
-    </div>
-  )
-
-  const renderSecurityFields = () => (
-    <div className="space-y-4" dir="rtl">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="incidentType" className="text-right">
-            نوع حادثه امنیتی *
-          </Label>
-          <Controller
-            name="incidentType"
-            control={control}
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                <SelectTrigger className="text-right">
-                  <SelectValue placeholder="نوع حادثه" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="malware">بدافزار/ویروس</SelectItem>
-                  <SelectItem value="phishing">فیشینگ</SelectItem>
-                  <SelectItem value="data-breach">نقض داده</SelectItem>
-                  <SelectItem value="unauthorized-access">دسترسی غیرمجاز</SelectItem>
-                  <SelectItem value="suspicious-activity">فعالیت مشکوک</SelectItem>
-                  <SelectItem value="password-compromise">نقض رمز عبور</SelectItem>
-                  <SelectItem value="social-engineering">مهندسی اجتماعی</SelectItem>
-                  <SelectItem value="other">سایر</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {errors.incidentType && <p className="text-sm text-red-500 text-right">{errors.incidentType.message}</p>}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="incidentSeverity" className="text-right">
-            شدت حادثه *
-          </Label>
-          <Controller
-            name="incidentSeverity"
-            control={control}
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                <SelectTrigger className="text-right">
-                  <SelectValue placeholder="شدت حادثه" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">کم - تأثیر محدود</SelectItem>
-                  <SelectItem value="medium">متوسط - تأثیر قابل توجه</SelectItem>
-                  <SelectItem value="high">بالا - تأثیر شدید</SelectItem>
-                  <SelectItem value="critical">بحرانی - تأثیر گسترده</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {errors.incidentSeverity && (
-            <p className="text-sm text-red-500 text-right">{errors.incidentSeverity.message}</p>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="incidentTime" className="text-right">
-          زمان حادثه *
-        </Label>
-        <Controller
-          name="incidentTime"
-          control={control}
-          render={({ field }) => <Input {...field} type="datetime-local" className="text-right" dir="rtl" />}
-        />
-        {errors.incidentTime && <p className="text-sm text-red-500 text-right">{errors.incidentTime.message}</p>}
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="affectedSystems" className="text-right">
-          سیستم‌های تحت تأثیر *
-        </Label>
-        <Controller
-          name="affectedSystems"
-          control={control}
-          render={({ field }) => (
-            <Textarea
-              {...field}
-              placeholder="لیست سیستم‌ها، سرورها یا خدماتی که تحت تأثیر قرار گرفته‌اند"
-              rows={2}
-              className="text-right"
-              dir="rtl"
-            />
-          )}
-        />
-        {errors.affectedSystems && <p className="text-sm text-red-500 text-right">{errors.affectedSystems.message}</p>}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="dataCompromised" className="text-right">
-            وضعیت امنیت داده‌ها *
-          </Label>
-          <Controller
-            name="dataCompromised"
-            control={control}
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                <SelectTrigger className="text-right">
-                  <SelectValue placeholder="وضعیت داده‌ها" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="no-compromise">بدون نقض</SelectItem>
-                  <SelectItem value="possible-compromise">احتمال نقض</SelectItem>
-                  <SelectItem value="confirmed-compromise">نقض تأیید شده</SelectItem>
-                  <SelectItem value="unknown">نامشخص</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {errors.dataCompromised && (
-            <p className="text-sm text-red-500 text-right">{errors.dataCompromised.message}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="evidenceAvailable" className="text-right">
-            وجود مدرک *
-          </Label>
-          <Controller
-            name="evidenceAvailable"
-            control={control}
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                <SelectTrigger className="text-right">
-                  <SelectValue placeholder="وجود مدرک" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="yes">بله - مدرک موجود است</SelectItem>
-                  <SelectItem value="partial">جزئی - برخی مدارک</SelectItem>
-                  <SelectItem value="no">خیر - مدرک موجود نیست</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {errors.evidenceAvailable && (
-            <p className="text-sm text-red-500 text-right">{errors.evidenceAvailable.message}</p>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="immediateActions" className="text-right">
-          اقدامات فوری انجام شده *
-        </Label>
-        <Controller
-          name="immediateActions"
-          control={control}
-          render={({ field }) => (
-            <Textarea
-              {...field}
-              placeholder="اقداماتی که تا کنون انجام داده‌اید"
-              rows={3}
-              className="text-right"
-              dir="rtl"
-            />
-          )}
-        />
-        {errors.immediateActions && (
-          <p className="text-sm text-red-500 text-right">{errors.immediateActions.message}</p>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="witnessCount" className="text-right">
-            تعداد شاهدان
-          </Label>
-          <Controller
-            name="witnessCount"
-            control={control}
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                <SelectTrigger className="text-right">
-                  <SelectValue placeholder="تعداد شاهدان" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">هیچ شاهدی</SelectItem>
-                  <SelectItem value="1">۱ شاهد</SelectItem>
-                  <SelectItem value="2-5">۲ تا ۵ شاهد</SelectItem>
-                  <SelectItem value="5+">بیش از ۵ شاهد</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="suspiciousActivity" className="text-right">
-          جزئیات فعالیت مشکوک
-        </Label>
-        <Controller
-          name="suspiciousActivity"
-          control={control}
-          render={({ field }) => (
-            <Textarea
-              {...field}
-              placeholder="توضیح کامل فعالیت مشکوک یا حادثه (اختیاری)"
-              rows={3}
-              className="text-right"
-              dir="rtl"
-            />
-          )}
-        />
-      </div>
-    </div>
-  )
-
-  const renderAccessFields = () => (
-    <div className="space-y-4" dir="rtl">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="accessType" className="text-right">
-            نوع درخواست دسترسی *
-          </Label>
-          <Controller
-            name="accessType"
-            control={control}
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                <SelectTrigger className="text-right">
-                  <SelectValue placeholder="نوع درخواست" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="new-account">حساب کاربری جدید</SelectItem>
-                  <SelectItem value="permission-change">تغییر مجوز</SelectItem>
-                  <SelectItem value="system-access">دسترسی سیستم</SelectItem>
-                  <SelectItem value="network-access">دسترسی شبکه</SelectItem>
-                  <SelectItem value="application-access">دسترسی اپلیکیشن</SelectItem>
-                  <SelectItem value="database-access">دسترسی پایگاه داده</SelectItem>
-                  <SelectItem value="file-access">دسترسی فایل</SelectItem>
-                  <SelectItem value="other">سایر</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {errors.accessType && <p className="text-sm text-red-500 text-right">{errors.accessType.message}</p>}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="targetSystem" className="text-right">
-            سیستم مقصد *
-          </Label>
-          <Controller
-            name="targetSystem"
-            control={control}
-            render={({ field }) => (
-              <Input {...field} placeholder="نام سیستم یا اپلیکیشن" className="text-right" dir="rtl" />
-            )}
-          />
-          {errors.targetSystem && <p className="text-sm text-red-500 text-right">{errors.targetSystem.message}</p>}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="requestedPermissions" className="text-right">
-          مجوزهای درخواستی *
-        </Label>
-        <Controller
-          name="requestedPermissions"
-          control={control}
-          render={({ field }) => (
-            <Textarea
-              {...field}
-              placeholder="لیست دقیق مجوزها و دسترسی‌های مورد نیاز"
-              rows={3}
-              className="text-right"
-              dir="rtl"
-            />
-          )}
-        />
-        {errors.requestedPermissions && (
-          <p className="text-sm text-red-500 text-right">{errors.requestedPermissions.message}</p>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="businessJustification" className="text-right">
-          توجیه کسب‌وکار *
-        </Label>
-        <Controller
-          name="businessJustification"
-          control={control}
-          render={({ field }) => (
-            <Textarea
-              {...field}
-              placeholder="دلیل نیاز به این دسترسی و تأثیر آن بر کار"
-              rows={3}
-              className="text-right"
-              dir="rtl"
-            />
-          )}
-        />
-        {errors.businessJustification && (
-          <p className="text-sm text-red-500 text-right">{errors.businessJustification.message}</p>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="managerName" className="text-right">
-            نام مدیر مستقیم *
-          </Label>
-          <Controller
-            name="managerName"
-            control={control}
-            render={({ field }) => (
-              <Input {...field} placeholder="نام و نام خانوادگی مدیر" className="text-right" dir="rtl" />
-            )}
-          />
-          {errors.managerName && <p className="text-sm text-red-500 text-right">{errors.managerName.message}</p>}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="managerEmail" className="text-right">
-            ایمیل مدیر *
-          </Label>
-          <Controller
-            name="managerEmail"
-            control={control}
-            render={({ field }) => (
-              <Input {...field} type="email" placeholder="manager@company.com" className="text-right" dir="rtl" />
-            )}
-          />
-          {errors.managerEmail && <p className="text-sm text-red-500 text-right">{errors.managerEmail.message}</p>}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="accessDuration" className="text-right">
-            مدت زمان دسترسی *
-          </Label>
-          <Controller
-            name="accessDuration"
-            control={control}
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value} dir="rtl">
-                <SelectTrigger className="text-right">
-                  <SelectValue placeholder="مدت زمان" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="temporary">موقت (کمتر از ۳ ماه)</SelectItem>
-                  <SelectItem value="medium-term">میان‌مدت (۳ تا ۱۲ ماه)</SelectItem>
-                  <SelectItem value="permanent">دائمی</SelectItem>
-                  <SelectItem value="project-based">بر اساس پروژه</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {errors.accessDuration && <p className="text-sm text-red-500 text-right">{errors.accessDuration.message}</p>}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="urgencyReason" className="text-right">
-            دلیل فوریت
-          </Label>
-          <Controller
-            name="urgencyReason"
-            control={control}
-            render={({ field }) => (
-              <Input {...field} placeholder="در صورت فوری بودن، دلیل را بنویسید" className="text-right" dir="rtl" />
-            )}
-          />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="alternativeAccess" className="text-right">
-          دسترسی جایگزین
-        </Label>
-        <Controller
-          name="alternativeAccess"
-          control={control}
-          render={({ field }) => (
-            <Textarea
-              {...field}
-              placeholder="آیا دسترسی جایگزین یا موقتی وجود دارد؟ (اختیاری)"
-              rows={2}
-              className="text-right"
-              dir="rtl"
-            />
-          )}
-        />
-      </div>
-    </div>
-  )
-
-  const renderCategorySpecificFields = () => {
-    switch (category) {
-      case "hardware":
-        return renderHardwareFields()
-      case "software":
-        return renderSoftwareFields()
-      case "network":
-        return renderNetworkFields()
-      case "email":
-        return renderEmailFields()
-      case "security":
-        return renderSecurityFields()
-      case "access":
-        return renderAccessFields()
-      default:
-        return null
+      // Default network fields
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm text-right flex items-center gap-2">
+              <Wifi className="w-4 h-4" />
+              اطلاعات تکمیلی شبکه (اختیاری)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="networkLocation" className="text-right">
+                محل شبکه
+              </Label>
+              <Controller
+                name="networkLocation"
+                control={control}
+                render={({ field }) => (
+                  <Input {...field} placeholder="مثال: طبقه دوم، اتاق 205" className="text-right" dir="rtl" />
+                )}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )
     }
+
+    if (selectedIssue === "email") {
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm text-right flex items-center gap-2">
+              <Settings className="w-4 h-4" />
+              اطلاعات تکمیلی ایمیل (اختیاری)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="emailProvider" className="text-right">
+                  ارائه‌دهنده ایمیل
+                </Label>
+                <Controller
+                  name="emailProvider"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                      <SelectTrigger className="text-right">
+                        <SelectValue placeholder="ارائه‌دهنده ایمیل" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gmail">Gmail</SelectItem>
+                        <SelectItem value="outlook">Outlook</SelectItem>
+                        <SelectItem value="yahoo">Yahoo</SelectItem>
+                        <SelectItem value="company">ایمیل شرکت</SelectItem>
+                        <SelectItem value="other">سایر</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="emailClient" className="text-right">
+                  نرم‌افزار ایمیل
+                </Label>
+                <Controller
+                  name="emailClient"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                      <SelectTrigger className="text-right">
+                        <SelectValue placeholder="نرم‌افزار" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="outlook-app">Outlook</SelectItem>
+                        <SelectItem value="thunderbird">Thunderbird</SelectItem>
+                        <SelectItem value="web-browser">مرورگر وب</SelectItem>
+                        <SelectItem value="mobile-app">اپ موبایل</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="errorMessage" className="text-right">
+                پیام خطا (در صورت وجود)
+              </Label>
+              <Controller
+                name="errorMessage"
+                control={control}
+                render={({ field }) => (
+                  <Textarea
+                    {...field}
+                    placeholder="متن کامل پیام خطا را اینجا بنویسید"
+                    rows={2}
+                    className="text-right"
+                    dir="rtl"
+                  />
+                )}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )
+    }
+
+    if (selectedIssue === "security") {
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm text-right flex items-center gap-2">
+              <Shield className="w-4 h-4 text-red-500" />
+              اطلاعات تکمیلی امنیتی (اختیاری)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="incidentTime" className="text-right">
+                زمان تقریبی حادثه
+              </Label>
+              <Controller
+                name="incidentTime"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                    <SelectTrigger className="text-right">
+                      <SelectValue placeholder="انتخاب زمان" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="just-now">همین الان</SelectItem>
+                      <SelectItem value="today">امروز</SelectItem>
+                      <SelectItem value="yesterday">دیروز</SelectItem>
+                      <SelectItem value="this-week">این هفته</SelectItem>
+                      <SelectItem value="not-sure">مطمئن نیستم</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="securitySeverity" className="text-right">
+                شدت مشکل
+              </Label>
+              <Controller
+                name="securitySeverity"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                    <SelectTrigger className="text-right">
+                      <SelectValue placeholder="انتخاب شدت" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">کم - فقط مشکوک است</SelectItem>
+                      <SelectItem value="medium">متوسط - احتمال مشکل</SelectItem>
+                      <SelectItem value="high">بالا - مشکل جدی</SelectItem>
+                      <SelectItem value="critical">بحرانی - فوری</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="affectedData" className="text-right">
+                اطلاعات تحت تأثیر
+              </Label>
+              <Controller
+                name="affectedData"
+                control={control}
+                render={({ field }) => (
+                  <Textarea
+                    {...field}
+                    placeholder="چه اطلاعاتی ممکن است تحت تأثیر قرار گرفته باشد؟"
+                    rows={2}
+                    className="text-right"
+                    dir="rtl"
+                  />
+                )}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )
+    }
+
+    if (selectedIssue === "access") {
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm text-right flex items-center gap-2">
+              <Key className="w-4 h-4" />
+              اطلاعات تکمیلی دسترسی (اختیاری)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="requestedSystem" className="text-right">
+                سیستم یا نرم‌افزار مورد نظر
+              </Label>
+              <Controller
+                name="requestedSystem"
+                control={control}
+                render={({ field }) => (
+                  <Input {...field} placeholder="نام سیستم یا نرم‌افزار" className="text-right" dir="rtl" />
+                )}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="accessLevel" className="text-right">
+                سطح دسترسی مورد نیاز
+              </Label>
+              <Controller
+                name="accessLevel"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                    <SelectTrigger className="text-right">
+                      <SelectValue placeholder="انتخاب سطح" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="read-only">فقط خواندن</SelectItem>
+                      <SelectItem value="read-write">خواندن و نوشتن</SelectItem>
+                      <SelectItem value="admin">مدیریت</SelectItem>
+                      <SelectItem value="full">دسترسی کامل</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="accessReason" className="text-right">
+                دلیل درخواست
+              </Label>
+              <Controller
+                name="accessReason"
+                control={control}
+                render={({ field }) => (
+                  <Textarea
+                    {...field}
+                    placeholder="چرا به این دسترسی نیاز دارید؟"
+                    rows={2}
+                    className="text-right"
+                    dir="rtl"
+                  />
+                )}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )
+    }
+
+    if (selectedIssue === "training") {
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm text-right flex items-center gap-2">
+              <GraduationCap className="w-4 h-4" />
+              اطلاعات تکمیلی آموزش (اختیاری)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="trainingTopic" className="text-right">
+                موضوع آموزش
+              </Label>
+              <Controller
+                name="trainingTopic"
+                control={control}
+                render={({ field }) => (
+                  <Input {...field} placeholder="چه چیزی می‌خواهید یاد بگیرید؟" className="text-right" dir="rtl" />
+                )}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="currentLevel" className="text-right">
+                سطح فعلی شما
+              </Label>
+              <Controller
+                name="currentLevel"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                    <SelectTrigger className="text-right">
+                      <SelectValue placeholder="انتخاب سطح" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="beginner">مبتدی</SelectItem>
+                      <SelectItem value="intermediate">متوسط</SelectItem>
+                      <SelectItem value="advanced">پیشرفته</SelectItem>
+                      <SelectItem value="expert">حرفه‌ای</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="preferredMethod" className="text-right">
+                روش آموزش ترجیحی
+              </Label>
+              <Controller
+                name="preferredMethod"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                    <SelectTrigger className="text-right">
+                      <SelectValue placeholder="انتخاب روش" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="in-person">حضوری</SelectItem>
+                      <SelectItem value="online">آنلاین</SelectItem>
+                      <SelectItem value="documentation">مستندات</SelectItem>
+                      <SelectItem value="video">ویدیو</SelectItem>
+                      <SelectItem value="hands-on">عملی</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )
+    }
+
+    if (selectedIssue === "maintenance") {
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm text-right flex items-center gap-2">
+              <Wrench className="w-4 h-4" />
+              اطلاعات تکمیلی نگهداری (اختیاری)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="equipmentType" className="text-right">
+                نوع تجهیزات
+              </Label>
+              <Controller
+                name="equipmentType"
+                control={control}
+                render={({ field }) => (
+                  <Input {...field} placeholder="مثال: رایانه، چاپگر، سرور" className="text-right" dir="rtl" />
+                )}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="maintenanceType" className="text-right">
+                نوع نگهداری
+              </Label>
+              <Controller
+                name="maintenanceType"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                    <SelectTrigger className="text-right">
+                      <SelectValue placeholder="انتخاب نوع" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="preventive">پیشگیرانه</SelectItem>
+                      <SelectItem value="corrective">اصلاحی</SelectItem>
+                      <SelectItem value="emergency">اضطراری</SelectItem>
+                      <SelectItem value="scheduled">برنامه‌ریزی شده</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="preferredTime" className="text-right">
+                زمان ترجیحی
+              </Label>
+              <Controller
+                name="preferredTime"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value} dir="rtl">
+                    <SelectTrigger className="text-right">
+                      <SelectValue placeholder="انتخاب زمان" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="morning">صبح</SelectItem>
+                      <SelectItem value="afternoon">بعدازظهر</SelectItem>
+                      <SelectItem value="evening">عصر</SelectItem>
+                      <SelectItem value="weekend">آخر هفته</SelectItem>
+                      <SelectItem value="after-hours">خارج از ساعت کاری</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )
+    }
+
+    return null
   }
 
   return (
@@ -1278,8 +1112,8 @@ export function TicketFormStep2({ control, errors, category, attachedFiles, onFi
               render={({ field }) => (
                 <Textarea
                   {...field}
-                  placeholder="لطفاً مشکل خود را به تفصیل شرح دهید..."
-                  rows={5}
+                  placeholder="لطفاً مشکل خود را به تفصیل شرح دهید. چه اتفاقی افتاده؟ چه زمانی شروع شده؟ چه کاری انجام داده‌اید؟"
+                  rows={6}
                   className="text-right"
                   dir="rtl"
                 />
@@ -1287,35 +1121,47 @@ export function TicketFormStep2({ control, errors, category, attachedFiles, onFi
             />
             {errors.description && <p className="text-sm text-red-500 text-right">{errors.description.message}</p>}
           </div>
+
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-amber-800 text-right">
+                <p className="font-medium mb-1">نکات مهم برای شرح مشکل:</p>
+                <ul className="list-disc list-inside space-y-1 text-right">
+                  <li>زمان دقیق بروز مشکل را ذکر کنید</li>
+                  <li>پیام‌های خطا را دقیقاً بنویسید</li>
+                  <li>اقداماتی که انجام داده‌اید را شرح دهید</li>
+                  <li>تأثیر مشکل بر کار شما را بیان کنید</li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Category Specific Fields */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-right">
-            {getCategoryIcon(category)}
-            {getCategoryTitle(category)}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>{renderCategorySpecificFields()}</CardContent>
-      </Card>
+      {/* Dynamic Fields Based on Issue Type */}
+      {renderDynamicFields()}
 
       {/* File Upload */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-right">
             <Paperclip className="w-5 h-5" />
-            پیوست فایل
+            پیوست فایل (اختیاری)
           </CardTitle>
         </CardHeader>
         <CardContent>
           <FileUpload onFilesChange={onFilesChange} maxFiles={5} />
-          <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <p className="text-sm text-yellow-800 text-right">
-              <strong>توصیه:</strong> برای تسریع در حل مشکل، تصاویر، فایل‌های لاگ، یا اسکرین‌شات مربوط به مشکل را پیوست
-              کنید.
+          <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
+            <p className="text-sm text-green-800 text-right">
+              <strong>توصیه:</strong> برای تسریع در حل مشکل، فایل‌های زیر را پیوست کنید:
             </p>
+            <ul className="list-disc list-inside mt-2 text-sm text-green-700 text-right space-y-1">
+              <li>تصاویر از صفحه خطا یا مشکل</li>
+              <li>فایل‌های لاگ مربوطه</li>
+              <li>اسکرین‌شات از تنظیمات</li>
+              <li>مستندات مرتبط</li>
+            </ul>
           </div>
         </CardContent>
       </Card>
