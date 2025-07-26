@@ -121,6 +121,7 @@ export function AdminTicketList({ tickets, onTicketUpdate }: AdminTicketListProp
   })
 
   const handleViewTicket = (ticket: any) => {
+    console.log("Opening ticket preview for:", ticket.id) // Debug log
     setSelectedTicket(ticket)
     setViewDialogOpen(true)
   }
@@ -517,7 +518,7 @@ export function AdminTicketList({ tickets, onTicketUpdate }: AdminTicketListProp
                             variant="ghost"
                             size="sm"
                             onClick={() => handleViewTicket(ticket)}
-                            className="gap-1 font-iran"
+                            className="gap-1 font-iran hover:bg-blue-50 hover:text-blue-600"
                           >
                             <Eye className="w-3 h-3" />
                             مشاهده
