@@ -24,7 +24,7 @@ import {
   Send,
   Calendar,
   HardDrive,
-  ComputerIcon as Software,
+  Laptop,
   Network,
   Mail,
   Shield,
@@ -61,7 +61,7 @@ const priorityLabels = {
 
 const categoryIcons = {
   hardware: HardDrive,
-  software: Software,
+  software: Laptop,
   network: Network,
   email: Mail,
   security: Shield,
@@ -93,7 +93,7 @@ export function TechnicianDashboard({ tickets, onTicketUpdate, currentUser }: Te
   const [responseMessage, setResponseMessage] = useState("")
   const [responseStatus, setResponseStatus] = useState("")
 
-  // Filter tickets assigned to current technician
+  // Filter tickets assigned to current technician - Fixed to use user ID
   const technicianTickets = tickets.filter((ticket) => ticket.assignedTo === currentUser?.id)
 
   // Filter tickets based on search and filters

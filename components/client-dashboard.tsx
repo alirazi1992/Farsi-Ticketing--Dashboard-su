@@ -21,7 +21,7 @@ import {
   CheckCircle,
   Ticket,
   HardDrive,
-  Computer,
+  Laptop,
   Network,
   Mail,
   Shield,
@@ -60,7 +60,7 @@ const priorityLabels = {
 
 const categoryIcons = {
   hardware: HardDrive,
-  software: Computer,
+  software: Laptop,
   network: Network,
   email: Mail,
   security: Shield,
