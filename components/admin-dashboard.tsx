@@ -1,209 +1,244 @@
 "use client"
 
 import { useState } from "react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { AdminTicketManagement } from "@/components/admin-ticket-management"
+import { Button } from "@/components/ui/button"
 import { CategoryManagement } from "@/components/category-management"
+import { AdminTechnicianAssignment } from "@/components/admin-technician-assignment"
+import { AutoAssignmentSettings } from "@/components/auto-assignment-settings"
 import { EnhancedAutoAssignment } from "@/components/enhanced-auto-assignment"
-import { Ticket, Clock, CheckCircle, AlertTriangle, BarChart3, Bot, FolderTree } from "lucide-react"
+import { AdminTicketManagement } from "@/components/admin-ticket-management"
+import { UserMenu } from "@/components/user-menu"
+import { SettingsDialog } from "@/components/settings-dialog"
+import {
+  Users,
+  Ticket,
+  Settings,
+  BarChart3,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+  TrendingUp,
+  Activity,
+  Zap,
+  Target,
+  Brain,
+  Layers,
+} from "lucide-react"
 
 interface AdminDashboardProps {
   tickets: any[]
-  categories: any
+  categories: any[]
   onTicketUpdate: (ticketId: string, updates: any) => void
-  onCategoryUpdate: (categories: any) => void
-  stats: any
+  onCategoriesUpdate: (categories: any[]) => void
 }
 
-export function AdminDashboard({ tickets, categories, onTicketUpdate, onCategoryUpdate, stats }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState("overview")
+export function AdminDashboard({ tickets, categories, onTicketUpdate, onCategoriesUpdate }: AdminDashboardProps) {
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
-  // Sample technicians data
-  const technicians = [
-    {
-      id: "tech-001",
-      name: "علی احمدی",
-      email: "ali@company.com",
-      specialties: ["network", "hardware"],
-      activeTickets: 3,
-      status: "available",
-      rating: 4.8,
-      completedTickets: 45,
-      avgResponseTime: "2.1",
-    },
-    {
-      id: "tech-002",
-      name: "سارا محمدی",
-      email: "sara@company.com",
-      specialties: ["software", "email"],
-      activeTickets: 2,
-      status: "available",
-      rating: 4.9,
-      completedTickets: 62,
-      avgResponseTime: "1.8",
-    },
-    {
-      id: "tech-003",
-      name: "حسن رضایی",
-      email: "hassan@company.com",
-      specialties: ["security", "access"],
-      activeTickets: 1,
-      status: "available",
-      rating: 4.7,
-      completedTickets: 38,
-      avgResponseTime: "3.2",
-    },
-  ]
+  // Calculate statistics
+  const totalTickets = tickets.length
+  const openTickets = tickets.filter((t) => t.status === "open").length
+  const inProgressTickets = tickets.filter((t) => t.status === "in-progress").length
+  const resolvedTickets = tickets.filter((t) => t.status === "resolved").length
+  const urgentTickets = tickets.filter((t) => t.priority === "urgent").length
 
   return (
-    <div className="space-y-6" dir="rtl">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">پنل مدیریت</h2>
-          <p className="text-muted-foreground">مدیریت کامل سیستم خدمات IT</p>
+    <div className="min-h-screen bg-background" dir="rtl">
+      {/* Header */}
+      <header className="border-b bg-card">
+        <div className="flex h-16 items-center justify-between px-6">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <Settings className="w-4 h-4 text-primary-foreground" />
+              </div>
+              <h1 className="text-xl font-semibold">پنل مدیریت</h1>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
+              <Settings className="w-4 h-4 ml-2" />
+              تنظیمات
+            </Button>
+            <UserMenu />
+          </div>
         </div>
+      </header>
+
+      {/* Dashboard Content */}
+      <div className="p-6">
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-right">
+                  <p className="text-sm text-muted-foreground">کل تیکت‌ها</p>
+                  <p className="text-2xl font-bold">{totalTickets}</p>
+                </div>
+                <Ticket className="w-8 h-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-right">
+                  <p className="text-sm text-muted-foreground">باز</p>
+                  <p className="text-2xl font-bold text-orange-600">{openTickets}</p>
+                </div>
+                <AlertTriangle className="w-8 h-8 text-orange-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-right">
+                  <p className="text-sm text-muted-foreground">در حال انجام</p>
+                  <p className="text-2xl font-bold text-blue-600">{inProgressTickets}</p>
+                </div>
+                <Clock className="w-8 h-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-right">
+                  <p className="text-sm text-muted-foreground">حل شده</p>
+                  <p className="text-2xl font-bold text-green-600">{resolvedTickets}</p>
+                </div>
+                <CheckCircle className="w-8 h-8 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-right">
+                  <p className="text-sm text-muted-foreground">فوری</p>
+                  <p className="text-2xl font-bold text-red-600">{urgentTickets}</p>
+                </div>
+                <Zap className="w-8 h-8 text-red-500" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Main Tabs */}
+        <Tabs defaultValue="tickets" className="w-full">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="tickets" className="flex items-center gap-2">
+              <Ticket className="w-4 h-4" />
+              مدیریت تیکت‌ها
+            </TabsTrigger>
+            <TabsTrigger value="categories" className="flex items-center gap-2">
+              <Layers className="w-4 h-4" />
+              دسته‌بندی‌ها
+            </TabsTrigger>
+            <TabsTrigger value="assignment" className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              تعیین تکنسین
+            </TabsTrigger>
+            <TabsTrigger value="auto-assignment" className="flex items-center gap-2">
+              <Target className="w-4 h-4" />
+              تعیین خودکار
+            </TabsTrigger>
+            <TabsTrigger value="enhanced-auto" className="flex items-center gap-2">
+              <Brain className="w-4 h-4" />
+              تعیین هوشمند
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              گزارشات
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="tickets" className="mt-6">
+            <AdminTicketManagement tickets={tickets} onTicketUpdate={onTicketUpdate} />
+          </TabsContent>
+
+          <TabsContent value="categories" className="mt-6">
+            <CategoryManagement categories={categories} onCategoriesUpdate={onCategoriesUpdate} />
+          </TabsContent>
+
+          <TabsContent value="assignment" className="mt-6">
+            <AdminTechnicianAssignment tickets={tickets} onTicketUpdate={onTicketUpdate} />
+          </TabsContent>
+
+          <TabsContent value="auto-assignment" className="mt-6">
+            <AutoAssignmentSettings tickets={tickets} onTicketUpdate={onTicketUpdate} />
+          </TabsContent>
+
+          <TabsContent value="enhanced-auto" className="mt-6">
+            <EnhancedAutoAssignment tickets={tickets} onTicketUpdate={onTicketUpdate} />
+          </TabsContent>
+
+          <TabsContent value="analytics" className="mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-right flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5" />
+                    روند تیکت‌ها
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span>امروز</span>
+                      <Badge variant="outline">+{Math.floor(Math.random() * 10) + 1}</Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>این هفته</span>
+                      <Badge variant="outline">+{Math.floor(Math.random() * 50) + 20}</Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>این ماه</span>
+                      <Badge variant="outline">+{Math.floor(Math.random() * 200) + 100}</Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-right flex items-center gap-2">
+                    <Activity className="w-5 h-5" />
+                    عملکرد سیستم
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span>میانگین زمان پاسخ</span>
+                      <Badge variant="secondary">2.3 ساعت</Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>نرخ حل مسئله</span>
+                      <Badge variant="secondary">94.2%</Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>رضایت مشتریان</span>
+                      <Badge variant="secondary">4.7/5</Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview" className="gap-2">
-            <BarChart3 className="w-4 h-4" />
-            نمای کلی
-          </TabsTrigger>
-          <TabsTrigger value="tickets" className="gap-2">
-            <Ticket className="w-4 h-4" />
-            مدیریت تیکت‌ها
-          </TabsTrigger>
-          <TabsTrigger value="categories" className="gap-2">
-            <FolderTree className="w-4 h-4" />
-            دسته‌بندی‌ها
-          </TabsTrigger>
-          <TabsTrigger value="auto-assign" className="gap-2">
-            <Bot className="w-4 h-4" />
-            تعیین خودکار
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-4">
-          {/* Statistics Cards */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">کل تیکت‌ها</CardTitle>
-                <Ticket className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalTickets}</div>
-                <p className="text-xs text-muted-foreground">+12% نسبت به ماه گذشته</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">تیکت‌های باز</CardTitle>
-                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">{stats.openTickets}</div>
-                <p className="text-xs text-muted-foreground">نیاز به توجه فوری</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">در حال انجام</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-yellow-600">{stats.inProgressTickets}</div>
-                <p className="text-xs text-muted-foreground">در دست بررسی</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">حل شده</CardTitle>
-                <CheckCircle className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">{stats.resolvedTickets}</div>
-                <p className="text-xs text-muted-foreground">میانگین حل: {stats.avgResolutionTime}h</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Recent Activity */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>فعالیت‌های اخیر</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {tickets.slice(0, 5).map((ticket) => (
-                    <div key={ticket.id} className="flex items-center gap-4">
-                      <div className="w-2 h-2 bg-primary rounded-full" />
-                      <div className="flex-1 text-right">
-                        <p className="text-sm font-medium">{ticket.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {ticket.clientName} - {new Date(ticket.createdAt).toLocaleDateString("fa-IR")}
-                        </p>
-                      </div>
-                      <Badge variant={ticket.status === "open" ? "destructive" : "default"}>
-                        {ticket.status === "open"
-                          ? "باز"
-                          : ticket.status === "in-progress"
-                            ? "در حال انجام"
-                            : ticket.status === "resolved"
-                              ? "حل شده"
-                              : "بسته"}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>عملکرد تکنسین‌ها</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {technicians.map((tech) => (
-                    <div key={tech.id} className="flex items-center justify-between">
-                      <div className="text-right">
-                        <p className="text-sm font-medium">{tech.name}</p>
-                        <p className="text-xs text-muted-foreground">{tech.activeTickets} تیکت فعال</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={tech.status === "available" ? "default" : "secondary"}>
-                          {tech.status === "available" ? "آزاد" : "مشغول"}
-                        </Badge>
-                        <div className="text-xs text-muted-foreground">⭐ {tech.rating}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="tickets">
-          <AdminTicketManagement tickets={tickets} onTicketUpdate={onTicketUpdate} />
-        </TabsContent>
-
-        <TabsContent value="categories">
-          <CategoryManagement categories={categories} onCategoryUpdate={onCategoryUpdate} />
-        </TabsContent>
-
-        <TabsContent value="auto-assign">
-          <EnhancedAutoAssignment tickets={tickets} technicians={technicians} onTicketUpdate={onTicketUpdate} />
-        </TabsContent>
-      </Tabs>
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   )
 }

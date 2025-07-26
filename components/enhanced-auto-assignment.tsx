@@ -1,197 +1,119 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "@/hooks/use-toast"
-import { Bot, Settings, Clock, AlertTriangle, CheckCircle, Activity, BarChart3, Zap, Target } from "lucide-react"
-
-const categoryLabels = {
-  hardware: "سخت‌افزار",
-  software: "نرم‌افزار",
-  network: "شبکه",
-  email: "ایمیل",
-  security: "امنیت",
-  access: "دسترسی",
-}
-
-const priorityLabels = {
-  low: "کم",
-  medium: "متوسط",
-  high: "بالا",
-  urgent: "فوری",
-}
+import {
+  Brain,
+  Zap,
+  Target,
+  Clock,
+  Users,
+  TrendingUp,
+  Settings,
+  CheckCircle,
+  AlertTriangle,
+  Activity,
+} from "lucide-react"
 
 interface EnhancedAutoAssignmentProps {
   tickets?: any[]
-  technicians?: any[]
   onTicketUpdate?: (ticketId: string, updates: any) => void
 }
 
-export function EnhancedAutoAssignment({
-  tickets = [],
-  technicians = [],
-  onTicketUpdate = () => {},
-}: EnhancedAutoAssignmentProps) {
+export function EnhancedAutoAssignment({ tickets = [], onTicketUpdate }: EnhancedAutoAssignmentProps) {
   const [autoAssignEnabled, setAutoAssignEnabled] = useState(true)
-  const [assignmentStrategy, setAssignmentStrategy] = useState("balanced")
-  const [priorityWeighting, setPriorityWeighting] = useState("medium")
-  const [workloadThreshold, setWorkloadThreshold] = useState("5")
-  const [specialtyMatching, setSpecialtyMatching] = useState(true)
-  const [stats, setStats] = useState({
-    totalAssignments: 0,
-    successfulAssignments: 0,
-    averageAssignmentTime: 0,
-    technicianUtilization: 0,
-  })
+  const [intelligentRouting, setIntelligentRouting] = useState(true)
+  const [priorityBasedAssignment, setPriorityBasedAssignment] = useState(true)
+  const [workloadBalancing, setWorkloadBalancing] = useState(true)
+  const [skillMatching, setSkillMatching] = useState(true)
+
+  // Mock technicians data
+  const technicians = [
+    {
+      id: "tech-001",
+      name: "علی احمدی",
+      specialties: ["hardware", "network"],
+      activeTickets: 3,
+      rating: 4.8,
+      status: "available",
+    },
+    {
+      id: "tech-002",
+      name: "سارا محمدی",
+      specialties: ["software", "email"],
+      activeTickets: 2,
+      rating: 4.9,
+      status: "available",
+    },
+    {
+      id: "tech-003",
+      name: "حسن رضایی",
+      specialties: ["security", "access"],
+      activeTickets: 1,
+      rating: 4.7,
+      status: "available",
+    },
+  ]
 
   // Calculate assignment statistics
-  useEffect(() => {
-    if (!tickets || tickets.length === 0) return
+  const totalTickets = tickets.length || 0
+  const unassignedTickets = tickets.filter((ticket) => !ticket.assignedTo).length || 0
+  const assignedTickets = totalTickets - unassignedTickets
+  const assignmentRate = totalTickets > 0 ? Math.round((assignedTickets / totalTickets) * 100) : 0
 
-    const assignedTickets = tickets.filter((ticket) => ticket.assignedTo)
-    const totalAssignments = assignedTickets.length
-    const successfulAssignments = assignedTickets.filter(
-      (ticket) => ticket.status === "resolved" || ticket.status === "closed",
-    ).length
-
-    // Calculate average assignment time (mock calculation)
-    const averageAssignmentTime = 2.3 // hours
-
-    // Calculate technician utilization
-    const totalCapacity = technicians.length * 5 // assuming 5 tickets per technician max
-    const currentLoad = technicians.reduce((sum, tech) => sum + (tech.activeTickets || 0), 0)
-    const technicianUtilization = totalCapacity > 0 ? (currentLoad / totalCapacity) * 100 : 0
-
-    setStats({
-      totalAssignments,
-      successfulAssignments,
-      averageAssignmentTime,
-      technicianUtilization,
-    })
-  }, [tickets, technicians])
-
-  // Auto-assignment algorithm
-  const getOptimalTechnician = (ticket: any) => {
-    if (!technicians || technicians.length === 0) return null
-
-    let availableTechnicians = technicians.filter(
-      (tech) => tech.status === "available" && (tech.activeTickets || 0) < Number.parseInt(workloadThreshold),
-    )
-
-    if (availableTechnicians.length === 0) {
-      // If no available technicians, consider all technicians
-      availableTechnicians = technicians
-    }
-
-    // Apply specialty matching if enabled
-    if (specialtyMatching && ticket.category) {
-      const specialtyMatches = availableTechnicians.filter(
-        (tech) => tech.specialties && tech.specialties.includes(ticket.category),
-      )
-      if (specialtyMatches.length > 0) {
-        availableTechnicians = specialtyMatches
-      }
-    }
-
-    // Apply assignment strategy
-    switch (assignmentStrategy) {
-      case "balanced":
-        return availableTechnicians.sort((a, b) => {
-          // Balance workload, rating, and response time
-          const aScore =
-            (a.activeTickets || 0) * 0.4 +
-            (5 - (a.rating || 4)) * 0.3 +
-            Number.parseFloat(a.avgResponseTime || "2") * 0.3
-          const bScore =
-            (b.activeTickets || 0) * 0.4 +
-            (5 - (b.rating || 4)) * 0.3 +
-            Number.parseFloat(b.avgResponseTime || "2") * 0.3
-          return aScore - bScore
-        })[0]
-
-      case "performance":
-        return availableTechnicians.sort((a, b) => {
-          if ((b.rating || 4) !== (a.rating || 4)) {
-            return (b.rating || 4) - (a.rating || 4)
-          }
-          return (a.activeTickets || 0) - (b.activeTickets || 0)
-        })[0]
-
-      case "workload":
-        return availableTechnicians.sort((a, b) => (a.activeTickets || 0) - (b.activeTickets || 0))[0]
-
-      case "round-robin":
-        // Simple round-robin based on last assignment (mock implementation)
-        return availableTechnicians[Math.floor(Math.random() * availableTechnicians.length)]
-
-      default:
-        return availableTechnicians[0]
-    }
-  }
-
-  // Handle automatic assignment for unassigned tickets
-  const handleAutoAssignUnassigned = () => {
-    if (!tickets || tickets.length === 0) return
-
-    const unassignedTickets = tickets.filter((ticket) => !ticket.assignedTo)
-    let assignedCount = 0
-
-    unassignedTickets.forEach((ticket) => {
-      const optimalTechnician = getOptimalTechnician(ticket)
-      if (optimalTechnician) {
-        onTicketUpdate(ticket.id, {
-          assignedTo: optimalTechnician.id,
-          assignedTechnicianName: optimalTechnician.name,
-          status: ticket.status === "open" ? "in-progress" : ticket.status,
-        })
-        assignedCount++
-      }
-    })
-
-    toast({
-      title: "تعیین خودکار تکنسین",
-      description: `${assignedCount} تیکت به صورت خودکار تعیین شد`,
-    })
-  }
-
-  // Handle rebalancing workload
-  const handleRebalanceWorkload = () => {
-    if (!tickets || tickets.length === 0 || !technicians || technicians.length === 0) return
-
-    const activeTickets = tickets.filter(
-      (ticket) => ticket.assignedTo && (ticket.status === "open" || ticket.status === "in-progress"),
-    )
-
-    // Find overloaded technicians
-    const overloadedTechnicians = technicians.filter(
-      (tech) => (tech.activeTickets || 0) > Number.parseInt(workloadThreshold),
-    )
-
-    let rebalancedCount = 0
-
-    overloadedTechnicians.forEach((overloadedTech) => {
-      const techTickets = activeTickets.filter((ticket) => ticket.assignedTo === overloadedTech.id)
-      const excessTickets = techTickets.slice(Number.parseInt(workloadThreshold))
-
-      excessTickets.forEach((ticket) => {
-        const newTechnician = getOptimalTechnician(ticket)
-        if (newTechnician && newTechnician.id !== overloadedTech.id) {
-          onTicketUpdate(ticket.id, {
-            assignedTo: newTechnician.id,
-            assignedTechnicianName: newTechnician.name,
-          })
-          rebalancedCount++
-        }
+  const handleAutoAssign = () => {
+    if (!onTicketUpdate) {
+      toast({
+        title: "خطا",
+        description: "عملکرد تخصیص خودکار در دسترس نیست",
+        variant: "destructive",
       })
+      return
+    }
+
+    const unassigned = tickets.filter((ticket) => !ticket.assignedTo)
+    let assigned = 0
+
+    unassigned.forEach((ticket) => {
+      // Find best technician based on criteria
+      const availableTechs = technicians.filter((tech) => tech.status === "available")
+
+      if (availableTechs.length === 0) return
+
+      let bestTech = availableTechs[0]
+
+      if (skillMatching && ticket.category) {
+        const skillMatched = availableTechs.filter((tech) => tech.specialties.includes(ticket.category))
+        if (skillMatched.length > 0) {
+          bestTech = skillMatched[0]
+        }
+      }
+
+      if (workloadBalancing) {
+        bestTech = availableTechs.reduce((prev, current) =>
+          prev.activeTickets < current.activeTickets ? prev : current,
+        )
+      }
+
+      if (bestTech) {
+        onTicketUpdate(ticket.id, {
+          assignedTo: bestTech.id,
+          assignedTechnicianName: bestTech.name,
+          status: "in-progress",
+        })
+        assigned++
+      }
     })
 
     toast({
-      title: "تعادل بار کاری",
-      description: `${rebalancedCount} تیکت مجدداً تعیین شد`,
+      title: "تخصیص خودکار انجام شد",
+      description: `${assigned} تیکت به صورت خودکار تخصیص یافت`,
     })
   }
 
@@ -199,176 +121,227 @@ export function EnhancedAutoAssignment({
     <div className="space-y-6" dir="rtl">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-right">
-            <Bot className="w-5 h-5" />
-            تعیین خودکار تکنسین پیشرفته
+          <CardTitle className="text-right flex items-center gap-2">
+            <Brain className="w-5 h-5" />
+            سیستم تخصیص هوشمند
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Main Controls */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Switch checked={autoAssignEnabled} onCheckedChange={setAutoAssignEnabled} id="auto-assign" />
-              <label htmlFor="auto-assign" className="text-sm font-medium">
-                فعال‌سازی تعیین خودکار
-              </label>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={handleAutoAssignUnassigned} disabled={!autoAssignEnabled} className="gap-2" size="sm">
-                <Zap className="w-4 h-4" />
-                تعیین تیکت‌های بدون تکنسین
-              </Button>
-              <Button onClick={handleRebalanceWorkload} variant="outline" className="gap-2 bg-transparent" size="sm">
-                <Target className="w-4 h-4" />
-                تعادل بار کاری
-              </Button>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Assignment Strategy */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Settings className="w-5 h-5" />
-                تنظیمات تعیین
-              </h3>
-
-              <div className="space-y-3">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">استراتژی تعیین</label>
-                  <Select value={assignmentStrategy} onValueChange={setAssignmentStrategy} dir="rtl">
-                    <SelectTrigger className="text-right">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="balanced">متعادل (توصیه شده)</SelectItem>
-                      <SelectItem value="performance">بر اساس عملکرد</SelectItem>
-                      <SelectItem value="workload">بر اساس بار کاری</SelectItem>
-                      <SelectItem value="round-robin">چرخشی</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-2 block">وزن اولویت</label>
-                  <Select value={priorityWeighting} onValueChange={setPriorityWeighting} dir="rtl">
-                    <SelectTrigger className="text-right">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">کم</SelectItem>
-                      <SelectItem value="medium">متوسط</SelectItem>
-                      <SelectItem value="high">بالا</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-2 block">حد آستانه بار کاری</label>
-                  <Select value={workloadThreshold} onValueChange={setWorkloadThreshold} dir="rtl">
-                    <SelectTrigger className="text-right">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="3">3 تیکت</SelectItem>
-                      <SelectItem value="5">5 تیکت</SelectItem>
-                      <SelectItem value="7">7 تیکت</SelectItem>
-                      <SelectItem value="10">10 تیکت</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <Switch checked={specialtyMatching} onCheckedChange={setSpecialtyMatching} id="specialty-matching" />
-                  <label htmlFor="specialty-matching" className="text-sm font-medium">
-                    تطبیق تخصص
-                  </label>
-                </div>
-              </div>
-            </div>
-
+        <CardContent>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Statistics */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <BarChart3 className="w-5 h-5" />
-                آمار عملکرد
-              </h3>
+              <h3 className="font-semibold text-right">آمار تخصیص</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                  <span className="text-sm">کل تیکت‌ها</span>
+                  <Badge variant="outline">{totalTickets}</Badge>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                  <span className="text-sm">تخصیص یافته</span>
+                  <Badge className="bg-green-100 text-green-800">{assignedTickets}</Badge>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
+                  <span className="text-sm">در انتظار</span>
+                  <Badge className="bg-orange-100 text-orange-800">{unassignedTickets}</Badge>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                  <span className="text-sm">نرخ تخصیص</span>
+                  <Badge className="bg-blue-100 text-blue-800">{assignmentRate}%</Badge>
+                </div>
+              </div>
+            </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-muted p-4 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-primary">{stats.totalAssignments}</div>
-                  <div className="text-sm text-muted-foreground">کل تعیین‌ها</div>
+            {/* Settings */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-right">تنظیمات</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-right">
+                    <Label htmlFor="auto-assign">تخصیص خودکار</Label>
+                    <p className="text-sm text-muted-foreground">فعال‌سازی تخصیص خودکار تیکت‌ها</p>
+                  </div>
+                  <Switch id="auto-assign" checked={autoAssignEnabled} onCheckedChange={setAutoAssignEnabled} />
                 </div>
 
-                <div className="bg-muted p-4 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-green-600">{stats.successfulAssignments}</div>
-                  <div className="text-sm text-muted-foreground">تعیین‌های موفق</div>
+                <Separator />
+
+                <div className="flex items-center justify-between">
+                  <div className="text-right">
+                    <Label htmlFor="intelligent-routing">مسیریابی هوشمند</Label>
+                    <p className="text-sm text-muted-foreground">تخصیص بر اساس الگوریتم‌های یادگیری</p>
+                  </div>
+                  <Switch
+                    id="intelligent-routing"
+                    checked={intelligentRouting}
+                    onCheckedChange={setIntelligentRouting}
+                  />
                 </div>
 
-                <div className="bg-muted p-4 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-blue-600">{stats.averageAssignmentTime}h</div>
-                  <div className="text-sm text-muted-foreground">میانگین زمان تعیین</div>
+                <div className="flex items-center justify-between">
+                  <div className="text-right">
+                    <Label htmlFor="priority-assignment">اولویت‌بندی</Label>
+                    <p className="text-sm text-muted-foreground">تخصیص اولویت‌دار تیکت‌های فوری</p>
+                  </div>
+                  <Switch
+                    id="priority-assignment"
+                    checked={priorityBasedAssignment}
+                    onCheckedChange={setPriorityBasedAssignment}
+                  />
                 </div>
 
-                <div className="bg-muted p-4 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-orange-600">{stats.technicianUtilization.toFixed(1)}%</div>
-                  <div className="text-sm text-muted-foreground">بهره‌وری تکنسین‌ها</div>
+                <div className="flex items-center justify-between">
+                  <div className="text-right">
+                    <Label htmlFor="workload-balancing">توزیع بار کاری</Label>
+                    <p className="text-sm text-muted-foreground">توزیع متعادل تیکت‌ها بین تکنسین‌ها</p>
+                  </div>
+                  <Switch id="workload-balancing" checked={workloadBalancing} onCheckedChange={setWorkloadBalancing} />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="text-right">
+                    <Label htmlFor="skill-matching">تطبیق مهارت</Label>
+                    <p className="text-sm text-muted-foreground">تخصیص بر اساس تخصص تکنسین‌ها</p>
+                  </div>
+                  <Switch id="skill-matching" checked={skillMatching} onCheckedChange={setSkillMatching} />
+                </div>
+              </div>
+
+              <div className="pt-4">
+                <Button onClick={handleAutoAssign} className="w-full gap-2" disabled={!autoAssignEnabled}>
+                  <Zap className="w-4 h-4" />
+                  اجرای تخصیص خودکار
+                </Button>
+              </div>
+            </div>
+
+            {/* Performance Metrics */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-right">عملکرد سیستم</h3>
+              <div className="space-y-3">
+                <div className="p-3 border rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">میانگین زمان تخصیص</span>
+                    <Clock className="w-4 h-4 text-blue-500" />
+                  </div>
+                  <p className="text-lg font-bold text-blue-600">1.2 دقیقه</p>
+                </div>
+
+                <div className="p-3 border rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">دقت تخصیص</span>
+                    <Target className="w-4 h-4 text-green-500" />
+                  </div>
+                  <p className="text-lg font-bold text-green-600">94.5%</p>
+                </div>
+
+                <div className="p-3 border rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">رضایت تکنسین‌ها</span>
+                    <Users className="w-4 h-4 text-purple-500" />
+                  </div>
+                  <p className="text-lg font-bold text-purple-600">4.7/5</p>
+                </div>
+
+                <div className="p-3 border rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">بهبود عملکرد</span>
+                    <TrendingUp className="w-4 h-4 text-orange-500" />
+                  </div>
+                  <p className="text-lg font-bold text-orange-600">+12%</p>
                 </div>
               </div>
             </div>
           </div>
+        </CardContent>
+      </Card>
 
-          <Separator />
-
-          {/* Current Status */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Activity className="w-5 h-5" />
-              وضعیت فعلی سیستم
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center gap-3 p-4 border rounded-lg">
-                <div className="p-2 bg-green-100 rounded-full">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
+      {/* Algorithm Details */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-right flex items-center gap-2">
+            <Settings className="w-5 h-5" />
+            جزئیات الگوریتم تخصیص
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="font-medium mb-3 text-right">معیارهای تخصیص</h4>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span className="text-sm">تطبیق مهارت و تخصص (وزن: 40%)</span>
                 </div>
-                <div>
-                  <div className="font-medium">تکنسین‌های آزاد</div>
-                  <div className="text-sm text-muted-foreground">
-                    {technicians.filter((tech) => tech.status === "available").length} نفر
-                  </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span className="text-sm">بار کاری فعلی تکنسین (وزن: 30%)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span className="text-sm">اولویت تیکت (وزن: 20%)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span className="text-sm">عملکرد تاریخی تکنسین (وزن: 10%)</span>
                 </div>
               </div>
+            </div>
 
-              <div className="flex items-center gap-3 p-4 border rounded-lg">
-                <div className="p-2 bg-yellow-100 rounded-full">
-                  <Clock className="w-5 h-5 text-yellow-600" />
+            <div>
+              <h4 className="font-medium mb-3 text-right">قوانین تخصیص</h4>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-orange-500" />
+                  <span className="text-sm">تیکت‌های فوری: تخصیص فوری به بهترین تکنسین</span>
                 </div>
-                <div>
-                  <div className="font-medium">تیکت‌های بدون تکنسین</div>
-                  <div className="text-sm text-muted-foreground">
-                    {tickets.filter((ticket) => !ticket.assignedTo).length} تیکت
-                  </div>
+                <div className="flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-blue-500" />
+                  <span className="text-sm">حداکثر 5 تیکت فعال برای هر تکنسین</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-purple-500" />
+                  <span className="text-sm">بازنگری خودکار تخصیص‌ها هر 15 دقیقه</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-green-500" />
+                  <span className="text-sm">یادگیری از الگوهای موفق تخصیص</span>
                 </div>
               </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-              <div className="flex items-center gap-3 p-4 border rounded-lg">
-                <div className="p-2 bg-red-100 rounded-full">
-                  <AlertTriangle className="w-5 h-5 text-red-600" />
-                </div>
-                <div>
-                  <div className="font-medium">تکنسین‌های پربار</div>
-                  <div className="text-sm text-muted-foreground">
-                    {
-                      technicians.filter((tech) => (tech.activeTickets || 0) >= Number.parseInt(workloadThreshold))
-                        .length
-                    }{" "}
-                    نفر
-                  </div>
-                </div>
+      {/* Recent Activity */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-right flex items-center gap-2">
+            <Activity className="w-5 h-5" />
+            فعالیت‌های اخیر
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+              <div className="text-right">
+                <p className="text-sm font-medium">تیکت T-2024-001 تخصیص یافت</p>
+                <p className="text-xs text-muted-foreground">به علی احمدی - 2 دقیقه پیش</p>
               </div>
+              <CheckCircle className="w-5 h-5 text-green-500" />
+            </div>
+            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+              <div className="text-right">
+                <p className="text-sm font-medium">بهینه‌سازی الگوریتم انجام شد</p>
+                <p className="text-xs text-muted-foreground">دقت تخصیص 3% بهبود یافت - 5 دقیقه پیش</p>
+              </div>
+              <Brain className="w-5 h-5 text-blue-500" />
+            </div>
+            <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+              <div className="text-right">
+                <p className="text-sm font-medium">تکنسین جدید به سیستم اضافه شد</p>
+                <p className="text-xs text-muted-foreground">فاطمه کریمی - 10 دقیقه پیش</p>
+              </div>
+              <Users className="w-5 h-5 text-yellow-500" />
             </div>
           </div>
         </CardContent>
