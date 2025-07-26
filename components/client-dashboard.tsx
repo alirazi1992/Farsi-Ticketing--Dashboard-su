@@ -4,6 +4,8 @@ import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { TwoStepTicketForm } from "@/components/two-step-ticket-form"
 import { useAuth } from "@/lib/auth-context"
 import { toast } from "@/hooks/use-toast"
@@ -16,84 +18,8 @@ import {
   Search,
   UserCheck,
   XCircle,
-  SpaceIcon as Room,
-  SpaceIcon as Room,
-  BracketsIcon as Bridge,
-  TrainFrontTunnelIcon as Tunnel,
-  WallpaperIcon as Wall,
-  CombineIcon as Comb,
-  GlassWaterIcon as Glass,
-  BoxIcon as Can,
-  GlassWaterIcon as Glass,
-  SquircleIcon as Sponge,
-  BoxIcon as Can,
-  HardDriveIcon as Hard,
-  HeaterIcon as Hot,
-  TreesIcon as Wood,
-  BoxIcon as Can,
-  PenIcon as Pan,
-  MilkIcon as Butter,
-  BeakerIcon as Bee,
-  AntennaIcon as Ant,
-  BeakerIcon as Bee,
-  DotIcon as Tick,
-  FlameIcon as Fire,
-  CrownIcon as Crow,
-  BoxIcon as Can,
-  TreesIcon as Wood,
-  PiggyBankIcon as Pig,
-  UtensilsIcon as Spoon,
-  TreesIcon as Wood,
-  RadarIcon as Razor,
-  DotIcon as Dove,
-  BirdIcon as Albatross,
-  PawPrintIcon as Petrel,
-  FlameIcon as Flamingo,
-  ItalicIcon as Ibis,
-  UtensilsIcon as Spoon,
-  StickerIcon as Stork,
-  BirdIcon as Heron,
-  BirdIcon as Egret,
-  BirdIcon as Bittern,
-  ConeIcon as Crane,
-  RailSymbolIcon as Rail,
-  CogIcon as Coot,
-  BirdIcon as Moorhen,
-  BirdIcon as Gallinule,
-  XIcon as Jacana,
-  BirdIcon as Plover,
-  BirdIcon as Sandpiper,
-  SignpostIcon as Turnstone,
-  BirdIcon as Curlew,
-  BirdIcon as Godwit,
-  SnailIcon as Snipe,
-  TreesIcon as Wood,
-  BirdIcon as Phalarope,
-  BirdIcon as Skua,
-  GaugeIcon as Jaeger,
-  GavelIcon as Gull,
-  TerminalIcon as Tern,
-  ScanIcon as Skimmer,
-  AwardIcon as Auk,
-  BirdIcon as Puffin,
-  MouseIcon as Murre,
-  BirdIcon as Guillemot,
-  RadarIcon as Razor,
-  DotIcon as Dove,
-  BirdIcon as Cormorant,
-  ShuffleIcon as Shag,
-  BirdIcon as Gannet,
-  BabyIcon as Booby,
-  BirdIcon as Frigatebird,
-  BirdIcon as Tropicbird,
-  PawPrintIcon as Petrel,
-  BirdIcon as Shearwater,
-  FigmaIcon as Fulmar,
-  BirdIcon as Albatross,
-  TornadoIcon as Storm,
-  PawPrintIcon as Petrel,
-  MoonIcon as Loon,
-  BirdIcon as Grebe,
+  Ticket,
+  Eye,
 } from "lucide-react"
 
 interface ClientDashboardProps {
@@ -105,52 +31,72 @@ export function ClientDashboard({ onLogout }: ClientDashboardProps) {
   const [showTicketForm, setShowTicketForm] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
+  const [selectedTicket, setSelectedTicket] = useState<any>(null)
+  const [previewDialog, setPreviewDialog] = useState(false)
 
   // Mock tickets data
   const [tickets, setTickets] = useState([
     {
-      id: "1",
+      id: "TK-001",
       title: "مشکل در اتصال به ایمیل",
       category: "email",
       priority: "high",
       status: "open",
       createdAt: "2024-01-15T10:30:00Z",
-      description: "نمی‌توانم به ایمیل خود دسترسی پیدا کنم",
-      response: null,
+      description: "نمی‌توانم به ایمیل خود دسترسی پیدا کنم. پیغام خطا می‌دهد که رمز عبور اشتباه است.",
+      responses: [],
       assignedTechnician: null,
+      assignedTechnicianName: null,
     },
     {
-      id: "2",
+      id: "TK-002",
       title: "درخواست نصب نرم‌افزار",
       category: "software",
       priority: "medium",
       status: "in-progress",
       createdAt: "2024-01-14T14:20:00Z",
-      description: "نیاز به نصب Adobe Photoshop دارم",
-      response: "در حال بررسی درخواست شما هستیم",
-      assignedTechnician: "علی احمدی",
+      description: "نیاز به نصب Adobe Photoshop دارم برای کار طراحی",
+      responses: [
+        {
+          id: "1",
+          author: "علی احمدی",
+          text: "در حال بررسی درخواست شما هستیم. لطفاً منتظر بمانید.",
+          timestamp: "2024-01-14T15:00:00Z",
+        },
+      ],
+      assignedTechnician: "tech1",
+      assignedTechnicianName: "علی احمدی",
     },
     {
-      id: "3",
+      id: "TK-003",
       title: "مشکل در پرینتر",
       category: "hardware",
       priority: "low",
       status: "resolved",
       createdAt: "2024-01-13T09:15:00Z",
-      description: "پرینتر کاغذ گیر می‌کند",
-      response: "مشکل حل شد. پرینتر تمیز و تنظیم گردید",
-      assignedTechnician: "محمد حسینی",
+      description: "پرینتر کاغذ گیر می‌کند و نمی‌توانم چاپ بگیرم",
+      responses: [
+        {
+          id: "1",
+          author: "محمد حسینی",
+          text: "مشکل حل شد. پرینتر تمیز و تنظیم گردید. اکنون به درستی کار می‌کند.",
+          timestamp: "2024-01-13T11:30:00Z",
+        },
+      ],
+      assignedTechnician: "tech2",
+      assignedTechnicianName: "محمد حسینی",
     },
   ])
 
   const handleTicketSubmit = (ticketData: any) => {
     const newTicket = {
-      id: Date.now().toString(),
+      id: `TK-${String(Date.now()).slice(-3)}`,
       ...ticketData,
       status: "open",
       createdAt: new Date().toISOString(),
-      response: null,
+      responses: [],
       assignedTechnician: null,
+      assignedTechnicianName: null,
     }
     setTickets([newTicket, ...tickets])
     setShowTicketForm(false)
@@ -158,6 +104,11 @@ export function ClientDashboard({ onLogout }: ClientDashboardProps) {
       title: "تیکت ثبت شد",
       description: "درخواست شما با موفقیت ثبت گردید",
     })
+  }
+
+  const handleTicketPreview = (ticket: any) => {
+    setSelectedTicket(ticket)
+    setPreviewDialog(true)
   }
 
   const getStatusBadge = (status: string) => {
@@ -178,7 +129,7 @@ export function ClientDashboard({ onLogout }: ClientDashboardProps) {
       case "urgent":
         return <Badge variant="destructive">فوری</Badge>
       case "high":
-        return <Badge variant="destructive">بالا</Badge>
+        return <Badge className="bg-orange-500 hover:bg-orange-600">بالا</Badge>
       case "medium":
         return <Badge variant="secondary">متوسط</Badge>
       case "low":
@@ -302,10 +253,10 @@ export function ClientDashboard({ onLogout }: ClientDashboardProps) {
           <div className="flex gap-4 items-center">
             <div className="flex-1 relative">
               <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-              <input
+              <Input
                 type="text"
                 placeholder="جستجو در تیکت‌ها..."
-                className="w-full pr-10 pl-4 py-2 border rounded-md text-right"
+                className="pr-10 text-right"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 dir="rtl"
@@ -346,37 +297,44 @@ export function ClientDashboard({ onLogout }: ClientDashboardProps) {
                   <CardContent className="p-4">
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2 justify-end">
+                          <span className="font-semibold">{ticket.id}</span>
+                          {getStatusBadge(ticket.status)}
+                          {getPriorityBadge(ticket.priority)}
+                        </div>
                         <h3 className="font-semibold text-right mb-1">{ticket.title}</h3>
-                        <p className="text-sm text-muted-foreground text-right mb-2">{ticket.description}</p>
+                        <p className="text-sm text-muted-foreground text-right mb-2 line-clamp-2">
+                          {ticket.description}
+                        </p>
                         <div className="flex gap-2 justify-end">
                           <Badge variant="outline">{getCategoryLabel(ticket.category)}</Badge>
-                          {getPriorityBadge(ticket.priority)}
-                          {getStatusBadge(ticket.status)}
                         </div>
                       </div>
-                      <div className="text-left mr-4">
-                        <p className="text-xs text-muted-foreground mb-1">تاریخ ثبت: {formatDate(ticket.createdAt)}</p>
-                        <p className="text-xs text-muted-foreground">شماره تیکت: #{ticket.id}</p>
+                      <div className="flex items-center gap-2 mr-4">
+                        {ticket.responses && ticket.responses.length > 0 && (
+                          <Badge variant="outline" className="gap-1">
+                            <MessageSquare className="w-3 h-3" />
+                            {ticket.responses.length}
+                          </Badge>
+                        )}
+                        <Button variant="outline" size="sm" onClick={() => handleTicketPreview(ticket)}>
+                          <Eye className="w-3 h-3" />
+                        </Button>
                       </div>
                     </div>
 
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground justify-end">
+                      <span>تاریخ: {formatDate(ticket.createdAt)}</span>
+                      {ticket.assignedTechnicianName && <span>تکنسین: {ticket.assignedTechnicianName}</span>}
+                    </div>
+
                     {ticket.assignedTechnician && (
-                      <div className="bg-blue-50 p-3 rounded-md mb-3">
+                      <div className="bg-blue-50 p-3 rounded-md mt-3">
                         <div className="flex items-center gap-2 justify-end">
                           <span className="text-sm">تکنسین تعیین شده:</span>
                           <UserCheck className="w-4 h-4 text-blue-600" />
                         </div>
-                        <p className="text-sm font-medium text-blue-800 text-right">{ticket.assignedTechnician}</p>
-                      </div>
-                    )}
-
-                    {ticket.response && (
-                      <div className="bg-green-50 p-3 rounded-md">
-                        <div className="flex items-center gap-2 justify-end mb-2">
-                          <span className="text-sm font-medium">پاسخ تکنسین:</span>
-                          <MessageSquare className="w-4 h-4 text-green-600" />
-                        </div>
-                        <p className="text-sm text-green-800 text-right">{ticket.response}</p>
+                        <p className="text-sm font-medium text-blue-800 text-right">{ticket.assignedTechnicianName}</p>
                       </div>
                     )}
                   </CardContent>
@@ -397,10 +355,92 @@ export function ClientDashboard({ onLogout }: ClientDashboardProps) {
                 <XCircle className="w-4 h-4" />
               </Button>
             </div>
-            <TwoStepTicketForm onSubmit={handleTicketSubmit} onCancel={() => setShowTicketForm(false)} />
+            <TwoStepTicketForm
+              categories={[
+                { id: "hardware", name: "سخت‌افزار" },
+                { id: "software", name: "نرم‌افزار" },
+                { id: "network", name: "شبکه" },
+                { id: "email", name: "ایمیل" },
+                { id: "access", name: "دسترسی" },
+                { id: "security", name: "امنیت" },
+              ]}
+              onSubmit={handleTicketSubmit}
+              onCancel={() => setShowTicketForm(false)}
+            />
           </div>
         </div>
       )}
+
+      {/* Ticket Preview Dialog */}
+      <Dialog open={previewDialog} onOpenChange={setPreviewDialog}>
+        <DialogContent className="sm:max-w-[600px]" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right">جزئیات تیکت</DialogTitle>
+          </DialogHeader>
+          {selectedTicket && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground">شماره تیکت:</span>
+                  <p className="font-semibold">{selectedTicket.id}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground">وضعیت:</span>
+                  <div className="mt-1">{getStatusBadge(selectedTicket.status)}</div>
+                </div>
+              </div>
+
+              <div>
+                <span className="text-sm font-medium text-muted-foreground">عنوان:</span>
+                <p className="font-semibold mt-1">{selectedTicket.title}</p>
+              </div>
+
+              <div>
+                <span className="text-sm font-medium text-muted-foreground">توضیحات:</span>
+                <p className="mt-1 text-sm">{selectedTicket.description}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground">اولویت:</span>
+                  <div className="mt-1">{getPriorityBadge(selectedTicket.priority)}</div>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground">دسته‌بندی:</span>
+                  <p className="mt-1">{getCategoryLabel(selectedTicket.category)}</p>
+                </div>
+              </div>
+
+              <div>
+                <span className="text-sm font-medium text-muted-foreground">تکنسین مسئول:</span>
+                <p className="mt-1">{selectedTicket.assignedTechnicianName || "تخصیص نیافته"}</p>
+              </div>
+
+              <div>
+                <span className="text-sm font-medium text-muted-foreground">تاریخ ایجاد:</span>
+                <p className="mt-1">{formatDate(selectedTicket.createdAt)}</p>
+              </div>
+
+              {selectedTicket.responses && selectedTicket.responses.length > 0 && (
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground">پاسخ‌ها:</span>
+                  <div className="space-y-3 mt-2">
+                    {selectedTicket.responses.map((response: any) => (
+                      <div key={response.id} className="p-3 bg-muted rounded-lg">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-semibold text-sm">{response.author}</span>
+                          <span className="text-xs text-muted-foreground">{formatDate(response.timestamp)}</span>
+                        </div>
+                        <p className="text-sm text-right">{response.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
