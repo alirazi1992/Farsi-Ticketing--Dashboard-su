@@ -15,9 +15,19 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/lib/auth-context"
 import { useTickets } from "@/lib/ticket-context"
 import { SimpleTicketForm } from "@/components/simple-ticket-form"
+import { SettingsDialog } from "@/components/settings-dialog"
 import { toast } from "@/hooks/use-toast"
 import {
   Plus,
@@ -41,6 +51,7 @@ import {
   Flag,
   Ticket,
   Activity,
+  ChevronDown,
 } from "lucide-react"
 
 interface ClientDashboardProps {
@@ -55,6 +66,8 @@ export function ClientDashboard({ onLogout }: ClientDashboardProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [showTicketForm, setShowTicketForm] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
+  const [activeTab, setActiveTab] = useState("tickets")
 
   // Get user's tickets
   const userTickets = getTicketsByUser(user?.email || "")
@@ -72,6 +85,13 @@ export function ClientDashboard({ onLogout }: ClientDashboardProps) {
     toast({
       title: "پیام ارسال شد",
       description: "پیام شما با موفقیت ثبت گردید",
+    })
+  }
+
+  const handleRefresh = () => {
+    toast({
+      title: "به‌روزرسانی انجام شد",
+      description: "اطلاعات با موفقیت به‌روزرسانی شد",
     })
   }
 
@@ -173,6 +193,15 @@ export function ClientDashboard({ onLogout }: ClientDashboardProps) {
     resolved: userTickets.filter((t) => t.status === "resolved").length,
   }
 
+  const getUserInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 font-iran" dir="rtl">
       {/* Top Navigation Bar */}
@@ -184,23 +213,72 @@ export function ClientDashboard({ onLogout }: ClientDashboardProps) {
                 <User className="w-8 h-8 text-blue-600" />
                 <div>
                   <h1 className="text-xl font-bold text-right font-iran">پنل کاربری</h1>
-                  <p className="text-sm text-muted-foreground text-right font-iran">خوش آمدید، {user?.name}</p>
+                  <p className="text-sm text-muted-foreground text-right font-iran">خوش آمدید</p>
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" className="gap-2 bg-transparent font-iran">
+              <Button variant="outline" size="sm" onClick={handleRefresh} className="gap-2 bg-transparent font-iran">
                 <RefreshCw className="w-4 h-4" />
                 به‌روزرسانی
               </Button>
-              <Button variant="outline" size="sm" className="gap-2 bg-transparent font-iran">
-                <Settings className="w-4 h-4" />
-                تنظیمات
-              </Button>
-              <Button variant="outline" size="sm" onClick={onLogout} className="gap-2 bg-transparent font-iran">
-                <LogOut className="w-4 h-4" />
-                خروج
-              </Button>
+
+              {/* User Profile Dropdown */}
+              <DropdownMenu dir="rtl">
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2 h-auto p-2 font-iran">
+                    <ChevronDown className="h-4 w-4" />
+                    <div className="text-right">
+                      <div className="text-sm font-medium font-iran">{user?.name}</div>
+                      <div className="text-xs text-muted-foreground font-iran">کاربر</div>
+                    </div>
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.name} />
+                      <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xs font-iran">
+                        {getUserInitials(user?.name || "")}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 font-iran" align="end" dir="rtl">
+                  <DropdownMenuLabel className="text-right font-iran">حساب کاربری</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                    <div className="font-medium text-foreground font-iran">{user?.name}</div>
+                    <div className="text-xs font-iran">{user?.email}</div>
+                    {user?.department && <div className="text-xs font-iran">{user?.department}</div>}
+                  </div>
+
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuItem
+                    className="text-right font-iran cursor-pointer"
+                    onClick={() => setActiveTab("profile")}
+                  >
+                    <User className="ml-2 h-4 w-4" />
+                    پروفایل
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    className="text-right font-iran cursor-pointer"
+                    onClick={() => setShowSettings(true)}
+                  >
+                    <Settings className="ml-2 h-4 w-4" />
+                    تنظیمات
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuItem
+                    className="text-right font-iran cursor-pointer text-red-600 focus:text-red-600"
+                    onClick={onLogout}
+                  >
+                    <LogOut className="ml-2 h-4 w-4" />
+                    خروج از سیستم
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
@@ -255,7 +333,7 @@ export function ClientDashboard({ onLogout }: ClientDashboardProps) {
         </div>
 
         {/* Main Content */}
-        <Tabs defaultValue="tickets" className="space-y-4" dir="rtl">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4" dir="rtl">
           <TabsList className="grid w-full grid-cols-3 bg-white" dir="rtl">
             <TabsTrigger value="tickets" className="gap-2 font-iran">
               <Ticket className="w-4 h-4" />
@@ -275,10 +353,19 @@ export function ClientDashboard({ onLogout }: ClientDashboardProps) {
             {/* Filters */}
             <Card dir="rtl">
               <CardHeader>
-                <CardTitle className="text-right flex items-center gap-2 font-iran">
-                  <Filter className="w-5 h-5" />
-                  فیلتر و جستجو
-                </CardTitle>
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-right flex items-center gap-2 font-iran">
+                    <Filter className="w-5 h-5" />
+                    فیلتر و جستجو
+                  </CardTitle>
+                  <Button
+                    onClick={() => setActiveTab("new-ticket")}
+                    className="gap-2 bg-blue-600 hover:bg-blue-700 font-iran"
+                  >
+                    <Plus className="w-4 h-4" />
+                    تیکت جدید
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -319,7 +406,7 @@ export function ClientDashboard({ onLogout }: ClientDashboardProps) {
                         ? "نتیجه‌ای برای جستجوی شما یافت نشد"
                         : "شما هنوز هیچ تیکتی ثبت نکرده‌اید"}
                     </p>
-                    <Button onClick={() => setShowTicketForm(true)} className="gap-2 font-iran">
+                    <Button onClick={() => setActiveTab("new-ticket")} className="gap-2 font-iran">
                       <Plus className="w-4 h-4" />
                       ایجاد تیکت جدید
                     </Button>
@@ -468,10 +555,10 @@ export function ClientDashboard({ onLogout }: ClientDashboardProps) {
           </TabsContent>
 
           <TabsContent value="new-ticket">
-            <SimpleTicketForm onCancel={() => setShowTicketForm(false)} />
+            <SimpleTicketForm onCancel={() => setActiveTab("tickets")} />
           </TabsContent>
 
-          <TabsContent value="profile" className="space-y-4">
+          <TabsContent value="profile" className="space-y-4" dir="rtl">
             <Card dir="rtl">
               <CardHeader>
                 <CardTitle className="text-right flex items-center gap-2 font-iran">
@@ -479,7 +566,7 @@ export function ClientDashboard({ onLogout }: ClientDashboardProps) {
                   اطلاعات کاربری
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent dir="rtl">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div className="flex items-center gap-3 justify-end">
@@ -542,6 +629,9 @@ export function ClientDashboard({ onLogout }: ClientDashboardProps) {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Settings Dialog */}
+      <SettingsDialog open={showSettings} onOpenChange={setShowSettings} />
     </div>
   )
 }

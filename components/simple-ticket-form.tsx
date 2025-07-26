@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,11 +11,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth } from "@/lib/auth-context"
 import { useTickets, ticketCategories } from "@/lib/ticket-context"
-import { Send, X } from "lucide-react"
+import { Send, X, Upload, File, Trash2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
 interface SimpleTicketFormProps {
   onCancel: () => void
+}
+
+interface AttachedFile {
+  id: string
+  name: string
+  size: number
+  type: string
+  url: string
 }
 
 export function SimpleTicketForm({ onCancel }: SimpleTicketFormProps) {
@@ -26,6 +36,8 @@ export function SimpleTicketForm({ onCancel }: SimpleTicketFormProps) {
     priority: "",
     description: "",
   })
+  const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([])
+  const [isUploading, setIsUploading] = useState(false)
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -37,6 +49,73 @@ export function SimpleTicketForm({ onCancel }: SimpleTicketFormProps) {
       category,
       subcategory: "", // Reset subcategory when category changes
     }))
+  }
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (!files) return
+
+    setIsUploading(true)
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+
+        // Check file size (max 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+          toast({
+            title: "خطا",
+            description: `فایل ${file.name} بیش از 10 مگابایت است`,
+            variant: "destructive",
+          })
+          continue
+        }
+
+        // Simulate file upload
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+
+        const newFile: AttachedFile = {
+          id: Date.now().toString() + i,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          url: URL.createObjectURL(file),
+        }
+
+        setAttachedFiles((prev) => [...prev, newFile])
+      }
+
+      toast({
+        title: "فایل‌ها آپلود شدند",
+        description: "فایل‌های انتخابی با موفقیت آپلود شدند",
+      })
+    } catch (error) {
+      toast({
+        title: "خطا در آپلود",
+        description: "خطا در آپلود فایل‌ها",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUploading(false)
+      // Reset input
+      event.target.value = ""
+    }
+  }
+
+  const removeFile = (fileId: string) => {
+    setAttachedFiles((prev) => prev.filter((file) => file.id !== fileId))
+    toast({
+      title: "فایل حذف شد",
+      description: "فایل از لیست پیوست‌ها حذف شد",
+    })
+  }
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes"
+    const k = 1024
+    const sizes = ["Bytes", "KB", "MB", "GB"]
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
   }
 
   const handleSubmit = () => {
@@ -62,6 +141,12 @@ export function SimpleTicketForm({ onCancel }: SimpleTicketFormProps) {
       clientEmail: user?.email || "",
       clientPhone: user?.phone || "",
       clientDepartment: user?.department || "",
+      attachments: attachedFiles.map((file) => ({
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        url: file.url,
+      })),
     })
 
     toast({
@@ -184,6 +269,77 @@ export function SimpleTicketForm({ onCancel }: SimpleTicketFormProps) {
               dir="rtl"
               required
             />
+          </div>
+
+          {/* File Upload Section */}
+          <div className="space-y-2">
+            <Label className="text-right font-iran">پیوست فایل (اختیاری)</Label>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+              <div className="text-center">
+                <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                <div className="text-sm text-gray-600 mb-2 font-iran">فایل‌های خود را اینجا بکشید یا کلیک کنید</div>
+                <input
+                  type="file"
+                  multiple
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  id="file-upload"
+                  accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt,.zip,.rar"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => document.getElementById("file-upload")?.click()}
+                  disabled={isUploading}
+                  className="font-iran bg-transparent"
+                >
+                  {isUploading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin ml-2" />
+                      در حال آپلود...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 ml-2" />
+                      انتخاب فایل
+                    </>
+                  )}
+                </Button>
+                <p className="text-xs text-gray-500 mt-2 font-iran">
+                  حداکثر حجم: 10 مگابایت | فرمت‌های مجاز: JPG, PNG, PDF, DOC, TXT, ZIP
+                </p>
+              </div>
+            </div>
+
+            {/* Attached Files List */}
+            {attachedFiles.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-right font-iran">فایل‌های پیوست شده:</Label>
+                <div className="space-y-2">
+                  {attachedFiles.map((file) => (
+                    <div key={file.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeFile(file.id)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                      <div className="flex items-center gap-2 flex-1 justify-end">
+                        <div className="text-right">
+                          <p className="text-sm font-medium font-iran">{file.name}</p>
+                          <p className="text-xs text-gray-500 font-iran">{formatFileSize(file.size)}</p>
+                        </div>
+                        <File className="w-5 h-5 text-gray-400" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* User Info Display (Read-only) */}

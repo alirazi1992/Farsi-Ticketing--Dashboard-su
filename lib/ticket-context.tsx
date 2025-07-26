@@ -8,7 +8,7 @@ export interface Ticket {
   title: string
   description: string
   category: string
-  subcategory: string
+  subcategory?: string
   priority: "low" | "medium" | "high" | "urgent"
   status: "open" | "in-progress" | "resolved" | "closed"
   clientId: string
@@ -16,42 +16,30 @@ export interface Ticket {
   clientEmail: string
   clientPhone: string
   clientDepartment: string
-  assignedTo?: string
+  assignedTechnicianId?: string
   assignedTechnicianName?: string
   createdAt: string
   updatedAt: string
-  responses: TicketResponse[]
   resolution?: string
-  actualTime?: string
-  estimatedTime?: string
-  attachments?: string[]
+  responses: Response[]
+  attachments?: Attachment[]
 }
 
-export interface TicketResponse {
+export interface Response {
   id: string
-  ticketId: string
   text: string
   author: string
-  type: "client" | "technician" | "admin"
   timestamp: string
+  type: "client" | "technician" | "admin"
 }
 
-interface TicketContextType {
-  tickets: Ticket[]
-  addTicket: (ticket: Omit<Ticket, "id" | "createdAt" | "updatedAt" | "responses">) => void
-  updateTicket: (ticketId: string, updates: Partial<Ticket>) => void
-  deleteTicket: (ticketId: string) => void
-  getTicketById: (ticketId: string) => Ticket | undefined
-  getTicketsByUser: (userEmail: string) => Ticket[]
-  getTicketsByTechnician: (technicianId: string) => Ticket[]
-  getTicketsByClient: (clientId: string) => Ticket[]
-  assignTicket: (ticketId: string, technicianId: string, technicianName: string) => void
-  addResponse: (ticketId: string, response: Omit<TicketResponse, "id" | "ticketId" | "timestamp">) => void
+export interface Attachment {
+  name: string
+  size: number
+  type: string
+  url: string
 }
 
-const TicketContext = createContext<TicketContextType | undefined>(undefined)
-
-// Categories with subcategories
 export const ticketCategories = {
   سخت‌افزار: ["کامپیوتر", "پرینتر", "تجهیزات شبکه", "مانیتور", "کیبورد و ماوس", "سایر"],
   نرم‌افزار: ["نصب", "به‌روزرسانی", "خطا", "آموزش", "مجوز", "سایر"],
@@ -61,251 +49,259 @@ export const ticketCategories = {
   دسترسی: ["حساب کاربری", "مجوزها", "سیستم‌ها", "فایل‌ها", "پایگاه داده", "سایر"],
 }
 
-// Sample tickets for demonstration
-const sampleTickets: Ticket[] = [
-  {
-    id: "TKT-001",
-    title: "مشکل در اتصال به اینترنت",
-    description:
-      "اینترنت دفتر کار نمی‌کند و نمی‌توانم به سایت‌های مورد نیاز دسترسی پیدا کنم. مشکل از صبح امروز شروع شده است.",
-    category: "شبکه",
-    subcategory: "اتصال اینترنت",
-    priority: "high",
-    status: "open",
-    clientId: "3",
-    clientName: "احمد محمدی",
-    clientEmail: "ahmad@company.com",
-    clientPhone: "09123456787",
-    clientDepartment: "حسابداری",
-    assignedTo: "2",
-    assignedTechnicianName: "علی احمدی",
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    responses: [],
-  },
-  {
-    id: "TKT-002",
-    title: "نصب نرم‌افزار حسابداری",
-    description: "نیاز به نصب نرم‌افزار حسابداری جدید روی سیستم دارم. نسخه قبلی مشکل دارد و نیاز به به‌روزرسانی است.",
-    category: "نرم‌افزار",
-    subcategory: "نصب",
-    priority: "medium",
-    status: "in-progress",
-    clientId: "3",
-    clientName: "احمد محمدی",
-    clientEmail: "ahmad@company.com",
-    clientPhone: "09123456787",
-    clientDepartment: "حسابداری",
-    assignedTo: "2",
-    assignedTechnicianName: "علی احمدی",
-    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-    responses: [
-      {
-        id: "RES-001",
-        ticketId: "TKT-002",
-        text: "سلام، نرم‌افزار مورد نظر شما را بررسی کردم. لطفاً زمان مناسب برای نصب را اعلام کنید.",
-        author: "علی احمدی",
-        type: "technician",
-        timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-      },
-    ],
-  },
-  {
-    id: "TKT-003",
-    title: "مشکل در پرینتر",
-    description: "پرینتر اداری کاغذ گیر می‌کند و کیفیت چاپ مناسب نیست. همچنین گاهی اوقات کاغذ را نمی‌کشد.",
-    category: "سخت‌افزار",
-    subcategory: "پرینتر",
-    priority: "low",
-    status: "resolved",
-    clientId: "3",
-    clientName: "احمد محمدی",
-    clientEmail: "ahmad@company.com",
-    clientPhone: "09123456787",
-    clientDepartment: "حسابداری",
-    assignedTo: "2",
-    assignedTechnicianName: "علی احمدی",
-    resolution: "پرینتر تمیز شد و کارتریج جدید نصب گردید. مشکل برطرف شد.",
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    responses: [
-      {
-        id: "RES-002",
-        ticketId: "TKT-003",
-        text: "مشکل پرینتر بررسی و برطرف شد. کارتریج جدید نصب گردید.",
-        author: "علی احمدی",
-        type: "technician",
-        timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-    ],
-  },
-  {
-    id: "TKT-004",
-    title: "مشکل در دسترسی به ایمیل",
-    description: "نمی‌توانم به ایمیل سازمانی خود دسترسی پیدا کنم. پیغام خطای رمز عبور نادرست می‌دهد.",
-    category: "ایمیل",
-    subcategory: "دسترسی",
-    priority: "high",
-    status: "open",
-    clientId: "4",
-    clientName: "فاطمه کریمی",
-    clientEmail: "fateme@company.com",
-    clientPhone: "09123456788",
-    clientDepartment: "منابع انسانی",
-    assignedTo: "2",
-    assignedTechnicianName: "علی احمدی",
-    createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-    responses: [],
-  },
-  {
-    id: "TKT-005",
-    title: "ویروس در سیستم",
-    description: "سیستم کامپیوتر من آلوده به ویروس شده و کند کار می‌کند. پاپ‌آپ‌های مزاحم زیادی ظاهر می‌شود.",
-    category: "امنیت",
-    subcategory: "ویروس",
-    priority: "urgent",
-    status: "in-progress",
-    clientId: "5",
-    clientName: "محمد رضایی",
-    clientEmail: "mohammad@company.com",
-    clientPhone: "09123456789",
-    clientDepartment: "فروش",
-    assignedTo: "2",
-    assignedTechnicianName: "علی احمدی",
-    createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-    responses: [
-      {
-        id: "RES-003",
-        ticketId: "TKT-005",
-        text: "در حال اسکن کامل سیستم هستم. لطفاً سیستم را خاموش نکنید.",
-        author: "علی احمدی",
-        type: "technician",
-        timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-      },
-    ],
-  },
-  {
-    id: "TKT-006",
-    title: "مشکل در کیبورد",
-    description: "چند کلید از کیبورد کار نمی‌کند. کلیدهای A، S، D کار نمی‌کنند.",
-    category: "سخت‌افزار",
-    subcategory: "کیبورد و ماوس",
-    priority: "medium",
-    status: "open",
-    clientId: "6",
-    clientName: "سارا احمدی",
-    clientEmail: "sara@company.com",
-    clientPhone: "09123456790",
-    clientDepartment: "بازاریابی",
-    createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-    responses: [],
-  },
-  {
-    id: "TKT-007",
-    title: "کندی شبکه داخلی",
-    description: "دسترسی به سرور داخلی بسیار کند است و فایل‌ها با تأخیر زیاد باز می‌شوند.",
-    category: "شبکه",
-    subcategory: "شبکه داخلی",
-    priority: "medium",
-    status: "open",
-    clientId: "7",
-    clientName: "علی موسوی",
-    clientEmail: "ali.mousavi@company.com",
-    clientPhone: "09123456791",
-    clientDepartment: "IT",
-    createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-    responses: [],
-  },
-  {
-    id: "TKT-008",
-    title: "درخواست نصب نرم‌افزار طراحی",
-    description: "نیاز به نصب نرم‌افزار Adobe Photoshop برای کار طراحی دارم.",
-    category: "نرم‌افزار",
-    subcategory: "نصب",
-    priority: "low",
-    status: "resolved",
-    clientId: "8",
-    clientName: "مریم حسینی",
-    clientEmail: "maryam@company.com",
-    clientPhone: "09123456792",
-    clientDepartment: "طراحی",
-    assignedTo: "2",
-    assignedTechnicianName: "علی احمدی",
-    resolution: "نرم‌افزار Adobe Photoshop نصب شد و مجوز فعال گردید.",
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    responses: [
-      {
-        id: "RES-004",
-        ticketId: "TKT-008",
-        text: "نرم‌افزار با موفقیت نصب شد. مجوز نیز فعال است.",
-        author: "علی احمدی",
-        type: "technician",
-        timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-    ],
-  },
-]
+interface TicketContextType {
+  tickets: Ticket[]
+  addTicket: (ticket: Omit<Ticket, "id" | "createdAt" | "updatedAt" | "responses">) => void
+  updateTicket: (id: string, updates: Partial<Ticket>) => void
+  getTicketById: (id: string) => Ticket | undefined
+  getTicketsByUser: (userEmail: string) => Ticket[]
+  getTicketsByTechnician: (technicianId: string) => Ticket[]
+  assignTicket: (ticketId: string, technicianId: string, technicianName: string) => void
+  addResponse: (ticketId: string, response: Omit<Response, "id" | "timestamp">) => void
+  resolveTicket: (ticketId: string, resolution: string) => void
+}
+
+const TicketContext = createContext<TicketContextType | undefined>(undefined)
 
 export function TicketProvider({ children }: { children: React.ReactNode }) {
   const [tickets, setTickets] = useState<Ticket[]>([])
 
+  // Initialize with mock data
   useEffect(() => {
-    // Load tickets from localStorage or use sample data
-    const savedTickets = localStorage.getItem("tickets")
-    if (savedTickets) {
-      try {
-        setTickets(JSON.parse(savedTickets))
-      } catch (error) {
-        setTickets(sampleTickets)
-      }
-    } else {
-      setTickets(sampleTickets)
-    }
-  }, [])
+    const mockTickets: Ticket[] = [
+      {
+        id: "T-001",
+        title: "مشکل در اتصال به اینترنت",
+        description: "اینترنت در بخش حسابداری قطع است و کارمندان نمی‌توانند به سیستم‌های آنلاین دسترسی پیدا کنند.",
+        category: "شبکه",
+        subcategory: "اتصال اینترنت",
+        priority: "high",
+        status: "in-progress",
+        clientId: "1",
+        clientName: "احمد محمدی",
+        clientEmail: "ahmad@company.com",
+        clientPhone: "09123456789",
+        clientDepartment: "حسابداری",
+        assignedTechnicianId: "2",
+        assignedTechnicianName: "علی احمدی",
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        updatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+        responses: [
+          {
+            id: "R-001",
+            text: "در حال بررسی مشکل شبکه هستم. لطفاً صبر کنید.",
+            author: "علی احمدی",
+            timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+            type: "technician",
+          },
+        ],
+      },
+      {
+        id: "T-002",
+        title: "پرینتر کار نمی‌کند",
+        description: "پرینتر HP LaserJet در اتاق 205 کاغذ گیر کرده و پیام خطا نمایش می‌دهد.",
+        category: "سخت‌افزار",
+        subcategory: "پرینتر",
+        priority: "medium",
+        status: "open",
+        clientId: "1",
+        clientName: "احمد محمدی",
+        clientEmail: "ahmad@company.com",
+        clientPhone: "09123456789",
+        clientDepartment: "حسابداری",
+        createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        updatedAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        responses: [],
+      },
+      {
+        id: "T-003",
+        title: "نصب نرم‌افزار Office",
+        description: "نیاز به نصب Microsoft Office 2021 روی کامپیوتر جدید در بخش فروش دارم.",
+        category: "نرم‌افزار",
+        subcategory: "نصب",
+        priority: "low",
+        status: "resolved",
+        clientId: "1",
+        clientName: "احمد محمدی",
+        clientEmail: "ahmad@company.com",
+        clientPhone: "09123456789",
+        clientDepartment: "حسابداری",
+        assignedTechnicianId: "2",
+        assignedTechnicianName: "علی احمدی",
+        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+        updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        resolution: "نرم‌افزار Microsoft Office 2021 با موفقیت نصب شد و فعال‌سازی انجام گرفت.",
+        responses: [
+          {
+            id: "R-002",
+            text: "نرم‌افزار نصب شد. لطفاً تست کنید.",
+            author: "علی احمدی",
+            timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+            type: "technician",
+          },
+          {
+            id: "R-003",
+            text: "ممنون، همه چیز درست کار می‌کند.",
+            author: "احمد محمدی",
+            timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+            type: "client",
+          },
+        ],
+      },
+      // Additional mock tickets for technician dashboard
+      {
+        id: "T-004",
+        title: "مشکل در سیستم ایمیل",
+        description: "نمی‌توانم ایمیل‌های جدید دریافت کنم. پیام‌ها در صندوق ورودی نمایش داده نمی‌شوند.",
+        category: "ایمیل",
+        subcategory: "دریافت",
+        priority: "urgent",
+        status: "open",
+        clientId: "3",
+        clientName: "فاطمه کریمی",
+        clientEmail: "fateme@company.com",
+        clientPhone: "09187654321",
+        clientDepartment: "منابع انسانی",
+        assignedTechnicianId: "2",
+        assignedTechnicianName: "علی احمدی",
+        createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        updatedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        responses: [],
+      },
+      {
+        id: "T-005",
+        title: "کامپیوتر خاموش نمی‌شود",
+        description: "کامپیوتر من بعد از کلیک روی Shutdown خاموش نمی‌شود و در حالت آماده باش می‌ماند.",
+        category: "سخت‌افزار",
+        subcategory: "کامپیوتر",
+        priority: "low",
+        status: "in-progress",
+        clientId: "4",
+        clientName: "محمد رضایی",
+        clientEmail: "mohammad@company.com",
+        clientPhone: "09198765432",
+        clientDepartment: "فروش",
+        assignedTechnicianId: "2",
+        assignedTechnicianName: "علی احمدی",
+        createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+        updatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+        responses: [
+          {
+            id: "R-004",
+            text: "لطفاً کامپیوتر را restart کنید و مجدداً تست کنید.",
+            author: "علی احمدی",
+            timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+            type: "technician",
+          },
+        ],
+      },
+      {
+        id: "T-006",
+        title: "فراموشی رمز عبور سیستم",
+        description: "رمز عبور سیستم CRM را فراموش کرده‌ام و نمی‌توانم وارد شوم.",
+        category: "دسترسی",
+        subcategory: "رمز عبور",
+        priority: "medium",
+        status: "resolved",
+        clientId: "5",
+        clientName: "زهرا احمدی",
+        clientEmail: "zahra@company.com",
+        clientPhone: "09176543210",
+        clientDepartment: "بازاریابی",
+        assignedTechnicianId: "2",
+        assignedTechnicianName: "علی احمدی",
+        createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+        updatedAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+        resolution: "رمز عبور بازنشانی شد و رمز جدید از طریق ایمیل ارسال گردید.",
+        responses: [
+          {
+            id: "R-005",
+            text: "رمز عبور جدید ارسال شد. لطفاً چک کنید.",
+            author: "علی احمدی",
+            timestamp: new Date(Date.now() - 9 * 60 * 60 * 1000).toISOString(),
+            type: "technician",
+          },
+          {
+            id: "R-006",
+            text: "دریافت کردم و مشکل حل شد. متشکرم.",
+            author: "زهرا احمدی",
+            timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+            type: "client",
+          },
+        ],
+      },
+      {
+        id: "T-007",
+        title: "ویروس در سیستم",
+        description: "کامپیوتر من بسیار کند شده و پیام‌های مشکوک نمایش می‌دهد. احتمال آلودگی به ویروس وجود دارد.",
+        category: "امنیت",
+        subcategory: "ویروس",
+        priority: "high",
+        status: "open",
+        clientId: "6",
+        clientName: "حسن موسوی",
+        clientEmail: "hassan@company.com",
+        clientPhone: "09165432109",
+        clientDepartment: "IT",
+        assignedTechnicianId: "2",
+        assignedTechnicianName: "علی احمدی",
+        createdAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+        updatedAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+        responses: [],
+      },
+      {
+        id: "T-008",
+        title: "به‌روزرسانی نرم‌افزار حسابداری",
+        description: "نرم‌افزار حسابداری نیاز به به‌روزرسانی دارد. نسخه فعلی قدیمی است و برخی ویژگی‌ها کار نمی‌کند.",
+        category: "نرم‌افزار",
+        subcategory: "به‌روزرسانی",
+        priority: "medium",
+        status: "in-progress",
+        clientId: "7",
+        clientName: "مریم صادقی",
+        clientEmail: "maryam@company.com",
+        clientPhone: "09154321098",
+        clientDepartment: "حسابداری",
+        assignedTechnicianId: "2",
+        assignedTechnicianName: "علی احمدی",
+        createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+        updatedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        responses: [
+          {
+            id: "R-007",
+            text: "در حال دانلود نسخه جدید هستم. به زودی نصب خواهم کرد.",
+            author: "علی احمدی",
+            timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+            type: "technician",
+          },
+        ],
+      },
+    ]
 
-  useEffect(() => {
-    // Save tickets to localStorage whenever tickets change
-    localStorage.setItem("tickets", JSON.stringify(tickets))
-  }, [tickets])
+    setTickets(mockTickets)
+  }, [])
 
   const addTicket = (ticketData: Omit<Ticket, "id" | "createdAt" | "updatedAt" | "responses">) => {
     const newTicket: Ticket = {
       ...ticketData,
-      id: `TKT-${Date.now().toString().slice(-6)}`,
+      id: `T-${String(tickets.length + 1).padStart(3, "0")}`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       responses: [],
     }
-
     setTickets((prev) => [newTicket, ...prev])
   }
 
-  const updateTicket = (ticketId: string, updates: Partial<Ticket>) => {
+  const updateTicket = (id: string, updates: Partial<Ticket>) => {
     setTickets((prev) =>
       prev.map((ticket) =>
-        ticket.id === ticketId
-          ? {
-              ...ticket,
-              ...updates,
-              updatedAt: new Date().toISOString(),
-            }
-          : ticket,
+        ticket.id === id ? { ...ticket, ...updates, updatedAt: new Date().toISOString() } : ticket,
       ),
     )
   }
 
-  const deleteTicket = (ticketId: string) => {
-    setTickets((prev) => prev.filter((ticket) => ticket.id !== ticketId))
-  }
-
-  const getTicketById = (ticketId: string) => {
-    return tickets.find((ticket) => ticket.id === ticketId)
+  const getTicketById = (id: string) => {
+    return tickets.find((ticket) => ticket.id === id)
   }
 
   const getTicketsByUser = (userEmail: string) => {
@@ -313,56 +309,50 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
   }
 
   const getTicketsByTechnician = (technicianId: string) => {
-    return tickets.filter((ticket) => ticket.assignedTo === technicianId)
-  }
-
-  const getTicketsByClient = (clientId: string) => {
-    return tickets.filter((ticket) => ticket.clientId === clientId)
+    return tickets.filter((ticket) => ticket.assignedTechnicianId === technicianId)
   }
 
   const assignTicket = (ticketId: string, technicianId: string, technicianName: string) => {
     updateTicket(ticketId, {
-      assignedTo: technicianId,
+      assignedTechnicianId: technicianId,
       assignedTechnicianName: technicianName,
       status: "in-progress",
     })
   }
 
-  const addResponse = (ticketId: string, responseData: Omit<TicketResponse, "id" | "ticketId" | "timestamp">) => {
-    const newResponse: TicketResponse = {
+  const addResponse = (ticketId: string, responseData: Omit<Response, "id" | "timestamp">) => {
+    const ticket = getTicketById(ticketId)
+    if (!ticket) return
+
+    const newResponse: Response = {
       ...responseData,
-      id: `RES-${Date.now()}`,
-      ticketId,
+      id: `R-${Date.now()}`,
       timestamp: new Date().toISOString(),
     }
 
-    setTickets((prev) =>
-      prev.map((ticket) =>
-        ticket.id === ticketId
-          ? {
-              ...ticket,
-              responses: [...ticket.responses, newResponse],
-              updatedAt: new Date().toISOString(),
-            }
-          : ticket,
-      ),
-    )
+    updateTicket(ticketId, {
+      responses: [...ticket.responses, newResponse],
+    })
   }
 
-  const value: TicketContextType = {
+  const resolveTicket = (ticketId: string, resolution: string) => {
+    updateTicket(ticketId, {
+      status: "resolved",
+      resolution,
+    })
+  }
+
+  return {
     tickets,
     addTicket,
     updateTicket,
-    deleteTicket,
     getTicketById,
     getTicketsByUser,
     getTicketsByTechnician,
-    getTicketsByClient,
     assignTicket,
     addResponse,
+    resolveTicket,
   }
-
-  return <TicketContext.Provider value={value}>{children}</TicketContext.Provider>
 }
 
 export function useTickets() {
