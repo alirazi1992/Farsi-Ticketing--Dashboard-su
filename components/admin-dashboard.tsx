@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
+import type { Ticket } from "@/types"
 import { AdminTicketManagement } from "./admin-ticket-management"
 import { AdminTechnicianAssignment } from "./admin-technician-assignment"
 import { CategoryManagement } from "./category-management"
@@ -12,16 +13,16 @@ import { EnhancedAutoAssignment } from "./enhanced-auto-assignment"
 import { Settings } from "lucide-react"
 
 interface AdminDashboardProps {
-  tickets: any[]
-  onTicketUpdate: (ticketId: string, updates: any) => void
-  categories: any
+  tickets: Ticket[]
+  onTicketUpdate: (ticketId: string, updates: Partial<Ticket>) => void
+  categoriesData: any
   onCategoryUpdate: (categories: any) => void
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   tickets,
   onTicketUpdate,
-  categories,
+  categoriesData,
   onCategoryUpdate,
 }) => {
   const [activeTab, setActiveTab] = useState("tickets")
@@ -56,7 +57,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       </TabsContent>
 
       <TabsContent value="categories">
-        <CategoryManagement categories={categories} onCategoryUpdate={onCategoryUpdate} />
+        <CategoryManagement categoriesData={categoriesData} onCategoryUpdate={onCategoryUpdate} />
       </TabsContent>
 
       <TabsContent value="auto-settings">
