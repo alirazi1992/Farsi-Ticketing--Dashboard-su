@@ -97,6 +97,10 @@ export function ClientDashboard({ tickets, onTicketCreate, currentUser }: Client
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [performanceReportOpen, setPerformanceReportOpen] = useState(false)
+  const [supportTeamOpen, setSupportTeamOpen] = useState(false)
+  const [systemStatusOpen, setSystemStatusOpen] = useState(false)
+  const [messagesOpen, setMessagesOpen] = useState(false)
 
   // Filter tickets for current user
   const userTickets = tickets.filter((ticket) => ticket.clientEmail === currentUser?.email)
@@ -276,7 +280,7 @@ export function ClientDashboard({ tickets, onTicketCreate, currentUser }: Client
               <DialogHeader>
                 <DialogTitle className="text-right">ایجاد درخواست جدید</DialogTitle>
               </DialogHeader>
-              <TwoStepTicketForm onSubmit={handleCreateTicket} />
+              <TwoStepTicketForm onSubmit={handleCreateTicket} onClose={() => setCreateDialogOpen(false)} />
             </DialogContent>
           </Dialog>
         </div>
@@ -335,22 +339,229 @@ export function ClientDashboard({ tickets, onTicketCreate, currentUser }: Client
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button variant="outline" className="gap-2 h-auto p-4 flex-col bg-transparent">
-              <TrendingUp className="w-6 h-6 text-blue-500" />
-              <span className="text-sm">گزارش عملکرد</span>
-            </Button>
-            <Button variant="outline" className="gap-2 h-auto p-4 flex-col bg-transparent">
-              <Users className="w-6 h-6 text-green-500" />
-              <span className="text-sm">تیم پشتیبانی</span>
-            </Button>
-            <Button variant="outline" className="gap-2 h-auto p-4 flex-col bg-transparent">
-              <Activity className="w-6 h-6 text-purple-500" />
-              <span className="text-sm">وضعیت سیستم</span>
-            </Button>
-            <Button variant="outline" className="gap-2 h-auto p-4 flex-col bg-transparent">
-              <MessageSquare className="w-6 h-6 text-orange-500" />
-              <span className="text-sm">پیام‌های جدید</span>
-            </Button>
+            <Dialog open={performanceReportOpen} onOpenChange={setPerformanceReportOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="gap-2 h-auto p-4 flex-col bg-transparent">
+                  <TrendingUp className="w-6 h-6 text-blue-500" />
+                  <span className="text-sm">گزارش عملکرد</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl" dir="rtl">
+                <DialogHeader>
+                  <DialogTitle className="text-right">گزارش عملکرد</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
+                          <div className="text-sm text-muted-foreground">کل تیکت‌ها</div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-green-600">{stats.resolved + stats.closed}</div>
+                          <div className="text-sm text-muted-foreground">حل شده</div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>میانگین زمان پاسخ:</span>
+                      <span className="font-medium">{stats.avgResponseTime}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>نرخ رضایت:</span>
+                      <span className="font-medium">{stats.satisfactionRate}/5</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>تیکت‌های فوری:</span>
+                      <span className="font-medium">{stats.urgent}</span>
+                    </div>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={supportTeamOpen} onOpenChange={setSupportTeamOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="gap-2 h-auto p-4 flex-col bg-transparent">
+                  <Users className="w-6 h-6 text-green-500" />
+                  <span className="text-sm">تیم پشتیبانی</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl" dir="rtl">
+                <DialogHeader>
+                  <DialogTitle className="text-right">تیم پشتیبانی</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="grid gap-4">
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarFallback>ع.ا</AvatarFallback>
+                          </Avatar>
+                          <div className="text-right">
+                            <div className="font-medium">علی احمدی</div>
+                            <div className="text-sm text-muted-foreground">تکنسین ارشد - سخت‌افزار</div>
+                            <div className="text-sm text-green-600">آنلاین</div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarFallback>م.ر</AvatarFallback>
+                          </Avatar>
+                          <div className="text-right">
+                            <div className="font-medium">مریم رضایی</div>
+                            <div className="text-sm text-muted-foreground">تکنسین - نرم‌افزار</div>
+                            <div className="text-sm text-yellow-600">مشغول</div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarFallback>ح.م</AvatarFallback>
+                          </Avatar>
+                          <div className="text-right">
+                            <div className="font-medium">حسن محمدی</div>
+                            <div className="text-sm text-muted-foreground">تکنسین - شبکه</div>
+                            <div className="text-sm text-green-600">آنلاین</div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-sm text-blue-800 text-right">برای تماس فوری با تیم پشتیبانی: داخلی 1234</p>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={systemStatusOpen} onOpenChange={setSystemStatusOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="gap-2 h-auto p-4 flex-col bg-transparent">
+                  <Activity className="w-6 h-6 text-purple-500" />
+                  <span className="text-sm">وضعیت سیستم</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl" dir="rtl">
+                <DialogHeader>
+                  <DialogTitle className="text-right">وضعیت سیستم‌ها</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="grid gap-3">
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <span>سرور اصلی</span>
+                      </div>
+                      <Badge className="bg-green-100 text-green-800">عملیاتی</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <span>شبکه داخلی</span>
+                      </div>
+                      <Badge className="bg-green-100 text-green-800">عملیاتی</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                        <span>سرور ایمیل</span>
+                      </div>
+                      <Badge className="bg-yellow-100 text-yellow-800">نگهداری</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <span>پایگاه داده</span>
+                      </div>
+                      <Badge className="bg-green-100 text-green-800">عملیاتی</Badge>
+                    </div>
+                  </div>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <p className="text-sm text-yellow-800 text-right">
+                      <strong>اطلاعیه:</strong> نگهداری برنامه‌ریزی شده سرور ایمیل تا ساعت 14:00 ادامه دارد.
+                    </p>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={messagesOpen} onOpenChange={setMessagesOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="gap-2 h-auto p-4 flex-col bg-transparent">
+                  <MessageSquare className="w-6 h-6 text-orange-500" />
+                  <span className="text-sm">پیام‌های جدید</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl" dir="rtl">
+                <DialogHeader>
+                  <DialogTitle className="text-right">پیام‌های جدید</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-3">
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                          <Avatar className="w-8 h-8">
+                            <AvatarFallback>ع.ا</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 text-right">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <div className="font-medium">علی احمدی</div>
+                                <div className="text-sm text-muted-foreground">تکنسین</div>
+                              </div>
+                              <div className="text-xs text-muted-foreground">2 ساعت پیش</div>
+                            </div>
+                            <div className="mt-2 text-sm">تیکت شما بررسی شد و در حال انجام است. لطفاً صبور باشید.</div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                          <Avatar className="w-8 h-8">
+                            <AvatarFallback>سیس</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 text-right">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <div className="font-medium">سیستم</div>
+                                <div className="text-sm text-muted-foreground">اطلاعیه</div>
+                              </div>
+                              <div className="text-xs text-muted-foreground">1 روز پیش</div>
+                            </div>
+                            <div className="mt-2 text-sm">به‌روزرسانی سیستم تیکتینگ با موفقیت انجام شد.</div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  <div className="text-center">
+                    <Button variant="outline" className="gap-2 bg-transparent">
+                      <MessageSquare className="w-4 h-4" />
+                      مشاهده همه پیام‌ها
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </CardContent>
       </Card>
