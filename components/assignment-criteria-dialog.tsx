@@ -1,420 +1,303 @@
 "use client"
 
-import React from "react"
-
 import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Progress } from "@/components/ui/progress"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
+import { Badge } from "@/components/ui/badge"
+import { toast } from "@/hooks/use-toast"
 import {
-  Star,
-  Clock,
-  CheckCircle,
-  AlertTriangle,
-  Target,
-  TrendingUp,
-  Users,
-  Award,
-  Zap,
-  HardDrive,
-  ComputerIcon as Software,
-  Network,
-  Mail,
-  Shield,
-  Key,
-} from "lucide-react"
-
-// Helper functions for safe string operations
-const safeString = (value: any): string => {
-  return value && typeof value === "string" ? value : ""
-}
-
-const getAvatarFallback = (name: any): string => {
-  const safeName = safeString(name)
-  return safeName.length > 0 ? safeName.charAt(0).toUpperCase() : "?"
-}
-
-const getDisplayName = (name: any): string => {
-  const safeName = safeString(name)
-  return safeName || "نامشخص"
-}
-
-const categoryIcons = {
-  hardware: HardDrive,
-  software: Software,
-  network: Network,
-  email: Mail,
-  security: Shield,
-  access: Key,
-}
-
-const categoryLabels = {
-  hardware: "سخت‌افزار",
-  software: "نرم‌افزار",
-  network: "شبکه",
-  email: "ایمیل",
-  security: "امنیت",
-  access: "دسترسی",
-}
-
-const priorityLabels = {
-  low: "کم",
-  medium: "متوسط",
-  high: "بالا",
-  urgent: "فوری",
-}
-
-const priorityColors = {
-  low: "bg-blue-100 text-blue-800 border-blue-200",
-  medium: "bg-orange-100 text-orange-800 border-orange-200",
-  high: "bg-red-100 text-red-800 border-red-200",
-  urgent: "bg-purple-100 text-purple-800 border-purple-200",
-}
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Settings, Plus, Trash2 } from "lucide-react"
 
 interface AssignmentCriteriaDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  ticket: any
   technicians: any[]
-  onAssign: (technicianId: string) => void
 }
 
-export function AssignmentCriteriaDialog({
-  open,
-  onOpenChange,
-  ticket,
-  technicians,
-  onAssign,
-}: AssignmentCriteriaDialogProps) {
-  const [selectedTechnician, setSelectedTechnician] = useState<string | null>(null)
+export function AssignmentCriteriaDialog({ open, onOpenChange, technicians = [] }: AssignmentCriteriaDialogProps) {
+  const [autoAssignEnabled, setAutoAssignEnabled] = useState(true)
+  const [workingHours, setWorkingHours] = useState({ start: "08:00", end: "17:00" })
+  const [maxTicketsPerTechnician, setMaxTicketsPerTechnician] = useState(10)
+  const [priorityWeights, setPriorityWeights] = useState({
+    urgent: 4,
+    high: 3,
+    medium: 2,
+    low: 1,
+  })
+  const [assignmentRules, setAssignmentRules] = useState([
+    {
+      id: "rule-1",
+      name: "واگذاری بر اساس تخصص",
+      condition: "category_match",
+      action: "assign_specialist",
+      enabled: true,
+    },
+    {
+      id: "rule-2",
+      name: "توزیع متعادل بار کاری",
+      condition: "workload_balance",
+      action: "assign_least_busy",
+      enabled: true,
+    },
+    {
+      id: "rule-3",
+      name: "اولویت‌بندی فوری",
+      condition: "priority_urgent",
+      action: "assign_immediately",
+      enabled: true,
+    },
+  ])
 
-  if (!ticket) return null
-
-  // Calculate detailed scores for each technician
-  const calculateDetailedScore = (technician: any) => {
-    const scores = {
-      specialty: 0,
-      availability: 0,
-      experience: 0,
-      rating: 0,
-      workload: 0,
-    }
-
-    // Specialty match (0-100)
-    if (technician.specialties && technician.specialties.includes(ticket.category)) {
-      scores.specialty = technician.specialties[0] === ticket.category ? 100 : 80
-    } else {
-      scores.specialty = 20
-    }
-
-    // Availability (0-100)
-    scores.availability = technician.status === "available" ? 100 : technician.status === "busy" ? 50 : 0
-
-    // Experience (0-100)
-    scores.experience = Math.min(100, (technician.completedTickets / 50) * 100)
-
-    // Rating (0-100)
-    scores.rating = (technician.rating / 5) * 100
-
-    // Workload (0-100) - inverse relationship
-    scores.workload = Math.max(0, ((8 - technician.activeTickets) / 8) * 100)
-
-    const totalScore =
-      scores.specialty * 0.3 +
-      scores.availability * 0.25 +
-      scores.experience * 0.2 +
-      scores.rating * 0.15 +
-      scores.workload * 0.1
-
-    return {
-      ...scores,
-      total: Math.round(totalScore),
-    }
+  const handleSaveSettings = () => {
+    // Here you would typically save the settings to your backend
+    toast({
+      title: "تنظیمات ذخیره شد",
+      description: "تنظیمات واگذاری خودکار با موفقیت ذخیره شد",
+    })
+    onOpenChange(false)
   }
 
-  const rankedTechnicians = technicians
-    .map((tech) => ({
-      ...tech,
-      scores: calculateDetailedScore(tech),
-    }))
-    .sort((a, b) => b.scores.total - a.scores.total)
-
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return "text-green-600"
-    if (score >= 60) return "text-yellow-600"
-    return "text-red-600"
-  }
-
-  const getScoreIcon = (score: number) => {
-    if (score >= 80) return <CheckCircle className="w-4 h-4 text-green-600" />
-    if (score >= 60) return <Clock className="w-4 h-4 text-yellow-600" />
-    return <AlertTriangle className="w-4 h-4 text-red-600" />
-  }
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "available":
-        return <CheckCircle className="w-3 h-3 text-green-500" />
-      case "busy":
-        return <Clock className="w-3 h-3 text-yellow-500" />
-      default:
-        return <AlertTriangle className="w-3 h-3 text-red-500" />
+  const handleAddRule = () => {
+    const newRule = {
+      id: `rule-${Date.now()}`,
+      name: "قانون جدید",
+      condition: "custom",
+      action: "assign_available",
+      enabled: true,
     }
+    setAssignmentRules([...assignmentRules, newRule])
   }
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "available":
-        return "آماده"
-      case "busy":
-        return "مشغول"
-      default:
-        return "غیرفعال"
-    }
+  const handleDeleteRule = (ruleId: string) => {
+    setAssignmentRules(assignmentRules.filter((rule) => rule.id !== ruleId))
+  }
+
+  const handleToggleRule = (ruleId: string) => {
+    setAssignmentRules(assignmentRules.map((rule) => (rule.id === ruleId ? { ...rule, enabled: !rule.enabled } : rule)))
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto" dir="rtl">
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-right flex items-center gap-2">
-            <Target className="w-5 h-5 text-purple-600" />
-            تحلیل معیارهای واگذاری - تیکت {safeString(ticket.id)}
+          <DialogTitle className="flex items-center gap-2 text-right">
+            <Settings className="w-5 h-5" />
+            تنظیمات واگذاری خودکار
           </DialogTitle>
+          <DialogDescription className="text-right">
+            قوانین و معیارهای واگذاری خودکار تیکت‌ها را تنظیم کنید
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Ticket Summary */}
+          {/* General Settings */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">خلاصه تیکت</CardTitle>
+              <CardTitle className="text-lg">تنظیمات کلی</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label className="text-base">واگذاری خودکار</Label>
+                  <p className="text-sm text-muted-foreground">
+                    فعال‌سازی واگذاری خودکار تیکت‌ها بر اساس قوانین تعریف شده
+                  </p>
+                </div>
+                <Switch checked={autoAssignEnabled} onCheckedChange={setAutoAssignEnabled} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="start-time">ساعت شروع کار</Label>
+                  <Input
+                    id="start-time"
+                    type="time"
+                    value={workingHours.start}
+                    onChange={(e) => setWorkingHours({ ...workingHours, start: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="end-time">ساعت پایان کار</Label>
+                  <Input
+                    id="end-time"
+                    type="time"
+                    value={workingHours.end}
+                    onChange={(e) => setWorkingHours({ ...workingHours, end: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="max-tickets">حداکثر تیکت به ازای هر تکنسین</Label>
+                <Input
+                  id="max-tickets"
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={maxTicketsPerTechnician}
+                  onChange={(e) => setMaxTicketsPerTechnician(Number.parseInt(e.target.value))}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Priority Weights */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">وزن اولویت‌ها</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <p className="text-xs text-muted-foreground">عنوان</p>
-                  <p className="font-medium">{getDisplayName(ticket.title)}</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="urgent-weight">فوری</Label>
+                  <Input
+                    id="urgent-weight"
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={priorityWeights.urgent}
+                    onChange={(e) =>
+                      setPriorityWeights({ ...priorityWeights, urgent: Number.parseInt(e.target.value) })
+                    }
+                  />
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">اولویت</p>
-                  <Badge className={priorityColors[ticket.priority] || priorityColors.medium}>
-                    {priorityLabels[ticket.priority] || ticket.priority}
-                  </Badge>
+                <div className="space-y-2">
+                  <Label htmlFor="high-weight">بالا</Label>
+                  <Input
+                    id="high-weight"
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={priorityWeights.high}
+                    onChange={(e) => setPriorityWeights({ ...priorityWeights, high: Number.parseInt(e.target.value) })}
+                  />
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">دسته‌بندی</p>
-                  <div className="flex items-center gap-1">
-                    {categoryIcons[ticket.category] &&
-                      React.createElement(categoryIcons[ticket.category], { className: "w-4 h-4" })}
-                    <span>{categoryLabels[ticket.category] || ticket.category}</span>
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="medium-weight">متوسط</Label>
+                  <Input
+                    id="medium-weight"
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={priorityWeights.medium}
+                    onChange={(e) =>
+                      setPriorityWeights({ ...priorityWeights, medium: Number.parseInt(e.target.value) })
+                    }
+                  />
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">درخواست‌کننده</p>
-                  <p className="font-medium">{getDisplayName(ticket.clientName)}</p>
+                <div className="space-y-2">
+                  <Label htmlFor="low-weight">پایین</Label>
+                  <Input
+                    id="low-weight"
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={priorityWeights.low}
+                    onChange={(e) => setPriorityWeights({ ...priorityWeights, low: Number.parseInt(e.target.value) })}
+                  />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Assignment Criteria Explanation */}
+          {/* Assignment Rules */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" />
-                معیارهای ارزیابی
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-sm">
-                <div className="text-center">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <Target className="w-4 h-4 text-blue-600" />
-                  </div>
-                  <p className="font-medium">تخصص</p>
-                  <p className="text-xs text-muted-foreground">30%</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                  </div>
-                  <p className="font-medium">در دسترس بودن</p>
-                  <p className="text-xs text-muted-foreground">25%</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <Award className="w-4 h-4 text-purple-600" />
-                  </div>
-                  <p className="font-medium">تجربه</p>
-                  <p className="text-xs text-muted-foreground">20%</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <Star className="w-4 h-4 text-yellow-600" />
-                  </div>
-                  <p className="font-medium">امتیاز</p>
-                  <p className="text-xs text-muted-foreground">15%</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <Users className="w-4 h-4 text-orange-600" />
-                  </div>
-                  <p className="font-medium">بار کاری</p>
-                  <p className="text-xs text-muted-foreground">10%</p>
-                </div>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">قوانین واگذاری</CardTitle>
+                <Button onClick={handleAddRule} size="sm" className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  افزودن قانون
+                </Button>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Technicians Ranking */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Zap className="w-4 h-4" />
-                رتبه‌بندی تکنسین‌ها
-              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {rankedTechnicians.map((technician, index) => (
-                  <div
-                    key={technician.id}
-                    className={`p-4 border rounded-lg transition-all ${
-                      selectedTechnician === technician.id
-                        ? "border-blue-500 bg-blue-50"
-                        : "hover:bg-muted/50 cursor-pointer"
-                    }`}
-                    onClick={() => setSelectedTechnician(technician.id)}
-                  >
-                    <div className="flex items-start justify-between mb-3">
+                {assignmentRules.map((rule) => (
+                  <Card key={rule.id} className="p-4">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg font-bold text-muted-foreground">#{index + 1}</span>
-                          <Avatar className="w-10 h-10">
-                            <AvatarFallback>{getAvatarFallback(technician.name)}</AvatarFallback>
-                          </Avatar>
-                        </div>
+                        <Switch checked={rule.enabled} onCheckedChange={() => handleToggleRule(rule.id)} />
                         <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-medium">{getDisplayName(technician.name)}</h4>
-                            {getStatusIcon(technician.status)}
-                            <span className="text-xs text-muted-foreground">{getStatusLabel(technician.status)}</span>
+                          <h4 className="font-medium">{rule.name}</h4>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="outline" className="text-xs">
+                              {rule.condition === "category_match"
+                                ? "تطبیق دسته‌بندی"
+                                : rule.condition === "workload_balance"
+                                  ? "توازن بار کاری"
+                                  : rule.condition === "priority_urgent"
+                                    ? "اولویت فوری"
+                                    : "سفارشی"}
+                            </Badge>
+                            <Badge variant="secondary" className="text-xs">
+                              {rule.action === "assign_specialist"
+                                ? "واگذاری به متخصص"
+                                : rule.action === "assign_least_busy"
+                                  ? "واگذاری به کم‌کارترین"
+                                  : rule.action === "assign_immediately"
+                                    ? "واگذاری فوری"
+                                    : "واگذاری به دردسترس"}
+                            </Badge>
                           </div>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <Star className="w-3 h-3 text-yellow-500" />
-                              <span>{technician.rating || 0}</span>
-                            </div>
-                            <span>فعال: {technician.activeTickets || 0}</span>
-                            <span>تکمیل: {technician.completedTickets || 0}</span>
-                          </div>
                         </div>
                       </div>
-                      <div className="text-left">
-                        <div className="flex items-center gap-2 mb-1">
-                          {getScoreIcon(technician.scores.total)}
-                          <span className={`text-lg font-bold ${getScoreColor(technician.scores.total)}`}>
-                            {technician.scores.total}%
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground">امتیاز کل</p>
-                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteRule(rule.id)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
-
-                    {/* Detailed Scores */}
-                    <div className="grid grid-cols-5 gap-3 mb-3">
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs">تخصص</span>
-                          <span className="text-xs font-medium">{technician.scores.specialty}%</span>
-                        </div>
-                        <Progress value={technician.scores.specialty} className="h-1" />
-                      </div>
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs">در دسترس</span>
-                          <span className="text-xs font-medium">{technician.scores.availability}%</span>
-                        </div>
-                        <Progress value={technician.scores.availability} className="h-1" />
-                      </div>
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs">تجربه</span>
-                          <span className="text-xs font-medium">{technician.scores.experience}%</span>
-                        </div>
-                        <Progress value={technician.scores.experience} className="h-1" />
-                      </div>
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs">امتیاز</span>
-                          <span className="text-xs font-medium">{technician.scores.rating}%</span>
-                        </div>
-                        <Progress value={technician.scores.rating} className="h-1" />
-                      </div>
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs">بار کاری</span>
-                          <span className="text-xs font-medium">{technician.scores.workload}%</span>
-                        </div>
-                        <Progress value={technician.scores.workload} className="h-1" />
-                      </div>
-                    </div>
-
-                    {/* Specialties */}
-                    <div className="flex gap-1">
-                      {(technician.specialties || []).map((specialty) => {
-                        const SpecialtyIcon = categoryIcons[specialty] || HardDrive
-                        const isMatch = specialty === ticket.category
-                        return (
-                          <div
-                            key={specialty}
-                            className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
-                              isMatch
-                                ? "bg-green-100 text-green-800 border border-green-200"
-                                : "bg-gray-100 text-gray-600"
-                            }`}
-                          >
-                            <SpecialtyIcon className="w-3 h-3" />
-                            <span>{categoryLabels[specialty] || specialty}</span>
-                            {isMatch && <CheckCircle className="w-3 h-3" />}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
+                  </Card>
                 ))}
               </div>
             </CardContent>
           </Card>
 
-          {/* Action Buttons */}
-          <div className="flex justify-between items-center pt-4 border-t">
-            <div className="text-sm text-muted-foreground">
-              {selectedTechnician ? "تکنسین انتخاب شده" : "تکنسین مورد نظر را انتخاب کنید"}
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                انصراف
-              </Button>
-              <Button
-                onClick={() => {
-                  if (selectedTechnician) {
-                    onAssign(selectedTechnician)
-                    onOpenChange(false)
-                  }
-                }}
-                disabled={!selectedTechnician}
-                className="gap-2"
-              >
-                <CheckCircle className="w-4 h-4" />
-                واگذاری تیکت
-              </Button>
-            </div>
-          </div>
+          {/* Technician Status */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">وضعیت تکنسین‌ها</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {technicians.map((technician) => (
+                  <div key={technician.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <h4 className="font-medium">{technician.name || "نام نامشخص"}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {technician.currentTickets || 0}/{technician.maxTickets || 0} تیکت فعال
+                      </p>
+                    </div>
+                    <Badge variant={technician.status === "available" ? "default" : "secondary"}>
+                      {technician.status === "available" ? "آزاد" : "مشغول"}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            انصراف
+          </Button>
+          <Button onClick={handleSaveSettings}>ذخیره تنظیمات</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

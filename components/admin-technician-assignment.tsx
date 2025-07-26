@@ -4,1046 +4,339 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Separator } from "@/components/ui/separator"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/hooks/use-toast"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
-import {
-  Search,
-  Filter,
-  UserPlus,
-  Users,
-  Star,
-  Clock,
-  CheckCircle,
-  AlertTriangle,
-  HardDrive,
-  ComputerIcon as Software,
-  Network,
-  Mail,
-  Shield,
-  Key,
-  Wrench,
-  Zap,
-  Target,
-} from "lucide-react"
 import { AssignmentCriteriaDialog } from "./assignment-criteria-dialog"
-
-// Helper functions for safe string operations
-const safeString = (value: any): string => {
-  return value && typeof value === "string" ? value : ""
-}
-
-const getAvatarFallback = (name: any): string => {
-  const safeName = safeString(name)
-  return safeName.length > 0 ? safeName.charAt(0).toUpperCase() : "?"
-}
-
-const getDisplayName = (name: any): string => {
-  const safeName = safeString(name)
-  return safeName || "نامشخص"
-}
-
-// Enhanced automatic assignment logic with multiple criteria
-const getAutomaticAssignment = (ticket: any, technicians: any[]) => {
-  const availableTechnicians = technicians.filter((tech) => tech.status === "available")
-
-  if (availableTechnicians.length === 0) {
-    // If no available technicians, find the least busy one
-    const leastBusyTech = technicians
-      .filter((tech) => tech.activeTickets < 8) // Don't assign if overloaded
-      .sort((a, b) => a.activeTickets - b.activeTickets)[0]
-
-    return leastBusyTech || null
-  }
-
-  // Calculate comprehensive score for each technician
-  const scoredTechnicians = availableTechnicians.map((tech) => ({
-    ...tech,
-    score: calculateComprehensiveScore(tech, ticket),
-    matchReasons: getMatchReasons(tech, ticket),
-  }))
-
-  // Sort by score (highest first)
-  return scoredTechnicians.sort((a, b) => b.score - a.score)[0]
-}
-
-const calculateComprehensiveScore = (technician: any, ticket: any) => {
-  let score = 0
-  const weights = {
-    specialty: 40,
-    priority: 25,
-    rating: 20,
-    workload: 10,
-    experience: 5,
-  }
-
-  // 1. Specialty Match (40% weight)
-  if (technician.specialties && technician.specialties.includes(ticket.category)) {
-    score += weights.specialty
-    // Bonus for primary specialty
-    if (technician.specialties[0] === ticket.category) {
-      score += 10
-    }
-  } else {
-    // Penalty for no specialty match
-    score -= 15
-  }
-
-  // 2. Priority Handling (25% weight)
-  const priorityScore = getPriorityScore(technician, ticket.priority)
-  score += (priorityScore / 100) * weights.priority
-
-  // 3. Rating (20% weight)
-  score += (technician.rating / 5) * weights.rating
-
-  // 4. Workload (10% weight) - inverse relationship
-  const workloadScore = Math.max(0, ((8 - technician.activeTickets) / 8) * 100)
-  score += (workloadScore / 100) * weights.workload
-
-  // 5. Experience (5% weight)
-  const experienceScore = Math.min(100, (technician.completedTickets / 100) * 100)
-  score += (experienceScore / 100) * weights.experience
-
-  // Bonus factors
-  score += getBonusScore(technician, ticket)
-
-  return Math.round(score * 10) / 10 // Round to 1 decimal place
-}
-
-const getPriorityScore = (technician: any, priority: string) => {
-  // Score based on technician's ability to handle different priorities
-  const priorityWeights = {
-    urgent: { rating: 4.5, experience: 30 },
-    high: { rating: 4.0, experience: 20 },
-    medium: { rating: 3.5, experience: 10 },
-    low: { rating: 3.0, experience: 5 },
-  }
-
-  const requirement = priorityWeights[priority] || priorityWeights.medium
-  let score = 0
-
-  // Rating requirement
-  if (technician.rating >= requirement.rating) {
-    score += 60
-  } else {
-    score += (technician.rating / requirement.rating) * 60
-  }
-
-  // Experience requirement
-  if (technician.completedTickets >= requirement.experience) {
-    score += 40
-  } else {
-    score += (technician.completedTickets / requirement.experience) * 40
-  }
-
-  return Math.min(100, score)
-}
-
-const getBonusScore = (technician: any, ticket: any) => {
-  let bonus = 0
-
-  // Response time bonus
-  if (technician.avgResponseTime && Number.parseFloat(technician.avgResponseTime) < 2.0) {
-    bonus += 5
-  }
-
-  // High performer bonus
-  if (technician.rating >= 4.8 && technician.completedTickets >= 50) {
-    bonus += 8
-  }
-
-  // Specialty depth bonus (multiple related specialties)
-  const relatedSpecialties = getRelatedSpecialties(ticket.category)
-  const matchingSpecialties = technician.specialties?.filter((s) => relatedSpecialties.includes(s)) || []
-  if (matchingSpecialties.length > 1) {
-    bonus += 3
-  }
-
-  // Low workload bonus
-  if (technician.activeTickets <= 1) {
-    bonus += 5
-  }
-
-  return bonus
-}
-
-const getRelatedSpecialties = (category: string) => {
-  const relations = {
-    hardware: ["hardware", "network"],
-    software: ["software", "access"],
-    network: ["network", "hardware", "security"],
-    email: ["email", "software", "security"],
-    security: ["security", "network", "access"],
-    access: ["access", "security", "software"],
-  }
-  return relations[category] || [category]
-}
-
-const getMatchReasons = (technician: any, ticket: any) => {
-  const reasons = []
-
-  if (technician.specialties && technician.specialties.includes(ticket.category)) {
-    reasons.push(`متخصص ${categoryLabels[ticket.category] || ticket.category}`)
-  }
-
-  if (technician.rating >= 4.5) {
-    reasons.push("امتیاز بالا")
-  }
-
-  if (technician.activeTickets <= 2) {
-    reasons.push("بار کاری کم")
-  }
-
-  if (technician.completedTickets >= 50) {
-    reasons.push("تجربه بالا")
-  }
-
-  const priorityRequirements = {
-    urgent: 4.5,
-    high: 4.0,
-    medium: 3.5,
-    low: 3.0,
-  }
-
-  if (technician.rating >= priorityRequirements[ticket.priority]) {
-    reasons.push(`مناسب برای اولویت ${priorityLabels[ticket.priority] || ticket.priority}`)
-  }
-
-  return reasons
-}
-
-const statusColors = {
-  open: "bg-red-100 text-red-800 border-red-200",
-  "in-progress": "bg-yellow-100 text-yellow-800 border-yellow-200",
-  resolved: "bg-green-100 text-green-800 border-green-200",
-  closed: "bg-gray-100 text-gray-800 border-gray-200",
-}
-
-const statusLabels = {
-  open: "باز",
-  "in-progress": "در حال انجام",
-  resolved: "حل شده",
-  closed: "بسته",
-}
-
-const priorityColors = {
-  low: "bg-blue-100 text-blue-800 border-blue-200",
-  medium: "bg-orange-100 text-orange-800 border-orange-200",
-  high: "bg-red-100 text-red-800 border-red-200",
-  urgent: "bg-purple-100 text-purple-800 border-purple-200",
-}
-
-const priorityLabels = {
-  low: "کم",
-  medium: "متوسط",
-  high: "بالا",
-  urgent: "فوری",
-}
-
-const categoryIcons = {
-  hardware: HardDrive,
-  software: Software,
-  network: Network,
-  email: Mail,
-  security: Shield,
-  access: Key,
-}
-
-const categoryLabels = {
-  hardware: "سخت‌افزار",
-  software: "نرم‌افزار",
-  network: "شبکه",
-  email: "ایمیل",
-  security: "امنیت",
-  access: "دسترسی",
-}
-
-// Mock technicians data
-const mockTechnicians = [
-  {
-    id: "tech-001",
-    name: "علی احمدی",
-    email: "ali@company.com",
-    specialties: ["network", "hardware"],
-    rating: 4.8,
-    activeTickets: 3,
-    completedTickets: 45,
-    status: "available",
-    avgResponseTime: "1.5",
-  },
-  {
-    id: "tech-002",
-    name: "سارا محمدی",
-    email: "sara@company.com",
-    specialties: ["software", "security"],
-    rating: 4.9,
-    activeTickets: 2,
-    completedTickets: 52,
-    status: "available",
-    avgResponseTime: "1.2",
-  },
-  {
-    id: "tech-003",
-    name: "حسن رضایی",
-    email: "hassan@company.com",
-    specialties: ["hardware", "email"],
-    rating: 4.7,
-    activeTickets: 4,
-    completedTickets: 38,
-    status: "busy",
-    avgResponseTime: "2.5",
-  },
-  {
-    id: "tech-004",
-    name: "مریم کریمی",
-    email: "maryam@company.com",
-    specialties: ["software", "access"],
-    rating: 4.6,
-    activeTickets: 1,
-    completedTickets: 29,
-    status: "available",
-    avgResponseTime: "1.8",
-  },
-]
+import { Clock, User, AlertCircle, CheckCircle, Settings } from "lucide-react"
 
 interface AdminTechnicianAssignmentProps {
   tickets: any[]
   onTicketUpdate: (ticketId: string, updates: any) => void
 }
 
-export function AdminTechnicianAssignment({ tickets, onTicketUpdate }: AdminTechnicianAssignmentProps) {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [filterStatus, setFilterStatus] = useState("unassigned")
-  const [filterPriority, setFilterPriority] = useState("all")
-  const [selectedTickets, setSelectedTickets] = useState<string[]>([])
-  const [selectedTicket, setSelectedTicket] = useState<any>(null)
-  const [assignDialogOpen, setAssignDialogOpen] = useState(false)
-  const [bulkAssignDialogOpen, setBulkAssignDialogOpen] = useState(false)
-  const [autoAssignEnabled, setAutoAssignEnabled] = useState(false)
-  const [autoAssignDialogOpen, setAutoAssignDialogOpen] = useState(false)
-  const [pendingAutoAssignments, setPendingAutoAssignments] = useState<any[]>([])
+// Helper functions for safe string operations
+const safeString = (value: any): string => {
+  return value && typeof value === "string" ? value : ""
+}
+
+const getDisplayName = (name: any): string => {
+  const safeName = safeString(name)
+  return safeName || "نام نامشخص"
+}
+
+const getAvatarFallback = (name: any): string => {
+  const safeName = safeString(name)
+  return safeName && safeName.length > 0 ? safeName.charAt(0) : "N"
+}
+
+// Mock technicians data
+const technicians = [
+  {
+    id: "tech-001",
+    name: "علی احمدی",
+    email: "ali@company.com",
+    specialties: ["hardware", "network"],
+    currentTickets: 3,
+    maxTickets: 10,
+    status: "available",
+  },
+  {
+    id: "tech-002",
+    name: "سارا محمدی",
+    email: "sara@company.com",
+    specialties: ["software", "email"],
+    currentTickets: 5,
+    maxTickets: 8,
+    status: "busy",
+  },
+  {
+    id: "tech-003",
+    name: "محمد رضایی",
+    email: "mohammad@company.com",
+    specialties: ["security", "access"],
+    currentTickets: 2,
+    maxTickets: 12,
+    status: "available",
+  },
+]
+
+export function AdminTechnicianAssignment({ tickets = [], onTicketUpdate }: AdminTechnicianAssignmentProps) {
   const [criteriaDialogOpen, setCriteriaDialogOpen] = useState(false)
-  const [selectedTicketForCriteria, setSelectedTicketForCriteria] = useState<any>(null)
+  const [selectedTicket, setSelectedTicket] = useState<any>(null)
 
-  // Filter tickets for assignment view
-  const filteredTickets = tickets.filter((ticket) => {
-    const safeTitle = safeString(ticket?.title)
-    const safeDescription = safeString(ticket?.description)
-    const safeId = safeString(ticket?.id)
-    const safeClientName = safeString(ticket?.clientName)
+  // Safe array access
+  const safeTickets = Array.isArray(tickets) ? tickets : []
 
-    const matchesSearch =
-      safeTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      safeDescription.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      safeId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      safeClientName.toLowerCase().includes(searchQuery.toLowerCase())
+  const handleAssignTicket = (ticketId: string, technicianId: string) => {
+    const technician = technicians.find((t) => t.id === technicianId)
+    if (!technician) return
 
-    const matchesStatus =
-      filterStatus === "all" ||
-      (filterStatus === "unassigned" && !ticket?.assignedTo) ||
-      (filterStatus === "assigned" && ticket?.assignedTo)
-
-    const matchesPriority = filterPriority === "all" || ticket?.priority === filterPriority
-
-    return matchesSearch && matchesStatus && matchesPriority
-  })
-
-  const handleAssignTicket = (ticket: any) => {
-    setSelectedTicket(ticket)
-    setAssignDialogOpen(true)
-  }
-
-  const handleSelectTicket = (ticketId: string, checked: boolean) => {
-    if (checked) {
-      setSelectedTickets([...selectedTickets, ticketId])
-    } else {
-      setSelectedTickets(selectedTickets.filter((id) => id !== ticketId))
-    }
-  }
-
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedTickets(filteredTickets.map((ticket) => ticket?.id).filter(Boolean))
-    } else {
-      setSelectedTickets([])
-    }
-  }
-
-  const handleAssignToTechnician = (technicianId: string, technicianName: string) => {
-    if (selectedTicket) {
-      onTicketUpdate(selectedTicket.id, {
-        assignedTo: technicianId,
-        assignedTechnicianName: technicianName,
-        status: selectedTicket.status === "open" ? "in-progress" : selectedTicket.status,
-      })
-
-      toast({
-        title: "تکنسین تعیین شد",
-        description: `تیکت ${selectedTicket.id} به ${technicianName} واگذار شد`,
-      })
-
-      setAssignDialogOpen(false)
-      setSelectedTicket(null)
-    }
-  }
-
-  const handleBulkAssign = (technicianId: string, technicianName: string) => {
-    selectedTickets.forEach((ticketId) => {
-      const ticket = tickets.find((t) => t?.id === ticketId)
-      onTicketUpdate(ticketId, {
-        assignedTo: technicianId,
-        assignedTechnicianName: technicianName,
-        status: ticket?.status === "open" ? "in-progress" : ticket?.status,
-      })
+    onTicketUpdate(ticketId, {
+      assignedTo: technicianId,
+      assignedTechnicianName: technician.name,
+      status: "in-progress",
     })
 
     toast({
-      title: "تکنسین تعیین شد",
-      description: `${selectedTickets.length} تیکت به ${technicianName} واگذار شد`,
+      title: "تیکت واگذار شد",
+      description: `تیکت به ${technician.name} واگذار شد`,
     })
-
-    setBulkAssignDialogOpen(false)
-    setSelectedTickets([])
   }
 
-  // Handle automatic assignment for single ticket with detailed feedback
-  const handleAutoAssign = (ticket: any) => {
-    const recommendedTech = getAutomaticAssignment(ticket, mockTechnicians)
-
-    if (recommendedTech) {
-      onTicketUpdate(ticket.id, {
-        assignedTo: recommendedTech.id,
-        assignedTechnicianName: recommendedTech.name,
-        status: ticket.status === "open" ? "in-progress" : ticket.status,
-      })
-
-      const reasons = recommendedTech.matchReasons?.join("، ") || "بهترین گزینه موجود"
-
-      toast({
-        title: "تکنسین به صورت خودکار تعیین شد",
-        description: `تیکت ${ticket.id} به ${recommendedTech.name} واگذار شد (امتیاز: ${recommendedTech.score}) - ${reasons}`,
-      })
-    } else {
-      toast({
-        title: "خطا در تعیین خودکار",
-        description: "تکنسین مناسبی برای این تیکت یافت نشد یا همه تکنسین‌ها مشغول هستند",
-        variant: "destructive",
-      })
-    }
-  }
-
-  // Handle bulk automatic assignment
-  const handleBulkAutoAssign = () => {
-    const unassignedTickets = selectedTickets
-      .map((id) => filteredTickets.find((t) => t?.id === id))
-      .filter((ticket) => ticket && !ticket.assignedTo)
-
-    const assignments = unassignedTickets.map((ticket) => {
-      const recommendedTech = getAutomaticAssignment(ticket, mockTechnicians)
-      return {
-        ticket,
-        technician: recommendedTech,
-        success: !!recommendedTech,
-      }
-    })
-
-    setPendingAutoAssignments(assignments)
-    setAutoAssignDialogOpen(true)
-  }
-
-  // Confirm automatic assignments
-  const confirmAutoAssignments = () => {
-    let successCount = 0
-
-    pendingAutoAssignments.forEach(({ ticket, technician, success }) => {
-      if (success && technician) {
-        onTicketUpdate(ticket.id, {
-          assignedTo: technician.id,
-          assignedTechnicianName: technician.name,
-          status: ticket.status === "open" ? "in-progress" : ticket.status,
-        })
-        successCount++
-      }
+  const handleUnassignTicket = (ticketId: string) => {
+    onTicketUpdate(ticketId, {
+      assignedTo: null,
+      assignedTechnicianName: null,
+      status: "open",
     })
 
     toast({
-      title: "تعیین خودکار تکمیل شد",
-      description: `${successCount} تیکت به صورت خودکار واگذار شد`,
+      title: "واگذاری لغو شد",
+      description: "تیکت از تکنسین لغو واگذاری شد",
     })
-
-    setAutoAssignDialogOpen(false)
-    setPendingAutoAssignments([])
-    setSelectedTickets([])
   }
 
-  const getRecommendedTechnicians = (ticket: any) => {
-    return mockTechnicians
-      .map((tech) => ({
-        ...tech,
-        score: calculateRecommendationScore(tech, ticket),
-      }))
-      .sort((a, b) => b.score - a.score)
-  }
-
-  const calculateRecommendationScore = (technician: any, ticket: any) => {
-    let score = 0
-
-    // Specialty match
-    if (technician.specialties && technician.specialties.includes(ticket?.category)) {
-      score += 50
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "urgent":
+        return "bg-red-100 text-red-800"
+      case "high":
+        return "bg-orange-100 text-orange-800"
+      case "medium":
+        return "bg-yellow-100 text-yellow-800"
+      case "low":
+        return "bg-green-100 text-green-800"
+      default:
+        return "bg-gray-100 text-gray-800"
     }
-
-    // Availability
-    if (technician.status === "available") {
-      score += 30
-    }
-
-    // Workload (fewer active tickets is better)
-    score += Math.max(0, 20 - (technician.activeTickets || 0) * 5)
-
-    // Rating
-    score += (technician.rating || 0) * 10
-
-    return score
   }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "available":
-        return <CheckCircle className="w-3 h-3 text-green-500" />
-      case "busy":
-        return <Clock className="w-3 h-3 text-yellow-500" />
+      case "open":
+        return <AlertCircle className="w-4 h-4 text-red-500" />
+      case "in-progress":
+        return <Clock className="w-4 h-4 text-yellow-500" />
+      case "resolved":
+        return <CheckCircle className="w-4 h-4 text-green-500" />
       default:
-        return <AlertTriangle className="w-3 h-3 text-red-500" />
+        return <AlertCircle className="w-4 h-4 text-gray-500" />
     }
   }
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "available":
-        return "آماده"
-      case "busy":
-        return "مشغول"
-      default:
-        return "غیرفعال"
-    }
-  }
+  const unassignedTickets = safeTickets.filter((ticket) => !ticket.assignedTo)
+  const assignedTickets = safeTickets.filter((ticket) => ticket.assignedTo)
 
   return (
     <div className="space-y-6" dir="rtl">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold">واگذاری تکنسین</h2>
+          <p className="text-muted-foreground">مدیریت واگذاری تیکت‌ها به تکنسین‌ها</p>
+        </div>
+        <Button onClick={() => setCriteriaDialogOpen(true)} className="gap-2">
+          <Settings className="w-4 h-4" />
+          تنظیمات واگذاری خودکار
+        </Button>
+      </div>
+
+      {/* Technicians Overview */}
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle className="text-right">تعیین تکنسین</CardTitle>
-            <div className="flex items-center gap-3">
-              {/* Auto-assign toggle */}
-              <div className="flex items-center gap-2">
-                <Switch checked={autoAssignEnabled} onCheckedChange={setAutoAssignEnabled} id="auto-assign" />
-                <Label htmlFor="auto-assign" className="text-sm">
-                  تعیین خودکار
-                </Label>
-              </div>
-
-              {selectedTickets.length > 0 && (
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={handleBulkAutoAssign} className="gap-2 bg-transparent">
-                    <Zap className="w-4 h-4" />
-                    تعیین خودکار ({selectedTickets.length})
-                  </Button>
-                  <Button onClick={() => setBulkAssignDialogOpen(true)} className="gap-2">
-                    <Users className="w-4 h-4" />
-                    تعیین دستی ({selectedTickets.length})
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <User className="w-5 h-5" />
+            وضعیت تکنسین‌ها
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="relative">
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="جستجو در تیکت‌ها..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-10 text-right"
-                dir="rtl"
-              />
-            </div>
-
-            <Select value={filterStatus} onValueChange={setFilterStatus} dir="rtl">
-              <SelectTrigger className="text-right">
-                <SelectValue placeholder="وضعیت واگذاری" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">همه تیکت‌ها</SelectItem>
-                <SelectItem value="unassigned">واگذار نشده</SelectItem>
-                <SelectItem value="assigned">واگذار شده</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={filterPriority} onValueChange={setFilterPriority} dir="rtl">
-              <SelectTrigger className="text-right">
-                <SelectValue placeholder="اولویت" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">همه اولویت‌ها</SelectItem>
-                <SelectItem value="urgent">فوری</SelectItem>
-                <SelectItem value="high">بالا</SelectItem>
-                <SelectItem value="medium">متوسط</SelectItem>
-                <SelectItem value="low">کم</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSearchQuery("")
-                setFilterStatus("unassigned")
-                setFilterPriority("all")
-              }}
-              className="gap-2"
-            >
-              <Filter className="w-4 h-4" />
-              پاک کردن فیلترها
-            </Button>
-          </div>
-
-          {/* Bulk Actions */}
-          {selectedTickets.length > 0 && (
-            <div className="flex items-center gap-4 mb-4 p-3 bg-muted rounded-lg">
-              <span className="text-sm font-medium">{selectedTickets.length} تیکت انتخاب شده</span>
-              <Button size="sm" onClick={() => setBulkAssignDialogOpen(true)} className="gap-2">
-                <UserPlus className="w-4 h-4" />
-                واگذاری گروهی
-              </Button>
-            </div>
-          )}
-
-          {/* Tickets Table */}
-          <div className="border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">
-                    <Checkbox
-                      checked={selectedTickets.length === filteredTickets.length && filteredTickets.length > 0}
-                      onCheckedChange={handleSelectAll}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {technicians.map((technician) => (
+              <Card key={technician.id} className="p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <Avatar>
+                    <AvatarFallback>{getAvatarFallback(technician.name)}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <h4 className="font-medium">{getDisplayName(technician.name)}</h4>
+                    <p className="text-sm text-muted-foreground">{safeString(technician.email)}</p>
+                  </div>
+                  <Badge variant={technician.status === "available" ? "default" : "secondary"}>
+                    {technician.status === "available" ? "آزاد" : "مشغول"}
+                  </Badge>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>تیکت‌های فعال:</span>
+                    <span>
+                      {technician.currentTickets}/{technician.maxTickets}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 h-2 rounded-full"
+                      style={{ width: `${(technician.currentTickets / technician.maxTickets) * 100}%` }}
                     />
-                  </TableHead>
-                  <TableHead className="text-right">شماره تیکت</TableHead>
-                  <TableHead className="text-right">عنوان</TableHead>
-                  <TableHead className="text-right">اولویت</TableHead>
-                  <TableHead className="text-right">دسته‌بندی</TableHead>
-                  <TableHead className="text-right">درخواست‌کننده</TableHead>
-                  <TableHead className="text-right">تکنسین فعلی</TableHead>
-                  <TableHead className="text-right">تاریخ ایجاد</TableHead>
-                  <TableHead className="text-right">عملیات</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredTickets.length > 0 ? (
-                  filteredTickets.map((ticket) => {
-                    if (!ticket) return null
-
-                    const CategoryIcon = categoryIcons[ticket.category] || HardDrive
-                    const isSelected = selectedTickets.includes(ticket.id)
-
-                    return (
-                      <TableRow key={ticket.id} className={isSelected ? "bg-muted/50" : ""}>
-                        <TableCell>
-                          <Checkbox
-                            checked={isSelected}
-                            onCheckedChange={(checked) => handleSelectTicket(ticket.id, checked as boolean)}
-                          />
-                        </TableCell>
-                        <TableCell className="font-mono text-sm">{safeString(ticket.id)}</TableCell>
-                        <TableCell className="max-w-xs">
-                          <div className="truncate" title={safeString(ticket.title)}>
-                            {getDisplayName(ticket.title)}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={priorityColors[ticket.priority] || priorityColors.medium}>
-                            {priorityLabels[ticket.priority] || ticket.priority}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <CategoryIcon className="w-4 h-4" />
-                            <span className="text-sm">{categoryLabels[ticket.category] || ticket.category}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Avatar className="w-6 h-6">
-                              <AvatarFallback className="text-xs">
-                                {getAvatarFallback(ticket.clientName)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <div className="text-sm font-medium">{getDisplayName(ticket.clientName)}</div>
-                              <div className="text-xs text-muted-foreground">{safeString(ticket.clientEmail)}</div>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {ticket.assignedTechnicianName ? (
-                            <div className="flex items-center gap-2">
-                              <Avatar className="w-6 h-6">
-                                <AvatarFallback className="text-xs">
-                                  {getAvatarFallback(ticket.assignedTechnicianName)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="text-sm">{getDisplayName(ticket.assignedTechnicianName)}</span>
-                            </div>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">تعیین نشده</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString("fa-IR") : "نامشخص"}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleAssignTicket(ticket)}
-                              className="gap-1"
-                            >
-                              <UserPlus className="w-3 h-3" />
-                              {ticket.assignedTo ? "تغییر تکنسین" : "تعیین دستی"}
-                            </Button>
-                            {!ticket.assignedTo && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleAutoAssign(ticket)}
-                                className="gap-1 text-blue-600 hover:text-blue-700"
-                              >
-                                <Zap className="w-3 h-3" />
-                                خودکار
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedTicketForCriteria(ticket)
-                                setCriteriaDialogOpen(true)
-                              }}
-                              className="gap-1 text-purple-600 hover:text-purple-700"
-                            >
-                              <Target className="w-3 h-3" />
-                              تحلیل
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8">
-                      <div className="flex flex-col items-center gap-2">
-                        <Search className="w-8 h-8 text-muted-foreground" />
-                        <p className="text-muted-foreground">تیکتی یافت نشد</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {(technician.specialties || []).map((specialty) => (
+                      <Badge key={specialty} variant="outline" className="text-xs">
+                        {specialty}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+            ))}
           </div>
         </CardContent>
       </Card>
 
-      {/* Assign Technician Dialog */}
-      <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
-        <DialogContent className="max-w-3xl" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="text-right">واگذاری تیکت {selectedTicket?.id}</DialogTitle>
-          </DialogHeader>
-          {selectedTicket && (
-            <div className="space-y-6">
-              {/* Ticket Info */}
-              <div className="bg-muted p-4 rounded-lg">
-                <h4 className="font-medium mb-2">{getDisplayName(selectedTicket.title)}</h4>
-                <div className="flex gap-2 mb-2">
-                  <Badge className={priorityColors[selectedTicket.priority] || priorityColors.medium}>
-                    {priorityLabels[selectedTicket.priority] || selectedTicket.priority}
-                  </Badge>
-                  <Badge variant="outline">{categoryLabels[selectedTicket.category] || selectedTicket.category}</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  درخواست‌کننده: {getDisplayName(selectedTicket.clientName)}
-                </p>
-              </div>
-
-              <Separator />
-
-              {/* Recommended Technicians */}
-              <div>
-                <h4 className="font-medium mb-4 flex items-center gap-2">
-                  <Star className="w-4 h-4 text-yellow-500" />
-                  تکنسین‌های پیشنهادی
-                </h4>
-                <div className="grid gap-3">
-                  {getRecommendedTechnicians(selectedTicket)
-                    .slice(0, 3)
-                    .map((technician) => (
-                      <div
-                        key={technician.id}
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50"
-                      >
-                        <div className="flex items-center gap-3">
-                          <Avatar className="w-10 h-10">
-                            <AvatarFallback>{getAvatarFallback(technician.name)}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">{getDisplayName(technician.name)}</span>
-                              {getStatusIcon(technician.status)}
-                              <span className="text-xs text-muted-foreground">{getStatusLabel(technician.status)}</span>
-                            </div>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <Star className="w-3 h-3 text-yellow-500" />
-                                <span>{technician.rating || 0}</span>
-                              </div>
-                              <span>تیکت‌های فعال: {technician.activeTickets || 0}</span>
-                              <span>تکمیل شده: {technician.completedTickets || 0}</span>
-                            </div>
-                            <div className="flex gap-1 mt-1">
-                              {(technician.specialties || []).map((specialty) => {
-                                const SpecialtyIcon = categoryIcons[specialty] || HardDrive
-                                return (
-                                  <div
-                                    key={specialty}
-                                    className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs"
-                                  >
-                                    <SpecialtyIcon className="w-3 h-3" />
-                                    <span>{categoryLabels[specialty] || specialty}</span>
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          </div>
-                        </div>
-                        <Button
-                          onClick={() => handleAssignToTechnician(technician.id, technician.name)}
-                          className="gap-2"
-                        >
-                          <UserPlus className="w-4 h-4" />
-                          واگذاری
-                        </Button>
-                      </div>
-                    ))}
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* All Technicians */}
-              <div>
-                <h4 className="font-medium mb-4 flex items-center gap-2">
-                  <Wrench className="w-4 h-4" />
-                  همه تکنسین‌ها
-                </h4>
-                <div className="grid gap-2 max-h-60 overflow-y-auto">
-                  {mockTechnicians.map((technician) => (
-                    <div
-                      key={technician.id}
-                      className="flex items-center justify-between p-2 border rounded hover:bg-muted/50"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Avatar className="w-8 h-8">
-                          <AvatarFallback className="text-sm">{getAvatarFallback(technician.name)}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">{getDisplayName(technician.name)}</span>
-                            {getStatusIcon(technician.status)}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            فعال: {technician.activeTickets || 0} | تکمیل: {technician.completedTickets || 0}
-                          </div>
-                        </div>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleAssignToTechnician(technician.id, technician.name)}
-                      >
-                        انتخاب
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
+      {/* Unassigned Tickets */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 text-red-500" />
+            تیکت‌های واگذار نشده ({unassignedTickets.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {unassignedTickets.length === 0 ? (
+            <div className="text-center py-8">
+              <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
+              <p className="text-muted-foreground">همه تیکت‌ها واگذار شده‌اند</p>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Bulk Assign Dialog */}
-      <Dialog open={bulkAssignDialogOpen} onOpenChange={setBulkAssignDialogOpen}>
-        <DialogContent className="max-w-2xl" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="text-right">واگذاری گروهی ({selectedTickets.length} تیکت)</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <h4 className="font-medium mb-3">انتخاب تکنسین</h4>
-              <div className="grid gap-2 max-h-60 overflow-y-auto">
-                {mockTechnicians.map((technician) => (
-                  <div
-                    key={technician.id}
-                    className="flex items-center justify-between p-3 border rounded hover:bg-muted/50"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Avatar className="w-8 h-8">
-                        <AvatarFallback>{getAvatarFallback(technician.name)}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{getDisplayName(technician.name)}</span>
-                          {getStatusIcon(technician.status)}
-                          <span className="text-xs text-muted-foreground">{getStatusLabel(technician.status)}</span>
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          فعال: {technician.activeTickets || 0} | امتیاز: {technician.rating || 0}
-                        </div>
-                      </div>
-                    </div>
-                    <Button onClick={() => handleBulkAssign(technician.id, technician.name)} className="gap-2">
-                      <Users className="w-4 h-4" />
-                      واگذاری همه
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Auto Assignment Confirmation Dialog */}
-      <Dialog open={autoAssignDialogOpen} onOpenChange={setAutoAssignDialogOpen}>
-        <DialogContent className="max-w-3xl" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="text-right">تأیید تعیین خودکار تکنسین</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <div className="flex items-center gap-2 mb-2">
-                <Zap className="w-5 h-5 text-blue-600" />
-                <h4 className="font-medium text-blue-900">پیش‌نمایش تعیین خودکار</h4>
-              </div>
-              <p className="text-sm text-blue-700">
-                سیستم بر اساس تخصص، امتیاز، و بار کاری تکنسین‌ها، بهترین گزینه را انتخاب کرده است.
-              </p>
-            </div>
-
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {pendingAutoAssignments.map(({ ticket, technician, success }, index) => (
-                <div
-                  key={ticket?.id || index}
-                  className={`p-4 border rounded-lg ${success ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}
-                >
-                  <div className="flex justify-between items-start">
+          ) : (
+            <div className="space-y-4">
+              {unassignedTickets.map((ticket) => (
+                <Card key={ticket.id} className="p-4">
+                  <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="font-medium">{getDisplayName(ticket?.title)}</span>
-                        <Badge className={priorityColors[ticket?.priority] || priorityColors.medium} variant="outline">
-                          {priorityLabels[ticket?.priority] || ticket?.priority}
+                        {getStatusIcon(ticket.status)}
+                        <h4 className="font-medium">{safeString(ticket.title) || "عنوان نامشخص"}</h4>
+                        <Badge className={getPriorityColor(ticket.priority)}>
+                          {ticket.priority === "urgent"
+                            ? "فوری"
+                            : ticket.priority === "high"
+                              ? "بالا"
+                              : ticket.priority === "medium"
+                                ? "متوسط"
+                                : "پایین"}
                         </Badge>
-                        <Badge variant="outline">{categoryLabels[ticket?.category] || ticket?.category}</Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        درخواست‌کننده: {getDisplayName(ticket?.clientName)}
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {safeString(ticket.description) || "توضیحات موجود نیست"}
                       </p>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span>ارسال‌کننده: {getDisplayName(ticket.clientName)}</span>
+                        <span>دسته‌بندی: {safeString(ticket.category) || "نامشخص"}</span>
+                        <span>شناسه: {safeString(ticket.id)}</span>
+                      </div>
                     </div>
-
-                    <div className="text-left">
-                      {success && technician ? (
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="w-4 h-4 text-green-600" />
-                          <div>
-                            <p className="font-medium text-green-800">{getDisplayName(technician.name)}</p>
-                            <div className="flex items-center gap-1 text-xs text-green-600">
-                              <Star className="w-3 h-3" />
-                              <span>{technician.rating || 0}</span>
-                              <span>• {technician.activeTickets || 0} فعال</span>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2 text-red-600">
-                          <AlertTriangle className="w-4 h-4" />
-                          <span className="text-sm">تکنسین مناسب یافت نشد</span>
-                        </div>
-                      )}
+                    <div className="flex items-center gap-2">
+                      <Select onValueChange={(value) => handleAssignTicket(ticket.id, value)}>
+                        <SelectTrigger className="w-48">
+                          <SelectValue placeholder="انتخاب تکنسین" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {technicians.map((technician) => (
+                            <SelectItem key={technician.id} value={technician.id}>
+                              <div className="flex items-center gap-2">
+                                <Avatar className="w-6 h-6">
+                                  <AvatarFallback className="text-xs">
+                                    {getAvatarFallback(technician.name)}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span>{getDisplayName(technician.name)}</span>
+                                <Badge
+                                  variant={technician.status === "available" ? "default" : "secondary"}
+                                  className="text-xs"
+                                >
+                                  {technician.currentTickets}/{technician.maxTickets}
+                                </Badge>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
+          )}
+        </CardContent>
+      </Card>
 
-            <div className="flex justify-between items-center pt-4 border-t">
-              <div className="text-sm text-muted-foreground">
-                {pendingAutoAssignments.filter((a) => a.success).length} از {pendingAutoAssignments.length} تیکت قابل
-                واگذاری
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setAutoAssignDialogOpen(false)}>
-                  انصراف
-                </Button>
-                <Button
-                  onClick={confirmAutoAssignments}
-                  disabled={pendingAutoAssignments.filter((a) => a.success).length === 0}
-                  className="gap-2"
-                >
-                  <CheckCircle className="w-4 h-4" />
-                  تأیید و اجرا
-                </Button>
-              </div>
+      {/* Assigned Tickets */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="w-5 h-5 text-blue-500" />
+            تیکت‌های واگذار شده ({assignedTickets.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {assignedTickets.length === 0 ? (
+            <div className="text-center py-8">
+              <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-muted-foreground">هیچ تیکت واگذار شده‌ای وجود ندارد</p>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          ) : (
+            <div className="space-y-4">
+              {assignedTickets.map((ticket) => (
+                <Card key={ticket.id} className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        {getStatusIcon(ticket.status)}
+                        <h4 className="font-medium">{safeString(ticket.title) || "عنوان نامشخص"}</h4>
+                        <Badge className={getPriorityColor(ticket.priority)}>
+                          {ticket.priority === "urgent"
+                            ? "فوری"
+                            : ticket.priority === "high"
+                              ? "بالا"
+                              : ticket.priority === "medium"
+                                ? "متوسط"
+                                : "پایین"}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {safeString(ticket.description) || "توضیحات موجود نیست"}
+                      </p>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span>ارسال‌کننده: {getDisplayName(ticket.clientName)}</span>
+                        <span>واگذار شده به: {getDisplayName(ticket.assignedTechnicianName)}</span>
+                        <span>شناسه: {safeString(ticket.id)}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 rounded-md">
+                        <Avatar className="w-6 h-6">
+                          <AvatarFallback className="text-xs">
+                            {getAvatarFallback(ticket.assignedTechnicianName)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-medium">{getDisplayName(ticket.assignedTechnicianName)}</span>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => handleUnassignTicket(ticket.id)}>
+                        لغو واگذاری
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Assignment Criteria Dialog */}
       <AssignmentCriteriaDialog
         open={criteriaDialogOpen}
         onOpenChange={setCriteriaDialogOpen}
-        ticket={selectedTicketForCriteria}
-        technicians={mockTechnicians}
-        onAssign={(technicianId) => {
-          const technician = mockTechnicians.find((t) => t.id === technicianId)
-          if (technician && selectedTicketForCriteria) {
-            onTicketUpdate(selectedTicketForCriteria.id, {
-              assignedTo: technicianId,
-              assignedTechnicianName: technician.name,
-              status: selectedTicketForCriteria.status === "open" ? "in-progress" : selectedTicketForCriteria.status,
-            })
-
-            toast({
-              title: "تکنسین تعیین شد",
-              description: `تیکت ${selectedTicketForCriteria.id} به ${technician.name} واگذار شد`,
-            })
-          }
-        }}
+        technicians={technicians}
       />
     </div>
   )
