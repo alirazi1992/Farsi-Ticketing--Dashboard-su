@@ -69,8 +69,8 @@ export function TechnicianDashboard({ onLogout }: TechnicianDashboardProps) {
   const [showResolutionDialog, setShowResolutionDialog] = useState(false)
   const [ticketToResolve, setTicketToResolve] = useState<any>(null)
 
-  // Get technician's tickets
-  const technicianTickets = getTicketsByTechnician(user?.id || "tech-001")
+  // Get technician's tickets (using user ID "2" for Ali Ahmadi)
+  const technicianTickets = getTicketsByTechnician("2")
 
   // Timer functionality
   useEffect(() => {
@@ -245,18 +245,6 @@ export function TechnicianDashboard({ onLogout }: TechnicianDashboardProps) {
           </Badge>
         )
     }
-  }
-
-  const getCategoryLabel = (category: string) => {
-    const categories: { [key: string]: string } = {
-      hardware: "سخت‌افزار",
-      software: "نرم‌افزار",
-      network: "شبکه",
-      email: "ایمیل",
-      access: "دسترسی",
-      security: "امنیت",
-    }
-    return categories[category] || "سایر"
   }
 
   const formatDate = (dateString: string) => {
@@ -573,8 +561,13 @@ export function TechnicianDashboard({ onLogout }: TechnicianDashboardProps) {
                               <div className="flex items-center gap-2">
                                 <Badge variant="outline" className="gap-1 font-iran">
                                   <FileText className="w-3 h-3" />
-                                  {getCategoryLabel(ticket.category)}
+                                  {ticket.category}
                                 </Badge>
+                                {ticket.subcategory && (
+                                  <Badge variant="outline" className="gap-1 font-iran">
+                                    {ticket.subcategory}
+                                  </Badge>
+                                )}
                                 {getPriorityBadge(ticket.priority)}
                                 {getStatusBadge(ticket.status)}
                               </div>
