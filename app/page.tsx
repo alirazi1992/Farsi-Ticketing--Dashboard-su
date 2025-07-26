@@ -10,7 +10,7 @@ import { UserMenu } from "@/components/user-menu"
 import { ClientDashboard } from "@/components/client-dashboard"
 import { TechnicianDashboard } from "@/components/technician-dashboard"
 import { AdminDashboard } from "@/components/admin-dashboard"
-import { AuthProvider, useAuth } from "@/lib/auth-context"
+import { useAuth } from "@/lib/auth-context"
 import { toast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import { Ticket, User, Wrench, Shield, LogIn } from "lucide-react"
@@ -136,161 +136,13 @@ const initialTickets = [
   },
 ]
 
-// Initial categories data - moved from category-management component for global access
-const initialCategoriesData = {
-  hardware: {
-    id: "hardware",
-    label: "مشکلات سخت‌افزاری",
-    description: "مشکلات مربوط به تجهیزات سخت‌افزاری",
-    icon: "hardware",
-    subIssues: {
-      "computer-not-working": {
-        id: "computer-not-working",
-        label: "رایانه کار نمی‌کند",
-        description: "مشکلات روشن نشدن یا خاموش شدن رایانه",
-      },
-      "printer-issues": { id: "printer-issues", label: "مشکلات چاپگر", description: "مشکلات چاپ، کاغذ گیر کردن و..." },
-      "monitor-problems": {
-        id: "monitor-problems",
-        label: "مشکلات مانیتور",
-        description: "مشکلات نمایش، رنگ و روشنایی",
-      },
-      "keyboard-mouse": { id: "keyboard-mouse", label: "مشکلات کیبورد و ماوس", description: "مشکلات ورودی" },
-      "network-hardware": {
-        id: "network-hardware",
-        label: "مشکلات سخت‌افزار شبکه",
-        description: "مشکلات سوئیچ، روتر و کابل",
-      },
-      "ups-power": { id: "ups-power", label: "مشکلات برق و UPS", description: "مشکلات تغذیه و پایداری برق" },
-      "other-hardware": { id: "other-hardware", label: "سایر مشکلات سخت‌افزاری", description: "سایر مشکلات سخت‌افزاری" },
-    },
-  },
-  software: {
-    id: "software",
-    label: "مشکلات نرم‌افزاری",
-    description: "مشکلات مربوط به نرم‌افزارها و سیستم عامل",
-    icon: "software",
-    subIssues: {
-      "os-issues": { id: "os-issues", label: "مشکلات سیستم عامل", description: "مشکلات ویندوز، لینوکس و..." },
-      "application-problems": {
-        id: "application-problems",
-        label: "مشکلات نرم‌افزارهای کاربردی",
-        description: "مشکلات اپلیکیشن‌ها",
-      },
-      "software-installation": {
-        id: "software-installation",
-        label: "نصب و حذف نرم‌افزار",
-        description: "درخواست نصب یا حذف نرم‌افزار",
-      },
-      "license-activation": {
-        id: "license-activation",
-        label: "مشکلات لایسنس و فعال‌سازی",
-        description: "مشکلات مجوز استفاده",
-      },
-      "updates-patches": { id: "updates-patches", label: "به‌روزرسانی‌ها و وصله‌ها", description: "مشکلات آپدیت" },
-      "performance-issues": {
-        id: "performance-issues",
-        label: "مشکلات عملکرد نرم‌افزار",
-        description: "کندی و مشکلات عملکرد",
-      },
-      "other-software": { id: "other-software", label: "سایر مشکلات نرم‌افزاری", description: "سایر مشکلات نرم‌افزاری" },
-    },
-  },
-  network: {
-    id: "network",
-    label: "مشکلات شبکه و اینترنت",
-    description: "مشکلات مربوط به اتصال شبکه و اینترنت",
-    icon: "network",
-    subIssues: {
-      "internet-connection": {
-        id: "internet-connection",
-        label: "مشکل اتصال اینترنت",
-        description: "عدم دسترسی به اینترنت",
-      },
-      "wifi-problems": { id: "wifi-problems", label: "مشکلات Wi-Fi", description: "مشکلات اتصال بی‌سیم" },
-      "network-speed": { id: "network-speed", label: "کندی شبکه", description: "سرعت پایین اینترنت" },
-      "vpn-issues": { id: "vpn-issues", label: "مشکلات VPN", description: "مشکلات اتصال VPN" },
-      "network-sharing": {
-        id: "network-sharing",
-        label: "مشکلات اشتراک‌گذاری شبکه",
-        description: "مشکلات دسترسی به منابع مشترک",
-      },
-      "firewall-security": {
-        id: "firewall-security",
-        label: "مشکلات فایروال و امنیت",
-        description: "مشکلات امنیت شبکه",
-      },
-      "other-network": { id: "other-network", label: "سایر مشکلات شبکه", description: "سایر مشکلات شبکه" },
-    },
-  },
-  email: {
-    id: "email",
-    label: "مشکلات ایمیل",
-    description: "مشکلات مربوط به سیستم ایمیل",
-    icon: "email",
-    subIssues: {
-      "cannot-send": { id: "cannot-send", label: "نمی‌توانم ایمیل ارسال کنم", description: "مشکل در ارسال ایمیل" },
-      "cannot-receive": { id: "cannot-receive", label: "ایمیل دریافت نمی‌کنم", description: "مشکل در دریافت ایمیل" },
-      "login-problems": { id: "login-problems", label: "مشکل ورود به ایمیل", description: "مشکل احراز هویت" },
-      "sync-issues": { id: "sync-issues", label: "مشکلات همگام‌سازی", description: "مشکل همگام‌سازی ایمیل‌ها" },
-      "attachment-problems": {
-        id: "attachment-problems",
-        label: "مشکلات پیوست",
-        description: "مشکل در ارسال یا دریافت پیوست",
-      },
-      "spam-issues": { id: "spam-issues", label: "مشکلات اسپم", description: "مشکلات فیلتر اسپم" },
-      "other-email": { id: "other-email", label: "سایر مشکلات ایمیل", description: "سایر مشکلات ایمیل" },
-    },
-  },
-  security: {
-    id: "security",
-    label: "مشکلات امنیتی",
-    description: "مشکلات مربوط به امنیت سیستم",
-    icon: "security",
-    subIssues: {
-      "virus-malware": { id: "virus-malware", label: "ویروس و بدافزار", description: "آلودگی به ویروس یا بدافزار" },
-      "suspicious-activity": { id: "suspicious-activity", label: "فعالیت مشکوک", description: "مشاهده فعالیت غیرعادی" },
-      "data-breach": { id: "data-breach", label: "نقض امنیت داده‌ها", description: "نشت یا سرقت اطلاعات" },
-      "phishing-attempt": { id: "phishing-attempt", label: "تلاش فیشینگ", description: "دریافت ایمیل یا پیام مشکوک" },
-      "unauthorized-access": {
-        id: "unauthorized-access",
-        label: "دسترسی غیرمجاز",
-        description: "دسترسی غیرمجاز به سیستم",
-      },
-      "password-issues": { id: "password-issues", label: "مشکلات رمز عبور", description: "فراموشی یا تغییر رمز عبور" },
-      "other-security": { id: "other-security", label: "سایر مشکلات امنیتی", description: "سایر مشکلات امنیتی" },
-    },
-  },
-  access: {
-    id: "access",
-    label: "درخواست‌های دسترسی",
-    description: "درخواست‌های دسترسی به سیستم‌ها و منابع",
-    icon: "access",
-    subIssues: {
-      "new-account": { id: "new-account", label: "ایجاد حساب کاربری جدید", description: "درخواست حساب کاربری جدید" },
-      "permission-change": { id: "permission-change", label: "تغییر مجوزهای دسترسی", description: "تغییر سطح دسترسی" },
-      "system-access": { id: "system-access", label: "دسترسی به سیستم‌ها", description: "درخواست دسترسی به سیستم خاص" },
-      "application-access": {
-        id: "application-access",
-        label: "دسترسی به نرم‌افزارها",
-        description: "درخواست دسترسی به اپلیکیشن",
-      },
-      "network-access": { id: "network-access", label: "دسترسی شبکه", description: "درخواست دسترسی شبکه" },
-      "file-access": { id: "file-access", label: "دسترسی به فایل‌ها", description: "درخواست دسترسی به فایل یا پوشه" },
-      "other-access": { id: "other-access", label: "سایر درخواست‌های دسترسی", description: "سایر درخواست‌های دسترسی" },
-    },
-  },
-}
-
-function ITServiceDashboardContent() {
+export default function ITServiceDashboard() {
   const { user, logout } = useAuth()
-  const [loginDialogOpen, setLoginDialogOpen] = useState(false)
-
-  // ✅ CENTRALIZED STATE MANAGEMENT FOR DATA SYNC
   const [tickets, setTickets] = useState(initialTickets)
-  const [categories, setCategories] = useState(initialCategoriesData)
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false)
+  const [categories, setCategories] = useState([])
 
-  // ✅ SYNC FUNCTION 1: Client creates ticket → appears in Admin Dashboard
+  // Handle ticket creation
   const handleTicketCreate = (newTicket: any) => {
     const ticketId = `TK-${new Date().getFullYear()}-${String(tickets.length + 1).padStart(3, "0")}`
     const ticket = {
@@ -304,17 +156,14 @@ function ITServiceDashboardContent() {
       responses: [],
     }
 
-    // Update centralized state - this syncs to Admin Dashboard immediately
     setTickets((prev) => [ticket, ...prev])
-
     toast({
       title: "تیکت ایجاد شد",
-      description: `تیکت ${ticketId} با موفقیت ثبت شد و به مدیر سیستم ارسال شد`,
+      description: `تیکت ${ticketId} با موفقیت ثبت شد`,
     })
   }
 
-  // ✅ SYNC FUNCTION 2: Admin assigns technician → appears in Technician Dashboard
-  // ✅ SYNC FUNCTION 3: Technician updates ticket → syncs to Client & Admin Dashboards
+  // Handle ticket updates
   const handleTicketUpdate = (ticketId: string, updates: any) => {
     setTickets((prev) =>
       prev.map((ticket) =>
@@ -327,30 +176,6 @@ function ITServiceDashboardContent() {
           : ticket,
       ),
     )
-
-    // Show appropriate toast based on update type
-    if (updates.assignedTo && updates.assignedTechnicianName) {
-      toast({
-        title: "تکنسین تعیین شد",
-        description: `تیکت ${ticketId} به ${updates.assignedTechnicianName} واگذار شد`,
-      })
-    } else if (updates.status) {
-      const statusLabels = {
-        open: "باز",
-        "in-progress": "در حال انجام",
-        resolved: "حل شده",
-        closed: "بسته",
-      }
-      toast({
-        title: "وضعیت تیکت به‌روزرسانی شد",
-        description: `وضعیت تیکت ${ticketId} به "${statusLabels[updates.status]}" تغییر کرد`,
-      })
-    } else if (updates.responses) {
-      toast({
-        title: "پاسخ جدید",
-        description: `پاسخ جدیدی برای تیکت ${ticketId} ثبت شد`,
-      })
-    }
   }
 
   // ✅ SYNC FUNCTION 4: Admin manages categories → syncs to Client Dashboard ticket form
@@ -505,13 +330,5 @@ function ITServiceDashboardContent() {
 
       <Toaster />
     </div>
-  )
-}
-
-export default function ITServiceDashboard() {
-  return (
-    <AuthProvider>
-      <ITServiceDashboardContent />
-    </AuthProvider>
   )
 }

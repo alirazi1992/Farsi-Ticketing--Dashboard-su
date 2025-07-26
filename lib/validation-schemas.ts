@@ -84,33 +84,6 @@ export const contactInfoSchema = yup.object({
     .test("phone-validation", "شماره تماس معتبر نیست", validatePhoneNumber),
 })
 
-// Step 1 Ticket Form Schema
-export const ticketFormStep1Schema = yup.object({
-  requesterName: yup
-    .string()
-    .required("نام درخواست‌کننده الزامی است")
-    .min(2, "نام باید حداقل ۲ کاراکتر باشد")
-    .max(50, "نام نباید بیش از ۵۰ کاراکتر باشد"),
-
-  email: yup.string().required("ایمیل الزامی است").email("فرمت ایمیل صحیح نیست"),
-
-  phone: yup.string().test("phone-validation", "شماره تماس معتبر نیست", (value) => {
-    if (!value) return true // phone is optional
-    return validatePhoneNumber(value)
-  }),
-
-  department: yup.string().required("واحد/بخش الزامی است").min(2, "نام واحد باید حداقل ۲ کاراکتر باشد"),
-
-  category: yup.string().required("انتخاب دسته‌بندی الزامی است"),
-
-  subcategory: yup.string().required("انتخاب زیردسته الزامی است"),
-
-  priority: yup
-    .string()
-    .required("انتخاب اولویت الزامی است")
-    .oneOf(["low", "medium", "high", "urgent"], "اولویت انتخابی معتبر نیست"),
-})
-
 // Update the combined schema to include contact info
 export const getCombinedSchema = (step: number) => {
   const baseSchema = contactInfoSchema.concat(issueSelectionSchema)

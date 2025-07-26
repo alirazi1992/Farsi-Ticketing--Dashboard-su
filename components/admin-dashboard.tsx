@@ -1,15 +1,5 @@
-"use client"
-
-import type React from "react"
-
-import { useState } from "react"
-import { AdminTicketManagement } from "./admin-ticket-management"
-import { AdminTechnicianAssignment } from "./admin-technician-assignment"
+import { TicketTable } from "./ticket-table"
 import { CategoryManagement } from "./category-management"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { TicketIcon, UserPlus, FolderTree } from "lucide-react"
-import { EnhancedAutoAssignment } from "./enhanced-auto-assignment"
-import { Settings } from "lucide-react"
 
 interface AdminDashboardProps {
   tickets: any[]
@@ -18,50 +8,20 @@ interface AdminDashboardProps {
   onCategoryUpdate: (categories: any) => void
 }
 
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({
-  tickets,
-  onTicketUpdate,
-  categories,
-  onCategoryUpdate,
-}) => {
-  const [activeTab, setActiveTab] = useState("tickets")
-
+export function AdminDashboard({ tickets, onTicketUpdate, categories, onCategoryUpdate }: AdminDashboardProps) {
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
-      <TabsList className="grid w-full grid-cols-4">
-        <TabsTrigger value="tickets" className="gap-2">
-          <TicketIcon className="w-4 h-4" />
-          مدیریت کامل تیکت‌ها
-        </TabsTrigger>
-        <TabsTrigger value="assignment" className="gap-2">
-          <UserPlus className="w-4 h-4" />
-          تعیین تکنسین
-        </TabsTrigger>
-        <TabsTrigger value="categories" className="gap-2">
-          <FolderTree className="w-4 h-4" />
-          مدیریت دسته‌بندی
-        </TabsTrigger>
-        <TabsTrigger value="auto-settings" className="gap-2">
-          <Settings className="w-4 h-4" />
-          تنظیمات خودکار
-        </TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="tickets">
-        <AdminTicketManagement tickets={tickets} onTicketUpdate={onTicketUpdate} />
-      </TabsContent>
-
-      <TabsContent value="assignment">
-        <AdminTechnicianAssignment tickets={tickets} onTicketUpdate={onTicketUpdate} />
-      </TabsContent>
-
-      <TabsContent value="categories">
-        <CategoryManagement categories={categories} onCategoryUpdate={onCategoryUpdate} />
-      </TabsContent>
-
-      <TabsContent value="auto-settings">
-        <EnhancedAutoAssignment tickets={tickets} onTicketUpdate={onTicketUpdate} />
-      </TabsContent>
-    </Tabs>
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <h2 className="text-xl font-semibold mb-2">Ticket Management</h2>
+          <TicketTable tickets={tickets} onTicketUpdate={onTicketUpdate} />
+        </div>
+        <div>
+          <h2 className="text-xl font-semibold mb-2">Category Management</h2>
+          <CategoryManagement categories={categories} onCategoryUpdate={onCategoryUpdate} />
+        </div>
+      </div>
+    </div>
   )
 }
