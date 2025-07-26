@@ -1,191 +1,215 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { toast } from "@/hooks/use-toast"
-import { Toaster } from "@/components/ui/toaster"
-import { AuthProvider, useAuth } from "@/lib/auth-context"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useAuth } from "@/lib/auth-context"
 import { LoginDialog } from "@/components/login-dialog"
-import { UserMenu } from "@/components/user-menu"
 import { ClientDashboard } from "@/components/client-dashboard"
 import { AdminDashboard } from "@/components/admin-dashboard"
 import { TechnicianDashboard } from "@/components/technician-dashboard"
-import { Ticket, Clock, CheckCircle, AlertCircle, Shield, LogIn } from "lucide-react"
+import { UserMenu } from "@/components/user-menu"
+import { SettingsDialog } from "@/components/settings-dialog"
+import { TicketIcon, Users, Settings, BarChart3, HelpCircle, Shield, Zap } from "lucide-react"
 
-// Initial categories data
+// Mock data for demonstration
+const mockTickets = [
+  {
+    id: "TK-001",
+    title: "مشکل در اتصال به شبکه",
+    description: "نمی‌توانم به شبکه شرکت متصل شوم",
+    status: "open",
+    priority: "high",
+    category: "network",
+    clientName: "احمد محمدی",
+    clientEmail: "ahmad@company.com",
+    assignedTo: null,
+    assignedTechnicianName: null,
+    createdAt: "2024-01-15T10:30:00Z",
+    responses: [],
+  },
+  {
+    id: "TK-002",
+    title: "نصب نرم‌افزار جدید",
+    description: "نیاز به نصب نرم‌افزار حسابداری دارم",
+    status: "in-progress",
+    priority: "medium",
+    category: "software",
+    clientName: "فاطمه کریمی",
+    clientEmail: "fateme@company.com",
+    assignedTo: "tech-001",
+    assignedTechnicianName: "علی احمدی",
+    createdAt: "2024-01-14T14:20:00Z",
+    responses: [
+      {
+        id: "resp-001",
+        text: "درخواست شما در حال بررسی است",
+        author: "علی احمدی",
+        timestamp: "2024-01-14T15:00:00Z",
+        type: "technician",
+      },
+    ],
+  },
+  {
+    id: "TK-003",
+    title: "مشکل در دسترسی به ایمیل",
+    description: "نمی‌توانم به ایمیل سازمانی خود دسترسی پیدا کنم",
+    status: "resolved",
+    priority: "urgent",
+    category: "email",
+    clientName: "حسن رضایی",
+    clientEmail: "hassan@company.com",
+    assignedTo: "tech-002",
+    assignedTechnicianName: "سارا محمدی",
+    createdAt: "2024-01-13T09:15:00Z",
+    responses: [
+      {
+        id: "resp-002",
+        text: "مشکل شما حل شد. لطفاً تست کنید",
+        author: "سارا محمدی",
+        timestamp: "2024-01-13T11:30:00Z",
+        type: "technician",
+      },
+    ],
+  },
+]
+
+// Categories data that will be shared between components
 const initialCategories = [
   {
     id: "hardware",
     name: "سخت‌افزار",
-    subcategories: [
-      { id: "computer-repair", name: "تعمیر رایانه" },
-      { id: "printer-issues", name: "مشکلات چاپگر" },
-      { id: "network-hardware", name: "تجهیزات شبکه" },
-      { id: "monitor-problems", name: "مشکلات مانیتور" },
+    description: "مشکلات مربوط به تجهیزات سخت‌افزاری",
+    color: "bg-blue-100 text-blue-800",
+    icon: "HardDrive",
+    isActive: true,
+    fields: [
+      {
+        id: "device_type",
+        label: "نوع دستگاه",
+        type: "select",
+        required: true,
+        options: ["کامپیوتر", "پرینتر", "مانیتور", "کیبورد", "ماوس"],
+      },
+      { id: "device_model", label: "مدل دستگاه", type: "text", required: false },
+      { id: "error_message", label: "پیام خطا", type: "textarea", required: false },
     ],
   },
   {
     id: "software",
     name: "نرم‌افزار",
-    subcategories: [
-      { id: "os-issues", name: "مشکلات سیستم عامل" },
-      { id: "application-install", name: "نصب نرم‌افزار" },
-      { id: "software-bugs", name: "باگ‌های نرم‌افزاری" },
-      { id: "license-issues", name: "مشکلات لایسنس" },
+    description: "مشکلات مربوط به نرم‌افزارها و برنامه‌ها",
+    color: "bg-green-100 text-green-800",
+    icon: "Software",
+    isActive: true,
+    fields: [
+      { id: "software_name", label: "نام نرم‌افزار", type: "text", required: true },
+      { id: "software_version", label: "نسخه نرم‌افزار", type: "text", required: false },
+      { id: "error_description", label: "شرح خطا", type: "textarea", required: true },
     ],
   },
   {
     id: "network",
     name: "شبکه",
-    subcategories: [
-      { id: "internet-connection", name: "اتصال اینترنت" },
-      { id: "wifi-problems", name: "مشکلات وای‌فای" },
-      { id: "network-speed", name: "سرعت شبکه" },
-      { id: "vpn-issues", name: "مشکلات VPN" },
+    description: "مشکلات مربوط به شبکه و اتصال اینترنت",
+    color: "bg-purple-100 text-purple-800",
+    icon: "Network",
+    isActive: true,
+    fields: [
+      { id: "connection_type", label: "نوع اتصال", type: "select", required: true, options: ["WiFi", "کابلی", "VPN"] },
+      { id: "network_name", label: "نام شبکه", type: "text", required: false },
+      { id: "speed_issue", label: "مشکل سرعت", type: "checkbox", required: false },
     ],
   },
   {
     id: "email",
     name: "ایمیل",
-    subcategories: [
-      { id: "email-setup", name: "راه‌اندازی ایمیل" },
-      { id: "email-sync", name: "همگام‌سازی ایمیل" },
-      { id: "spam-issues", name: "مشکلات اسپم" },
-      { id: "email-recovery", name: "بازیابی ایمیل" },
+    description: "مشکلات مربوط به ایمیل و پیام‌رسانی",
+    color: "bg-orange-100 text-orange-800",
+    icon: "Mail",
+    isActive: true,
+    fields: [
+      {
+        id: "email_client",
+        label: "نرم‌افزار ایمیل",
+        type: "select",
+        required: true,
+        options: ["Outlook", "Gmail", "Thunderbird", "سایر"],
+      },
+      { id: "email_address", label: "آدرس ایمیل", type: "email", required: true },
+      {
+        id: "issue_type",
+        label: "نوع مشکل",
+        type: "select",
+        required: true,
+        options: ["ارسال", "دریافت", "تنظیمات", "سایر"],
+      },
     ],
   },
   {
     id: "security",
     name: "امنیت",
-    subcategories: [
-      { id: "virus-malware", name: "ویروس و بدافزار" },
-      { id: "firewall-config", name: "پیکربندی فایروال" },
-      { id: "security-updates", name: "به‌روزرسانی‌های امنیتی" },
-      { id: "data-breach", name: "نقض امنیت داده" },
+    description: "مشکلات مربوط به امنیت و حریم خصوصی",
+    color: "bg-red-100 text-red-800",
+    icon: "Shield",
+    isActive: true,
+    fields: [
+      {
+        id: "security_type",
+        label: "نوع مشکل امنیتی",
+        type: "select",
+        required: true,
+        options: ["ویروس", "هک", "فیشینگ", "سایر"],
+      },
+      { id: "affected_system", label: "سیستم آسیب‌دیده", type: "text", required: true },
+      { id: "incident_time", label: "زمان وقوع", type: "datetime-local", required: false },
     ],
   },
   {
     id: "access",
     name: "دسترسی",
-    subcategories: [
-      { id: "password-reset", name: "بازنشانی رمز عبور" },
-      { id: "account-lockout", name: "قفل شدن حساب کاربری" },
-      { id: "permission-issues", name: "مشکلات مجوز" },
-      { id: "new-user-setup", name: "راه‌اندازی کاربر جدید" },
+    description: "مشکلات مربوط به دسترسی‌ها و مجوزها",
+    color: "bg-yellow-100 text-yellow-800",
+    icon: "Key",
+    isActive: true,
+    fields: [
+      {
+        id: "access_type",
+        label: "نوع دسترسی",
+        type: "select",
+        required: true,
+        options: ["فایل", "پوشه", "نرم‌افزار", "سیستم"],
+      },
+      { id: "resource_name", label: "نام منبع", type: "text", required: true },
+      {
+        id: "permission_level",
+        label: "سطح دسترسی مورد نیاز",
+        type: "select",
+        required: true,
+        options: ["خواندن", "نوشتن", "اجرا", "مدیریت"],
+      },
     ],
   },
 ]
 
-// Sample tickets data
-const initialTickets = [
-  {
-    id: "TKT-001",
-    title: "مشکل در اتصال به اینترنت",
-    description: "اینترنت در بخش حسابداری قطع شده و کارمندان نمی‌توانند به سیستم‌های آنلاین دسترسی پیدا کنند.",
-    category: "network",
-    subcategory: "internet-connection",
-    priority: "high",
-    status: "open",
-    submittedBy: "احمد محمدی",
-    email: "ahmad@company.com",
-    submittedAt: new Date("2024-01-15T09:30:00").toISOString(),
-    assignedTo: null,
-    assignedTechnicianName: null,
-  },
-  {
-    id: "TKT-002",
-    title: "نصب نرم‌افزار حسابداری",
-    description: "نیاز به نصب نرم‌افزار حسابداری جدید روی 5 دستگاه در بخش مالی",
-    category: "software",
-    subcategory: "application-install",
-    priority: "medium",
-    status: "in-progress",
-    submittedBy: "فاطمه احمدی",
-    email: "fateme@company.com",
-    submittedAt: new Date("2024-01-14T14:20:00").toISOString(),
-    assignedTo: "tech-002",
-    assignedTechnicianName: "سارا محمدی",
-  },
-  {
-    id: "TKT-003",
-    title: "چاپگر کار نمی‌کند",
-    description: "چاپگر اصلی دفتر از صبح کار نمی‌کند و پیغام خطا می‌دهد",
-    category: "hardware",
-    subcategory: "printer-issues",
-    priority: "urgent",
-    status: "resolved",
-    submittedBy: "علی رضایی",
-    email: "ali@company.com",
-    submittedAt: new Date("2024-01-13T08:45:00").toISOString(),
-    assignedTo: "tech-001",
-    assignedTechnicianName: "علی احمدی",
-  },
-]
-
-function DashboardContent() {
-  const { user, logout } = useAuth()
-  const [tickets, setTickets] = useState(initialTickets)
+export default function Home() {
+  const { user, login, logout } = useAuth()
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false)
+  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false)
+  const [tickets, setTickets] = useState(mockTickets)
   const [categories, setCategories] = useState(initialCategories)
-  const [dashboardStats, setDashboardStats] = useState({
-    totalTickets: 0,
-    openTickets: 0,
-    inProgressTickets: 0,
-    resolvedTickets: 0,
-    avgResolutionTime: 0,
-  })
-
-  // Calculate dashboard statistics
-  useEffect(() => {
-    const totalTickets = tickets.length
-    const openTickets = tickets.filter((t) => t.status === "open").length
-    const inProgressTickets = tickets.filter((t) => t.status === "in-progress").length
-    const resolvedTickets = tickets.filter((t) => t.status === "resolved" || t.status === "closed").length
-
-    setDashboardStats({
-      totalTickets,
-      openTickets,
-      inProgressTickets,
-      resolvedTickets,
-      avgResolutionTime: 2.5, // Mock data - in real app, calculate from actual resolution times
-    })
-  }, [tickets])
 
   // Handle ticket updates
   const handleTicketUpdate = (ticketId: string, updates: any) => {
     setTickets((prevTickets) =>
-      prevTickets.map((ticket) =>
-        ticket.id === ticketId
-          ? {
-              ...ticket,
-              ...updates,
-              updatedAt: new Date().toISOString(),
-            }
-          : ticket,
-      ),
+      prevTickets.map((ticket) => (ticket.id === ticketId ? { ...ticket, ...updates } : ticket)),
     )
   }
 
-  // Handle new ticket submission
-  const handleTicketSubmit = (ticketData: any) => {
-    const newTicket = {
-      id: `TKT-${String(tickets.length + 1).padStart(3, "0")}`,
-      ...ticketData,
-      status: "open",
-      submittedAt: new Date().toISOString(),
-      assignedTo: null,
-      assignedTechnicianName: null,
-    }
-
+  // Handle adding new tickets
+  const handleAddTicket = (newTicket: any) => {
     setTickets((prevTickets) => [newTicket, ...prevTickets])
-
-    toast({
-      title: "تیکت با موفقیت ثبت شد",
-      description: `شماره تیکت شما: ${newTicket.id}`,
-    })
-
-    return newTicket.id
   }
 
   // Handle category updates
@@ -193,161 +217,200 @@ function DashboardContent() {
     setCategories(updatedCategories)
   }
 
+  // Stats calculations
+  const stats = {
+    total: tickets.length,
+    open: tickets.filter((t) => t.status === "open").length,
+    inProgress: tickets.filter((t) => t.status === "in-progress").length,
+    resolved: tickets.filter((t) => t.status === "resolved").length,
+    urgent: tickets.filter((t) => t.priority === "urgent").length,
+  }
+
   if (!user) {
     return (
-      <div
-        className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center"
-        dir="rtl"
-      >
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              <Shield className="w-6 h-6 text-blue-600" />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100" dir="rtl">
+        <div className="container mx-auto px-4 py-8">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                <TicketIcon className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">سامانه مدیریت تیکت</h1>
+                <p className="text-gray-600">پشتیبانی فناوری اطلاعات</p>
+              </div>
             </div>
-            <CardTitle className="text-2xl">سیستم مدیریت خدمات IT</CardTitle>
-            <p className="text-muted-foreground">برای ادامه وارد شوید</p>
-          </CardHeader>
-          <CardContent>
-            <LoginDialog>
-              <Button className="w-full gap-2">
-                <LogIn className="w-4 h-4" />
-                ورود به سیستم
+            <Button onClick={() => setLoginDialogOpen(true)} className="gap-2">
+              <Shield className="w-4 h-4" />
+              ورود به سیستم
+            </Button>
+          </div>
+
+          {/* Welcome Section */}
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">به سامانه پشتیبانی خوش آمدید</h2>
+            <p className="text-xl text-gray-600 mb-8">برای دریافت پشتیبانی فنی و ارسال درخواست، لطفاً وارد سیستم شوید</p>
+            <div className="flex justify-center gap-4">
+              <Button onClick={() => setLoginDialogOpen(true)} size="lg" className="gap-2">
+                <Users className="w-5 h-5" />
+                ورود کاربران
               </Button>
-            </LoginDialog>
-          </CardContent>
-        </Card>
+              <Button variant="outline" size="lg" className="gap-2 bg-transparent">
+                <HelpCircle className="w-5 h-5" />
+                راهنمای استفاده
+              </Button>
+            </div>
+          </div>
+
+          {/* Features */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-right">
+                  <Zap className="w-5 h-5 text-blue-600" />
+                  پشتیبانی سریع
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 text-right">
+                  تیم پشتیبانی ما آماده ارائه خدمات سریع و کارآمد در تمامی ساعات کاری است
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-right">
+                  <BarChart3 className="w-5 h-5 text-green-600" />
+                  پیگیری آسان
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 text-right">
+                  وضعیت درخواست‌های خود را به راحتی پیگیری کنید و از آخرین تغییرات مطلع شوید
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-right">
+                  <Shield className="w-5 h-5 text-purple-600" />
+                  امنیت بالا
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 text-right">اطلاعات شما با بالاترین استانداردهای امنیتی محافظت می‌شود</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
+                <div className="text-sm text-gray-600">کل تیکت‌ها</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-red-600">{stats.open}</div>
+                <div className="text-sm text-gray-600">باز</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-yellow-600">{stats.inProgress}</div>
+                <div className="text-sm text-gray-600">در حال انجام</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-green-600">{stats.resolved}</div>
+                <div className="text-sm text-gray-600">حل شده</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-purple-600">{stats.urgent}</div>
+                <div className="text-sm text-gray-600">فوری</div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        <LoginDialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen} onLogin={login} />
       </div>
     )
   }
 
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Shield className="w-5 h-5 text-white" />
+      <div className="container mx-auto px-4 py-6">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+              <TicketIcon className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">سیستم مدیریت خدمات IT</h1>
-              <p className="text-sm text-gray-500">مدیریت تیکت‌ها و درخواست‌های فنی</p>
+              <h1 className="text-2xl font-bold text-gray-900">سامانه مدیریت تیکت</h1>
+              <p className="text-gray-600">پشتیبانی فناوری اطلاعات</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Avatar className="w-8 h-8">
-                <AvatarFallback className="text-sm">{user.name?.charAt(0) || "U"}</AvatarFallback>
-              </Avatar>
-              <div className="text-right">
-                <p className="text-sm font-medium">{user.name}</p>
-                <p className="text-xs text-gray-500">
-                  {user.role === "admin" ? "مدیر سیستم" : user.role === "technician" ? "تکنسین" : "کاربر"}
-                </p>
-              </div>
-            </div>
-            <UserMenu />
+          <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={() => setSettingsDialogOpen(true)} className="gap-2">
+              <Settings className="w-4 h-4" />
+              تنظیمات
+            </Button>
+            <UserMenu user={user} onLogout={logout} />
           </div>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="p-6">
-        {/* Dashboard Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">کل تیکت‌ها</p>
-                  <p className="text-2xl font-bold text-gray-900">{dashboardStats.totalTickets}</p>
-                </div>
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Ticket className="w-6 h-6 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Dashboard Content */}
+        <Tabs defaultValue={user.role} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="client" disabled={user.role !== "client"}>
+              پنل کاربر
+            </TabsTrigger>
+            <TabsTrigger value="technician" disabled={user.role !== "technician"}>
+              پنل تکنسین
+            </TabsTrigger>
+            <TabsTrigger value="admin" disabled={user.role !== "admin"}>
+              پنل مدیریت
+            </TabsTrigger>
+          </TabsList>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">تیکت‌های باز</p>
-                  <p className="text-2xl font-bold text-red-600">{dashboardStats.openTickets}</p>
-                </div>
-                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                  <AlertCircle className="w-6 h-6 text-red-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <TabsContent value="client">
+            <ClientDashboard
+              tickets={tickets.filter((t) => t.clientEmail === user.email)}
+              onTicketAdd={handleAddTicket}
+              categories={categories}
+            />
+          </TabsContent>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">در حال انجام</p>
-                  <p className="text-2xl font-bold text-yellow-600">{dashboardStats.inProgressTickets}</p>
-                </div>
-                <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-yellow-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <TabsContent value="technician">
+            <TechnicianDashboard
+              tickets={tickets.filter((t) => t.assignedTo === user.id)}
+              onTicketUpdate={handleTicketUpdate}
+            />
+          </TabsContent>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">حل شده</p>
-                  <p className="text-2xl font-bold text-green-600">{dashboardStats.resolvedTickets}</p>
-                </div>
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-6 h-6 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+          <TabsContent value="admin">
+            <AdminDashboard
+              tickets={tickets}
+              onTicketUpdate={handleTicketUpdate}
+              categories={categories}
+              onCategoryUpdate={handleCategoryUpdate}
+            />
+          </TabsContent>
+        </Tabs>
 
-        {/* Role-based Dashboard */}
-        {user.role === "admin" && (
-          <AdminDashboard
-            tickets={tickets}
-            categories={categories}
-            onTicketUpdate={handleTicketUpdate}
-            onCategoryUpdate={handleCategoryUpdate}
-          />
-        )}
-
-        {user.role === "technician" && (
-          <TechnicianDashboard
-            tickets={tickets.filter((ticket) => ticket.assignedTo === user.id)}
-            onTicketUpdate={handleTicketUpdate}
-          />
-        )}
-
-        {user.role === "client" && (
-          <ClientDashboard
-            tickets={tickets.filter((ticket) => ticket.submittedBy === user.name || ticket.email === user.email)}
-            categories={categories}
-            onTicketSubmit={handleTicketSubmit}
-          />
-        )}
-      </main>
-
-      <Toaster />
+        <SettingsDialog open={settingsDialogOpen} onOpenChange={setSettingsDialogOpen} />
+      </div>
     </div>
-  )
-}
-
-export default function App() {
-  return (
-    <AuthProvider>
-      <DashboardContent />
-    </AuthProvider>
   )
 }

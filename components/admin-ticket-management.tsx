@@ -1,5 +1,7 @@
 "use client"
 
+import { DialogTrigger } from "@/components/ui/dialog"
+
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -7,9 +9,10 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Separator } from "@/components/ui/separator"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 import { toast } from "@/hooks/use-toast"
 import {
   Printer,
@@ -27,10 +30,30 @@ import {
   Clock,
   Star,
   TrendingUp,
-  Calendar,
   MessageSquare,
+  Edit,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  User,
+  FileText,
 } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
+
+// Helper functions for safe string operations
+const safeString = (value: any): string => {
+  return value && typeof value === "string" ? value : ""
+}
+
+const getAvatarFallback = (name: any): string => {
+  const safeName = safeString(name)
+  return safeName.length > 0 ? safeName.charAt(0).toUpperCase() : "?"
+}
+
+const getDisplayName = (name: any): string => {
+  const safeName = safeString(name)
+  return safeName || "نامشخص"
+}
 
 const statusColors = {
   open: "bg-red-100 text-red-800 border-red-200",
@@ -147,22 +170,6 @@ interface AdminTicketManagementProps {
   onTicketUpdate: (ticketId: string, updates: any) => void
 }
 
-// Helper functions for safe string operations
-const safeString = (value: any): string => {
-  if (value === null || value === undefined) return ""
-  return String(value).trim()
-}
-
-const getDisplayName = (name: any, fallback = "نامشخص"): string => {
-  const safeName = safeString(name)
-  return safeName || fallback
-}
-
-const getAvatarFallback = (name: any): string => {
-  const displayName = getDisplayName(name)
-  return displayName.charAt(0).toUpperCase()
-}
-
 const safeDate = (dateValue: any): string => {
   if (!dateValue) return "نامشخص"
   try {
@@ -172,12 +179,17 @@ const safeDate = (dateValue: any): string => {
   }
 }
 
-export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTicketManagementProps) {
-  const [technicians, setTechnicians] = useState(initialTechnicians)
+export function AdminTicketManagement({ tickets, onTicketUpdate }: AdminTicketManagementProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [filterStatus, setFilterStatus] = useState("all")
   const [filterPriority, setFilterPriority] = useState("all")
   const [filterCategory, setFilterCategory] = useState("all")
+  const [selectedTicket, setSelectedTicket] = useState<any>(null)
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [responseDialogOpen, setResponseDialogOpen] = useState(false)
+  const [responseText, setResponseText] = useState("")
+  const [technicians, setTechnicians] = useState(initialTechnicians)
   const [filterTechnician, setFilterTechnician] = useState("all")
   const [selectedTickets, setSelectedTickets] = useState<string[]>([])
   const [assignDialogOpen, setAssignDialogOpen] = useState(false)
@@ -185,9 +197,42 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
   const [selectedTicketForAssign, setSelectedTicketForAssign] = useState<any>(null)
   const [technicianFilter, setTechnicianFilter] = useState("all")
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
-  const [selectedTicket, setSelectedTicket] = useState<any>(null)
 
-  // Update technician workload when tickets change
+  // Filter tickets
+  const filteredTickets = tickets.filter((ticket) => {
+    if (!ticket) return false
+
+    const safeTitle = safeString(ticket.title)
+    const safeDescription = safeString(ticket.description)
+    const safeId = safeString(ticket.id)
+    const safeClientName = safeString(ticket.clientName)
+    const searchableText = [
+      safeString(ticket.title),
+      safeString(ticket.description),
+      safeString(ticket.id),
+      safeString(ticket.clientName),
+      safeString(ticket.submittedBy),
+    ]
+      .join(" ")
+      .toLowerCase()
+
+    const matchesSearch =
+      safeTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      safeDescription.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      safeId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      safeClientName.toLowerCase().includes(searchQuery.toLowerCase())
+
+    const matchesStatus = filterStatus === "all" || ticket.status === filterStatus
+    const matchesPriority = filterPriority === "all" || ticket.priority === filterPriority
+    const matchesCategory = filterCategory === "all" || ticket.category === filterCategory
+    const matchesTechnician =
+      filterTechnician === "all" ||
+      (filterTechnician === "unassigned" && !ticket.assignedTo) ||
+      ticket.assignedTo === filterTechnician
+
+    return matchesSearch && matchesStatus && matchesPriority && matchesCategory && matchesTechnician
+  })
+
   useEffect(() => {
     const updatedTechnicians = technicians.map((tech) => {
       const assignedTickets = tickets.filter(
@@ -204,33 +249,6 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
     setTechnicians(updatedTechnicians)
   }, [tickets])
 
-  // Filter tickets based on search and filters
-  const filteredTickets = tickets.filter((ticket) => {
-    if (!ticket) return false
-
-    const searchableText = [
-      safeString(ticket.title),
-      safeString(ticket.description),
-      safeString(ticket.id),
-      safeString(ticket.clientName),
-      safeString(ticket.submittedBy),
-    ]
-      .join(" ")
-      .toLowerCase()
-
-    const matchesSearch = searchableText.includes(searchQuery.toLowerCase())
-    const matchesStatus = filterStatus === "all" || ticket.status === filterStatus
-    const matchesPriority = filterPriority === "all" || ticket.priority === filterPriority
-    const matchesCategory = filterCategory === "all" || ticket.category === filterCategory
-    const matchesTechnician =
-      filterTechnician === "all" ||
-      (filterTechnician === "unassigned" && !ticket.assignedTo) ||
-      ticket.assignedTo === filterTechnician
-
-    return matchesSearch && matchesStatus && matchesPriority && matchesCategory && matchesTechnician
-  })
-
-  // Get recommended technicians for a specific ticket
   const getRecommendedTechnicians = (ticket: any) => {
     if (!ticket?.category) return technicians
 
@@ -586,6 +604,82 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
     </div>
   )
 
+  const handlePreviewTicket = (ticket: any) => {
+    setSelectedTicket(ticket)
+    setPreviewDialogOpen(true)
+  }
+
+  const handleEditTicket = (ticket: any) => {
+    setSelectedTicket(ticket)
+    setEditDialogOpen(true)
+  }
+
+  const handleRespondToTicket = (ticket: any) => {
+    setSelectedTicket(ticket)
+    setResponseText("")
+    setResponseDialogOpen(true)
+  }
+
+  const handleStatusChange = (ticketId: string, newStatus: string) => {
+    onTicketUpdate(ticketId, { status: newStatus })
+    toast({
+      title: "وضعیت تیکت تغییر کرد",
+      description: `وضعیت تیکت ${ticketId} به ${statusLabels[newStatus]} تغییر یافت`,
+    })
+  }
+
+  const handlePriorityChange = (ticketId: string, newPriority: string) => {
+    onTicketUpdate(ticketId, { priority: newPriority })
+    toast({
+      title: "اولویت تیکت تغییر کرد",
+      description: `اولویت تیکت ${ticketId} به ${priorityLabels[newPriority]} تغییر یافت`,
+    })
+  }
+
+  const handleSendResponse = () => {
+    if (selectedTicket && responseText.trim()) {
+      // Add response to ticket
+      const updatedTicket = {
+        ...selectedTicket,
+        responses: [
+          ...(selectedTicket.responses || []),
+          {
+            id: Date.now().toString(),
+            text: responseText,
+            author: "مدیر سیستم",
+            timestamp: new Date().toISOString(),
+            type: "admin",
+          },
+        ],
+      }
+
+      onTicketUpdate(selectedTicket.id, updatedTicket)
+
+      toast({
+        title: "پاسخ ارسال شد",
+        description: `پاسخ شما به تیکت ${selectedTicket.id} ارسال شد`,
+      })
+
+      setResponseDialogOpen(false)
+      setResponseText("")
+    }
+  }
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "open":
+        return <AlertTriangle className="w-4 h-4 text-red-500" />
+      case "in-progress":
+        return <Clock className="w-4 h-4 text-yellow-500" />
+      case "resolved":
+        return <CheckCircle className="w-4 h-4 text-green-500" />
+      case "closed":
+        return <XCircle className="w-4 h-4 text-gray-500" />
+      default:
+        return <AlertTriangle className="w-4 h-4 text-gray-500" />
+    }
+  }
+
   const handleViewTicket = (ticket: any) => {
     setSelectedTicket(ticket)
     setViewDialogOpen(true)
@@ -797,37 +891,34 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge className={statusColors[ticket.status] || statusColors.open}>
-                            {statusLabels[ticket.status] || "نامشخص"}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            {getStatusIcon(ticket.status)}
+                            <Badge className={statusColors[ticket.status] || statusColors.open}>
+                              {statusLabels[ticket.status] || ticket.status}
+                            </Badge>
+                          </div>
                         </TableCell>
                         <TableCell>
                           <Badge className={priorityColors[ticket.priority] || priorityColors.medium}>
-                            {priorityLabels[ticket.priority] || "نامشخص"}
+                            {priorityLabels[ticket.priority] || ticket.priority}
                           </Badge>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <CategoryIcon className="w-4 h-4" />
-                            <span className="text-sm">
-                              {categoryLabels[ticket.category] || safeString(ticket.category) || "نامشخص"}
-                            </span>
+                            <span className="text-sm">{categoryLabels[ticket.category] || ticket.category}</span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Avatar className="w-6 h-6">
                               <AvatarFallback className="text-xs">
-                                {getAvatarFallback(ticket.clientName || ticket.submittedBy)}
+                                {getAvatarFallback(ticket.clientName)}
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <div className="text-sm font-medium">
-                                {getDisplayName(ticket.clientName || ticket.submittedBy)}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {safeString(ticket.clientEmail || ticket.email) || "ایمیل نامشخص"}
-                              </div>
+                              <div className="text-sm font-medium">{getDisplayName(ticket.clientName)}</div>
+                              <div className="text-xs text-muted-foreground">{safeString(ticket.clientEmail)}</div>
                             </div>
                           </div>
                         </TableCell>
@@ -845,12 +936,39 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
                             <span className="text-sm text-muted-foreground">تعیین نشده</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-sm">{safeDate(ticket.createdAt || ticket.submittedAt)}</TableCell>
+                        <TableCell className="text-sm">
+                          {ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString("fa-IR") : "نامشخص"}
+                        </TableCell>
                         <TableCell>
-                          <Button variant="ghost" size="sm" onClick={() => handleViewTicket(ticket)} className="gap-1">
-                            <Eye className="w-3 h-3" />
-                            مشاهده
-                          </Button>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handlePreviewTicket(ticket)}
+                              className="gap-1"
+                            >
+                              <Eye className="w-3 h-3" />
+                              مشاهده
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditTicket(ticket)}
+                              className="gap-1"
+                            >
+                              <Edit className="w-3 h-3" />
+                              ویرایش
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRespondToTicket(ticket)}
+                              className="gap-1"
+                            >
+                              <MessageSquare className="w-3 h-3" />
+                              پاسخ
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     )
@@ -871,127 +989,217 @@ export function AdminTicketManagement({ tickets = [], onTicketUpdate }: AdminTic
         </CardContent>
       </Card>
 
-      {/* View Ticket Dialog */}
-      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" dir="rtl">
+      {/* Preview Dialog */}
+      <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-right">جزئیات تیکت {safeString(selectedTicket?.id) || "نامشخص"}</DialogTitle>
+            <DialogTitle className="text-right">جزئیات تیکت {selectedTicket?.id}</DialogTitle>
           </DialogHeader>
           {selectedTicket && (
             <div className="space-y-6">
               {/* Ticket Header */}
-              <div className="flex justify-between items-start">
-                <div className="text-right space-y-2">
-                  <h3 className="text-xl font-semibold">{safeString(selectedTicket.title) || "بدون عنوان"}</h3>
-                  <div className="flex gap-2">
-                    <Badge className={statusColors[selectedTicket.status] || statusColors.open}>
-                      {statusLabels[selectedTicket.status] || "نامشخص"}
-                    </Badge>
-                    <Badge className={priorityColors[selectedTicket.priority] || priorityColors.medium}>
-                      {priorityLabels[selectedTicket.priority] || "نامشخص"}
-                    </Badge>
-                  </div>
-                </div>
-                <div className="text-left space-y-1">
-                  <p className="text-sm text-muted-foreground">شماره تیکت</p>
-                  <p className="font-mono text-lg">{safeString(selectedTicket.id) || "نامشخص"}</p>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      اطلاعات تیکت
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">عنوان</Label>
+                      <p className="font-medium">{getDisplayName(selectedTicket.title)}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">توضیحات</Label>
+                      <p className="text-sm">{safeString(selectedTicket.description) || "توضیحی ارائه نشده"}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="flex items-center gap-2">
+                        {getStatusIcon(selectedTicket.status)}
+                        <Badge className={statusColors[selectedTicket.status] || statusColors.open}>
+                          {statusLabels[selectedTicket.status] || selectedTicket.status}
+                        </Badge>
+                      </div>
+                      <Badge className={priorityColors[selectedTicket.priority] || priorityColors.medium}>
+                        {priorityLabels[selectedTicket.priority] || selectedTicket.priority}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      اطلاعات درخواست‌کننده
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="w-10 h-10">
+                        <AvatarFallback>{getAvatarFallback(selectedTicket.clientName)}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{getDisplayName(selectedTicket.clientName)}</p>
+                        <p className="text-sm text-muted-foreground">{safeString(selectedTicket.clientEmail)}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">تاریخ ایجاد</Label>
+                      <p className="text-sm">
+                        {selectedTicket.createdAt
+                          ? new Date(selectedTicket.createdAt).toLocaleDateString("fa-IR")
+                          : "نامشخص"}
+                      </p>
+                    </div>
+                    {selectedTicket.assignedTechnicianName && (
+                      <div>
+                        <Label className="text-xs text-muted-foreground">تکنسین مسئول</Label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Avatar className="w-6 h-6">
+                            <AvatarFallback className="text-xs">
+                              {getAvatarFallback(selectedTicket.assignedTechnicianName)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm">{getDisplayName(selectedTicket.assignedTechnicianName)}</span>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
 
-              <Separator />
+              {/* Quick Actions */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">عملیات سریع</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex gap-2 flex-wrap">
+                    <Select
+                      value={selectedTicket.status}
+                      onValueChange={(value) => handleStatusChange(selectedTicket.id, value)}
+                      dir="rtl"
+                    >
+                      <SelectTrigger className="w-40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="open">باز</SelectItem>
+                        <SelectItem value="in-progress">در حال انجام</SelectItem>
+                        <SelectItem value="resolved">حل شده</SelectItem>
+                        <SelectItem value="closed">بسته</SelectItem>
+                      </SelectContent>
+                    </Select>
 
-              {/* Ticket Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium mb-2">اطلاعات کلی</h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">دسته‌بندی:</span>
-                        <span>
-                          {categoryLabels[selectedTicket.category] || safeString(selectedTicket.category) || "نامشخص"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">زیر دسته:</span>
-                        <span>{safeString(selectedTicket.subcategory) || "نامشخص"}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">تاریخ ایجاد:</span>
-                        <span>{safeDate(selectedTicket.createdAt || selectedTicket.submittedAt)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">آخرین به‌روزرسانی:</span>
-                        <span>{safeDate(selectedTicket.updatedAt || selectedTicket.submittedAt)}</span>
-                      </div>
-                    </div>
-                  </div>
+                    <Select
+                      value={selectedTicket.priority}
+                      onValueChange={(value) => handlePriorityChange(selectedTicket.id, value)}
+                      dir="rtl"
+                    >
+                      <SelectTrigger className="w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">کم</SelectItem>
+                        <SelectItem value="medium">متوسط</SelectItem>
+                        <SelectItem value="high">بالا</SelectItem>
+                        <SelectItem value="urgent">فوری</SelectItem>
+                      </SelectContent>
+                    </Select>
 
-                  {selectedTicket.assignedTechnicianName && (
-                    <div>
-                      <h4 className="font-medium mb-2">تکنسین مسئول</h4>
-                      <div className="flex items-center gap-2">
-                        <Avatar className="w-8 h-8">
-                          <AvatarFallback>{getAvatarFallback(selectedTicket.assignedTechnicianName)}</AvatarFallback>
-                        </Avatar>
-                        <span>{getDisplayName(selectedTicket.assignedTechnicianName)}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="bg-muted p-4 rounded-lg text-right">
-                  <h4 className="font-medium mb-2">شرح مشکل</h4>
-                  <p className="whitespace-pre-wrap">
-                    {safeString(selectedTicket.description) || "توضیحی ارائه نشده است"}
-                  </p>
-                </div>
-
-                {selectedTicket.responses && selectedTicket.responses.length > 0 && (
-                  <div className="md:col-span-2">
-                    <h4 className="font-medium mb-4 flex items-center gap-2">
+                    <Button
+                      onClick={() => {
+                        setPreviewDialogOpen(false)
+                        handleRespondToTicket(selectedTicket)
+                      }}
+                      className="gap-2"
+                    >
                       <MessageSquare className="w-4 h-4" />
-                      پاسخ‌ها و به‌روزرسانی‌ها
-                    </h4>
+                      ارسال پاسخ
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Responses */}
+              {selectedTicket.responses && selectedTicket.responses.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4" />
+                      پاسخ‌ها و تعاملات
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
                     <div className="space-y-4">
-                      {selectedTicket.responses.map((response: any, index: number) => (
-                        <div key={index} className="border rounded-lg p-4">
+                      {selectedTicket.responses.map((response, index) => (
+                        <div
+                          key={response.id || index}
+                          className={`p-3 rounded-lg ${
+                            response.type === "admin" ? "bg-blue-50 border-r-4 border-blue-500" : "bg-gray-50"
+                          }`}
+                        >
                           <div className="flex justify-between items-start mb-2">
                             <div className="flex items-center gap-2">
                               <Avatar className="w-6 h-6">
                                 <AvatarFallback className="text-xs">
-                                  {getAvatarFallback(response.technicianName)}
+                                  {getAvatarFallback(response.author)}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="font-medium text-sm">
-                                {getDisplayName(response.technicianName, "تکنسین نامشخص")}
-                              </span>
+                              <span className="text-sm font-medium">{getDisplayName(response.author)}</span>
+                              {response.type === "admin" && (
+                                <Badge variant="secondary" className="text-xs">
+                                  مدیر
+                                </Badge>
+                              )}
                             </div>
-                            <div className="text-left">
-                              <Badge className={statusColors[response.status] || statusColors.open}>
-                                {statusLabels[response.status] || "نامشخص"}
-                              </Badge>
-                              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />
-                                {response.timestamp
-                                  ? `${safeDate(response.timestamp)} - ${new Date(response.timestamp).toLocaleTimeString("fa-IR")}`
-                                  : "زمان نامشخص"}
-                              </p>
-                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              {response.timestamp ? new Date(response.timestamp).toLocaleDateString("fa-IR") : "نامشخص"}
+                            </span>
                           </div>
-                          <div className="bg-muted/50 p-3 rounded text-right">
-                            <p className="whitespace-pre-wrap">
-                              {safeString(response.message) || "پیامی ارسال نشده است"}
-                            </p>
-                          </div>
+                          <p className="text-sm">{safeString(response.text)}</p>
                         </div>
                       ))}
                     </div>
-                  </div>
-                )}
-              </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Response Dialog */}
+      <Dialog open={responseDialogOpen} onOpenChange={setResponseDialogOpen}>
+        <DialogContent className="max-w-2xl" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right">ارسال پاسخ به تیکت {selectedTicket?.id}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="response">متن پاسخ</Label>
+              <Textarea
+                id="response"
+                placeholder="پاسخ خود را اینجا بنویسید..."
+                value={responseText}
+                onChange={(e) => setResponseText(e.target.value)}
+                className="min-h-32 text-right"
+                dir="rtl"
+              />
+            </div>
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={() => setResponseDialogOpen(false)}>
+                انصراف
+              </Button>
+              <Button onClick={handleSendResponse} disabled={!responseText.trim()} className="gap-2">
+                <MessageSquare className="w-4 h-4" />
+                ارسال پاسخ
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

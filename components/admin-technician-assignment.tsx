@@ -35,6 +35,21 @@ import {
 } from "lucide-react"
 import { AssignmentCriteriaDialog } from "./assignment-criteria-dialog"
 
+// Helper functions for safe string operations
+const safeString = (value: any): string => {
+  return value && typeof value === "string" ? value : ""
+}
+
+const getAvatarFallback = (name: any): string => {
+  const safeName = safeString(name)
+  return safeName.length > 0 ? safeName.charAt(0).toUpperCase() : "?"
+}
+
+const getDisplayName = (name: any): string => {
+  const safeName = safeString(name)
+  return safeName || "نامشخص"
+}
+
 // Enhanced automatic assignment logic with multiple criteria
 const getAutomaticAssignment = (ticket: any, technicians: any[]) => {
   const availableTechnicians = technicians.filter((tech) => tech.status === "available")
@@ -70,7 +85,7 @@ const calculateComprehensiveScore = (technician: any, ticket: any) => {
   }
 
   // 1. Specialty Match (40% weight)
-  if (technician.specialties.includes(ticket.category)) {
+  if (technician.specialties && technician.specialties.includes(ticket.category)) {
     score += weights.specialty
     // Bonus for primary specialty
     if (technician.specialties[0] === ticket.category) {
@@ -146,7 +161,7 @@ const getBonusScore = (technician: any, ticket: any) => {
 
   // Specialty depth bonus (multiple related specialties)
   const relatedSpecialties = getRelatedSpecialties(ticket.category)
-  const matchingSpecialties = technician.specialties.filter((s) => relatedSpecialties.includes(s))
+  const matchingSpecialties = technician.specialties?.filter((s) => relatedSpecialties.includes(s)) || []
   if (matchingSpecialties.length > 1) {
     bonus += 3
   }
@@ -174,8 +189,8 @@ const getRelatedSpecialties = (category: string) => {
 const getMatchReasons = (technician: any, ticket: any) => {
   const reasons = []
 
-  if (technician.specialties.includes(ticket.category)) {
-    reasons.push(`متخصص ${categoryLabels[ticket.category]}`)
+  if (technician.specialties && technician.specialties.includes(ticket.category)) {
+    reasons.push(`متخصص ${categoryLabels[ticket.category] || ticket.category}`)
   }
 
   if (technician.rating >= 4.5) {
@@ -198,7 +213,7 @@ const getMatchReasons = (technician: any, ticket: any) => {
   }
 
   if (technician.rating >= priorityRequirements[ticket.priority]) {
-    reasons.push(`مناسب برای اولویت ${priorityLabels[ticket.priority]}`)
+    reasons.push(`مناسب برای اولویت ${priorityLabels[ticket.priority] || ticket.priority}`)
   }
 
   return reasons
@@ -319,18 +334,23 @@ export function AdminTechnicianAssignment({ tickets, onTicketUpdate }: AdminTech
 
   // Filter tickets for assignment view
   const filteredTickets = tickets.filter((ticket) => {
+    const safeTitle = safeString(ticket?.title)
+    const safeDescription = safeString(ticket?.description)
+    const safeId = safeString(ticket?.id)
+    const safeClientName = safeString(ticket?.clientName)
+
     const matchesSearch =
-      ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ticket.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ticket.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ticket.clientName.toLowerCase().includes(searchQuery.toLowerCase())
+      safeTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      safeDescription.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      safeId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      safeClientName.toLowerCase().includes(searchQuery.toLowerCase())
 
     const matchesStatus =
       filterStatus === "all" ||
-      (filterStatus === "unassigned" && !ticket.assignedTo) ||
-      (filterStatus === "assigned" && ticket.assignedTo)
+      (filterStatus === "unassigned" && !ticket?.assignedTo) ||
+      (filterStatus === "assigned" && ticket?.assignedTo)
 
-    const matchesPriority = filterPriority === "all" || ticket.priority === filterPriority
+    const matchesPriority = filterPriority === "all" || ticket?.priority === filterPriority
 
     return matchesSearch && matchesStatus && matchesPriority
   })
@@ -350,7 +370,7 @@ export function AdminTechnicianAssignment({ tickets, onTicketUpdate }: AdminTech
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedTickets(filteredTickets.map((ticket) => ticket.id))
+      setSelectedTickets(filteredTickets.map((ticket) => ticket?.id).filter(Boolean))
     } else {
       setSelectedTickets([])
     }
@@ -376,7 +396,7 @@ export function AdminTechnicianAssignment({ tickets, onTicketUpdate }: AdminTech
 
   const handleBulkAssign = (technicianId: string, technicianName: string) => {
     selectedTickets.forEach((ticketId) => {
-      const ticket = tickets.find((t) => t.id === ticketId)
+      const ticket = tickets.find((t) => t?.id === ticketId)
       onTicketUpdate(ticketId, {
         assignedTo: technicianId,
         assignedTechnicianName: technicianName,
@@ -422,7 +442,7 @@ export function AdminTechnicianAssignment({ tickets, onTicketUpdate }: AdminTech
   // Handle bulk automatic assignment
   const handleBulkAutoAssign = () => {
     const unassignedTickets = selectedTickets
-      .map((id) => filteredTickets.find((t) => t.id === id))
+      .map((id) => filteredTickets.find((t) => t?.id === id))
       .filter((ticket) => ticket && !ticket.assignedTo)
 
     const assignments = unassignedTickets.map((ticket) => {
@@ -476,7 +496,7 @@ export function AdminTechnicianAssignment({ tickets, onTicketUpdate }: AdminTech
     let score = 0
 
     // Specialty match
-    if (technician.specialties.includes(ticket.category)) {
+    if (technician.specialties && technician.specialties.includes(ticket?.category)) {
       score += 50
     }
 
@@ -486,10 +506,10 @@ export function AdminTechnicianAssignment({ tickets, onTicketUpdate }: AdminTech
     }
 
     // Workload (fewer active tickets is better)
-    score += Math.max(0, 20 - technician.activeTickets * 5)
+    score += Math.max(0, 20 - (technician.activeTickets || 0) * 5)
 
     // Rating
-    score += technician.rating * 10
+    score += (technician.rating || 0) * 10
 
     return score
   }
@@ -633,7 +653,9 @@ export function AdminTechnicianAssignment({ tickets, onTicketUpdate }: AdminTech
               <TableBody>
                 {filteredTickets.length > 0 ? (
                   filteredTickets.map((ticket) => {
-                    const CategoryIcon = categoryIcons[ticket.category]
+                    if (!ticket) return null
+
+                    const CategoryIcon = categoryIcons[ticket.category] || HardDrive
                     const isSelected = selectedTickets.includes(ticket.id)
 
                     return (
@@ -644,29 +666,33 @@ export function AdminTechnicianAssignment({ tickets, onTicketUpdate }: AdminTech
                             onCheckedChange={(checked) => handleSelectTicket(ticket.id, checked as boolean)}
                           />
                         </TableCell>
-                        <TableCell className="font-mono text-sm">{ticket.id}</TableCell>
+                        <TableCell className="font-mono text-sm">{safeString(ticket.id)}</TableCell>
                         <TableCell className="max-w-xs">
-                          <div className="truncate" title={ticket.title}>
-                            {ticket.title}
+                          <div className="truncate" title={safeString(ticket.title)}>
+                            {getDisplayName(ticket.title)}
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge className={priorityColors[ticket.priority]}>{priorityLabels[ticket.priority]}</Badge>
+                          <Badge className={priorityColors[ticket.priority] || priorityColors.medium}>
+                            {priorityLabels[ticket.priority] || ticket.priority}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <CategoryIcon className="w-4 h-4" />
-                            <span className="text-sm">{categoryLabels[ticket.category]}</span>
+                            <span className="text-sm">{categoryLabels[ticket.category] || ticket.category}</span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Avatar className="w-6 h-6">
-                              <AvatarFallback className="text-xs">{ticket.clientName.charAt(0)}</AvatarFallback>
+                              <AvatarFallback className="text-xs">
+                                {getAvatarFallback(ticket.clientName)}
+                              </AvatarFallback>
                             </Avatar>
                             <div>
-                              <div className="text-sm font-medium">{ticket.clientName}</div>
-                              <div className="text-xs text-muted-foreground">{ticket.clientEmail}</div>
+                              <div className="text-sm font-medium">{getDisplayName(ticket.clientName)}</div>
+                              <div className="text-xs text-muted-foreground">{safeString(ticket.clientEmail)}</div>
                             </div>
                           </div>
                         </TableCell>
@@ -675,17 +701,17 @@ export function AdminTechnicianAssignment({ tickets, onTicketUpdate }: AdminTech
                             <div className="flex items-center gap-2">
                               <Avatar className="w-6 h-6">
                                 <AvatarFallback className="text-xs">
-                                  {ticket.assignedTechnicianName.charAt(0)}
+                                  {getAvatarFallback(ticket.assignedTechnicianName)}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="text-sm">{ticket.assignedTechnicianName}</span>
+                              <span className="text-sm">{getDisplayName(ticket.assignedTechnicianName)}</span>
                             </div>
                           ) : (
                             <span className="text-sm text-muted-foreground">تعیین نشده</span>
                           )}
                         </TableCell>
                         <TableCell className="text-sm">
-                          {new Date(ticket.createdAt).toLocaleDateString("fa-IR")}
+                          {ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString("fa-IR") : "نامشخص"}
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1">
@@ -752,14 +778,16 @@ export function AdminTechnicianAssignment({ tickets, onTicketUpdate }: AdminTech
             <div className="space-y-6">
               {/* Ticket Info */}
               <div className="bg-muted p-4 rounded-lg">
-                <h4 className="font-medium mb-2">{selectedTicket.title}</h4>
+                <h4 className="font-medium mb-2">{getDisplayName(selectedTicket.title)}</h4>
                 <div className="flex gap-2 mb-2">
-                  <Badge className={priorityColors[selectedTicket.priority]}>
-                    {priorityLabels[selectedTicket.priority]}
+                  <Badge className={priorityColors[selectedTicket.priority] || priorityColors.medium}>
+                    {priorityLabels[selectedTicket.priority] || selectedTicket.priority}
                   </Badge>
-                  <Badge variant="outline">{categoryLabels[selectedTicket.category]}</Badge>
+                  <Badge variant="outline">{categoryLabels[selectedTicket.category] || selectedTicket.category}</Badge>
                 </div>
-                <p className="text-sm text-muted-foreground">درخواست‌کننده: {selectedTicket.clientName}</p>
+                <p className="text-sm text-muted-foreground">
+                  درخواست‌کننده: {getDisplayName(selectedTicket.clientName)}
+                </p>
               </div>
 
               <Separator />
@@ -780,32 +808,32 @@ export function AdminTechnicianAssignment({ tickets, onTicketUpdate }: AdminTech
                       >
                         <div className="flex items-center gap-3">
                           <Avatar className="w-10 h-10">
-                            <AvatarFallback>{technician.name.charAt(0)}</AvatarFallback>
+                            <AvatarFallback>{getAvatarFallback(technician.name)}</AvatarFallback>
                           </Avatar>
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="font-medium">{technician.name}</span>
+                              <span className="font-medium">{getDisplayName(technician.name)}</span>
                               {getStatusIcon(technician.status)}
                               <span className="text-xs text-muted-foreground">{getStatusLabel(technician.status)}</span>
                             </div>
                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
                               <div className="flex items-center gap-1">
                                 <Star className="w-3 h-3 text-yellow-500" />
-                                <span>{technician.rating}</span>
+                                <span>{technician.rating || 0}</span>
                               </div>
-                              <span>تیکت‌های فعال: {technician.activeTickets}</span>
-                              <span>تکمیل شده: {technician.completedTickets}</span>
+                              <span>تیکت‌های فعال: {technician.activeTickets || 0}</span>
+                              <span>تکمیل شده: {technician.completedTickets || 0}</span>
                             </div>
                             <div className="flex gap-1 mt-1">
-                              {technician.specialties.map((specialty) => {
-                                const SpecialtyIcon = categoryIcons[specialty]
+                              {(technician.specialties || []).map((specialty) => {
+                                const SpecialtyIcon = categoryIcons[specialty] || HardDrive
                                 return (
                                   <div
                                     key={specialty}
                                     className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs"
                                   >
                                     <SpecialtyIcon className="w-3 h-3" />
-                                    <span>{categoryLabels[specialty]}</span>
+                                    <span>{categoryLabels[specialty] || specialty}</span>
                                   </div>
                                 )
                               })}
@@ -840,15 +868,15 @@ export function AdminTechnicianAssignment({ tickets, onTicketUpdate }: AdminTech
                     >
                       <div className="flex items-center gap-2">
                         <Avatar className="w-8 h-8">
-                          <AvatarFallback className="text-sm">{technician.name.charAt(0)}</AvatarFallback>
+                          <AvatarFallback className="text-sm">{getAvatarFallback(technician.name)}</AvatarFallback>
                         </Avatar>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">{technician.name}</span>
+                            <span className="text-sm font-medium">{getDisplayName(technician.name)}</span>
                             {getStatusIcon(technician.status)}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            فعال: {technician.activeTickets} | تکمیل: {technician.completedTickets}
+                            فعال: {technician.activeTickets || 0} | تکمیل: {technician.completedTickets || 0}
                           </div>
                         </div>
                       </div>
@@ -885,16 +913,16 @@ export function AdminTechnicianAssignment({ tickets, onTicketUpdate }: AdminTech
                   >
                     <div className="flex items-center gap-3">
                       <Avatar className="w-8 h-8">
-                        <AvatarFallback>{technician.name.charAt(0)}</AvatarFallback>
+                        <AvatarFallback>{getAvatarFallback(technician.name)}</AvatarFallback>
                       </Avatar>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-medium">{technician.name}</span>
+                          <span className="font-medium">{getDisplayName(technician.name)}</span>
                           {getStatusIcon(technician.status)}
                           <span className="text-xs text-muted-foreground">{getStatusLabel(technician.status)}</span>
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          فعال: {technician.activeTickets} | امتیاز: {technician.rating}
+                          فعال: {technician.activeTickets || 0} | امتیاز: {technician.rating || 0}
                         </div>
                       </div>
                     </div>
@@ -930,19 +958,21 @@ export function AdminTechnicianAssignment({ tickets, onTicketUpdate }: AdminTech
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {pendingAutoAssignments.map(({ ticket, technician, success }, index) => (
                 <div
-                  key={ticket.id}
+                  key={ticket?.id || index}
                   className={`p-4 border rounded-lg ${success ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="font-medium">{ticket.title}</span>
-                        <Badge className={priorityColors[ticket.priority]} variant="outline">
-                          {priorityLabels[ticket.priority]}
+                        <span className="font-medium">{getDisplayName(ticket?.title)}</span>
+                        <Badge className={priorityColors[ticket?.priority] || priorityColors.medium} variant="outline">
+                          {priorityLabels[ticket?.priority] || ticket?.priority}
                         </Badge>
-                        <Badge variant="outline">{categoryLabels[ticket.category]}</Badge>
+                        <Badge variant="outline">{categoryLabels[ticket?.category] || ticket?.category}</Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground">درخواست‌کننده: {ticket.clientName}</p>
+                      <p className="text-sm text-muted-foreground">
+                        درخواست‌کننده: {getDisplayName(ticket?.clientName)}
+                      </p>
                     </div>
 
                     <div className="text-left">
@@ -950,11 +980,11 @@ export function AdminTechnicianAssignment({ tickets, onTicketUpdate }: AdminTech
                         <div className="flex items-center gap-2">
                           <CheckCircle className="w-4 h-4 text-green-600" />
                           <div>
-                            <p className="font-medium text-green-800">{technician.name}</p>
+                            <p className="font-medium text-green-800">{getDisplayName(technician.name)}</p>
                             <div className="flex items-center gap-1 text-xs text-green-600">
                               <Star className="w-3 h-3" />
-                              <span>{technician.rating}</span>
-                              <span>• {technician.activeTickets} فعال</span>
+                              <span>{technician.rating || 0}</span>
+                              <span>• {technician.activeTickets || 0} فعال</span>
                             </div>
                           </div>
                         </div>
