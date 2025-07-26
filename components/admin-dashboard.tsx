@@ -1,61 +1,57 @@
 "use client"
-
-import type React from "react"
-
-import { useState } from "react"
-import type { Ticket } from "@/types"
-import { AdminTicketManagement } from "./admin-ticket-management"
-import { AdminTechnicianAssignment } from "./admin-technician-assignment"
-import { CategoryManagement } from "./category-management"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { TicketIcon, UserPlus, FolderTree } from "lucide-react"
-import { EnhancedAutoAssignment } from "./enhanced-auto-assignment"
-import { Settings } from "lucide-react"
+import { AdminTicketManagement } from "@/components/admin-ticket-management"
+import { CategoryManagement } from "@/components/category-management"
+import { AdminTechnicianAssignment } from "@/components/admin-technician-assignment"
+import { EnhancedAutoAssignment } from "@/components/enhanced-auto-assignment"
 
 interface AdminDashboardProps {
-  tickets: Ticket[]
-  onTicketUpdate: (ticketId: string, updates: Partial<Ticket>) => void
+  tickets: any[]
+  onTicketUpdate: (ticketId: string, updates: any) => void
+  categories: any
+  onCategoriesUpdate: (categories: any) => void
 }
 
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({ tickets, onTicketUpdate }) => {
-  const [activeTab, setActiveTab] = useState("tickets")
-
+export function AdminDashboard({ tickets, onTicketUpdate, categories, onCategoriesUpdate }: AdminDashboardProps) {
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
-      <TabsList className="grid w-full grid-cols-4">
-        <TabsTrigger value="tickets" className="gap-2">
-          <TicketIcon className="w-4 h-4" />
-          مدیریت کامل تیکت‌ها
-        </TabsTrigger>
-        <TabsTrigger value="assignment" className="gap-2">
-          <UserPlus className="w-4 h-4" />
-          تعیین تکنسین
-        </TabsTrigger>
-        <TabsTrigger value="categories" className="gap-2">
-          <FolderTree className="w-4 h-4" />
-          مدیریت دسته‌بندی
-        </TabsTrigger>
-        <TabsTrigger value="auto-settings" className="gap-2">
-          <Settings className="w-4 h-4" />
-          تنظیمات خودکار
-        </TabsTrigger>
-      </TabsList>
+    <div className="space-y-6" dir="rtl">
+      <div className="text-right">
+        <h2 className="text-2xl font-bold">پنل مدیریت</h2>
+        <p className="text-muted-foreground">مدیریت کامل سیستم تیکتینگ</p>
+      </div>
 
-      <TabsContent value="tickets">
-        <AdminTicketManagement tickets={tickets} onTicketUpdate={onTicketUpdate} />
-      </TabsContent>
+      <Tabs defaultValue="tickets" className="w-full" dir="rtl">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="tickets" className="text-right">
+            مدیریت تیکت‌ها
+          </TabsTrigger>
+          <TabsTrigger value="categories" className="text-right">
+            دسته‌بندی‌ها
+          </TabsTrigger>
+          <TabsTrigger value="assignment" className="text-right">
+            تخصیص تکنسین‌ها
+          </TabsTrigger>
+          <TabsTrigger value="auto-assignment" className="text-right">
+            تخصیص خودکار
+          </TabsTrigger>
+        </TabsList>
 
-      <TabsContent value="assignment">
-        <AdminTechnicianAssignment tickets={tickets} onTicketUpdate={onTicketUpdate} />
-      </TabsContent>
+        <TabsContent value="tickets" className="space-y-4">
+          <AdminTicketManagement tickets={tickets} onTicketUpdate={onTicketUpdate} />
+        </TabsContent>
 
-      <TabsContent value="categories">
-        <CategoryManagement />
-      </TabsContent>
+        <TabsContent value="categories" className="space-y-4">
+          <CategoryManagement categories={categories} onCategoriesUpdate={onCategoriesUpdate} />
+        </TabsContent>
 
-      <TabsContent value="auto-settings">
-        <EnhancedAutoAssignment tickets={tickets} onTicketUpdate={onTicketUpdate} />
-      </TabsContent>
-    </Tabs>
+        <TabsContent value="assignment" className="space-y-4">
+          <AdminTechnicianAssignment tickets={tickets} onTicketUpdate={onTicketUpdate} />
+        </TabsContent>
+
+        <TabsContent value="auto-assignment" className="space-y-4">
+          <EnhancedAutoAssignment />
+        </TabsContent>
+      </Tabs>
+    </div>
   )
 }

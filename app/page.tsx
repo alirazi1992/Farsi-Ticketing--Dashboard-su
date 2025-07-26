@@ -324,6 +324,15 @@ export default function ITServiceDashboard() {
     )
   }
 
+  // Handle categories update
+  const handleCategoriesUpdate = (newCategories: any) => {
+    setCategories(newCategories)
+    toast({
+      title: "دسته‌بندی‌ها به‌روزرسانی شد",
+      description: "تغییرات دسته‌بندی‌ها در تمام بخش‌ها اعمال شد",
+    })
+  }
+
   // Get dashboard content based on user role
   const getDashboardContent = () => {
     if (!user) {
@@ -368,11 +377,25 @@ export default function ITServiceDashboard() {
 
     switch (user.role) {
       case "admin":
-        return <AdminDashboard tickets={tickets} onTicketUpdate={handleTicketUpdate} />
+        return (
+          <AdminDashboard
+            tickets={tickets}
+            onTicketUpdate={handleTicketUpdate}
+            categories={categories}
+            onCategoriesUpdate={handleCategoriesUpdate}
+          />
+        )
       case "engineer":
         return <TechnicianDashboard tickets={tickets} onTicketUpdate={handleTicketUpdate} currentUser={user} />
       default:
-        return <ClientDashboard tickets={tickets} onTicketCreate={handleTicketCreate} currentUser={user} />
+        return (
+          <ClientDashboard
+            tickets={tickets}
+            onTicketCreate={handleTicketCreate}
+            currentUser={user}
+            categories={categories}
+          />
+        )
     }
   }
 
