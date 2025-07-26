@@ -41,9 +41,6 @@ import {
   Filter,
   RefreshCw,
   User,
-  Phone,
-  Mail,
-  Building,
   Calendar,
   FileText,
   Settings,
@@ -228,10 +225,6 @@ export function ClientDashboard({ onLogout }: ClientDashboardProps) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center gap-2 h-auto p-2 font-iran">
                     <ChevronDown className="h-4 w-4" />
-                    <div className="text-right">
-                      <div className="text-sm font-medium font-iran">{user?.name}</div>
-                      <div className="text-xs text-muted-foreground font-iran">کاربر</div>
-                    </div>
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.name} />
                       <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xs font-iran">
@@ -252,10 +245,7 @@ export function ClientDashboard({ onLogout }: ClientDashboardProps) {
 
                   <DropdownMenuSeparator />
 
-                  <DropdownMenuItem
-                    className="text-right font-iran cursor-pointer"
-                    onClick={() => setActiveTab("profile")}
-                  >
+                  <DropdownMenuItem className="text-right font-iran cursor-pointer">
                     <User className="ml-2 h-4 w-4" />
                     پروفایل
                   </DropdownMenuItem>
@@ -334,7 +324,7 @@ export function ClientDashboard({ onLogout }: ClientDashboardProps) {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4" dir="rtl">
-          <TabsList className="grid w-full grid-cols-3 bg-white" dir="rtl">
+          <TabsList className="grid w-full grid-cols-2 bg-white" dir="rtl">
             <TabsTrigger value="tickets" className="gap-2 font-iran">
               <Ticket className="w-4 h-4" />
               تیکت‌های من
@@ -342,10 +332,6 @@ export function ClientDashboard({ onLogout }: ClientDashboardProps) {
             <TabsTrigger value="new-ticket" className="gap-2 font-iran">
               <Plus className="w-4 h-4" />
               تیکت جدید
-            </TabsTrigger>
-            <TabsTrigger value="profile" className="gap-2 font-iran">
-              <User className="w-4 h-4" />
-              پروفایل
             </TabsTrigger>
           </TabsList>
 
@@ -556,76 +542,6 @@ export function ClientDashboard({ onLogout }: ClientDashboardProps) {
 
           <TabsContent value="new-ticket">
             <SimpleTicketForm onCancel={() => setActiveTab("tickets")} />
-          </TabsContent>
-
-          <TabsContent value="profile" className="space-y-4" dir="rtl">
-            <Card dir="rtl">
-              <CardHeader>
-                <CardTitle className="text-right flex items-center gap-2 font-iran">
-                  <User className="w-5 h-5" />
-                  اطلاعات کاربری
-                </CardTitle>
-              </CardHeader>
-              <CardContent dir="rtl">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3 justify-end">
-                      <div className="text-right">
-                        <p className="font-semibold font-iran">{user?.name}</p>
-                        <p className="text-sm text-muted-foreground font-iran">نام کامل</p>
-                      </div>
-                      <User className="w-8 h-8 text-blue-600" />
-                    </div>
-
-                    <div className="flex items-center gap-3 justify-end">
-                      <div className="text-right">
-                        <p className="font-semibold font-iran">{user?.email}</p>
-                        <p className="text-sm text-muted-foreground font-iran">ایمیل</p>
-                      </div>
-                      <Mail className="w-8 h-8 text-blue-600" />
-                    </div>
-
-                    <div className="flex items-center gap-3 justify-end">
-                      <div className="text-right">
-                        <p className="font-semibold font-iran">{user?.phone}</p>
-                        <p className="text-sm text-muted-foreground font-iran">تلفن</p>
-                      </div>
-                      <Phone className="w-8 h-8 text-blue-600" />
-                    </div>
-
-                    <div className="flex items-center gap-3 justify-end">
-                      <div className="text-right">
-                        <p className="font-semibold font-iran">{user?.department}</p>
-                        <p className="text-sm text-muted-foreground font-iran">بخش</p>
-                      </div>
-                      <Building className="w-8 h-8 text-blue-600" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="font-semibold text-right font-iran">آمار تیکت‌ها</h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="font-iran">{stats.total}</span>
-                        <span className="text-muted-foreground font-iran">کل تیکت‌ها</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="font-iran">{stats.resolved}</span>
-                        <span className="text-muted-foreground font-iran">حل شده</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="font-iran">{stats.inProgress}</span>
-                        <span className="text-muted-foreground font-iran">در حال بررسی</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="font-iran">{stats.open}</span>
-                        <span className="text-muted-foreground font-iran">باز</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
       </div>

@@ -135,7 +135,7 @@ export function SimpleTicketForm({ onCancel }: SimpleTicketFormProps) {
         <CardContent className="space-y-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* User Information Display */}
-            <div className="bg-blue-50 rounded-lg p-4 border-r-4 border-r-blue-500">
+            <div className="bg-blue-50 rounded-lg p-4 border-r-4 border-r-blue-500" dir="rtl">
               <h3 className="font-semibold mb-3 text-right font-iran">اطلاعات کاربر</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center gap-2 justify-end">
