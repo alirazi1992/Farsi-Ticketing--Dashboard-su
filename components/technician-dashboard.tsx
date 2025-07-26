@@ -606,7 +606,7 @@ export function TechnicianDashboard({ onLogout }: TechnicianDashboardProps) {
 
                               {/* Responses */}
                               <div className="space-y-3 max-h-60 overflow-y-auto">
-                                {ticket.responses.map((response) => (
+                                {ticket.responses.map((response: any) => (
                                   <div
                                     key={response.id}
                                     className={`rounded-lg p-4 ${

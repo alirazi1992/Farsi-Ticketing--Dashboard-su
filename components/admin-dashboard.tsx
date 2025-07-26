@@ -12,6 +12,7 @@ import { CategoryManagement } from "@/components/category-management"
 import { EnhancedAutoAssignment } from "@/components/enhanced-auto-assignment"
 import { AutoAssignmentSettings } from "@/components/auto-assignment-settings"
 import { useAuth } from "@/lib/auth-context"
+import { useTickets } from "@/lib/ticket-context"
 import { toast } from "@/hooks/use-toast"
 import {
   BarChart3,
@@ -24,69 +25,6 @@ import {
   Settings,
   Target,
   Brain,
-  ToggleLeftIcon as Left,
-  ArrowRightIcon as Right,
-  ToggleLeftIcon as Left,
-  ArrowRightIcon as Right,
-  CornerRightUpIcon as Corner,
-  CornerRightUpIcon as Corner,
-  CornerRightUpIcon as Corner,
-  CornerRightUpIcon as Corner,
-  CornerRightUpIcon as Corner,
-  CornerRightUpIcon as Corner,
-  CornerRightUpIcon as Corner,
-  MicIcon as Microphone,
-  CircleStopIcon as Stop,
-  BoxIcon as Bucket,
-  AlignCenterIcon as Align,
-  AlignCenterIcon as Align,
-  AlignCenterIcon as Align,
-  AlignCenterIcon as Align,
-  AlignCenterIcon as Align,
-  AlignCenterIcon as Align,
-  AlignCenterIcon as Align,
-  AlignCenterIcon as Align,
-  AlignCenterIcon as Align,
-  ShareIcon as Distribute,
-  ShareIcon as Distribute,
-  FlipVerticalIcon as Flip,
-  FlipVerticalIcon as Flip,
-  Rotate3dIcon as Rotate,
-  Rotate3dIcon as Rotate,
-  Rotate3dIcon as Rotate,
-  ComponentIcon as Aspect,
-  ZoomInIcon as Zoom,
-  ZoomInIcon as Zoom,
-  EraserIcon as Emboss,
-  EraserIcon as Engrave,
-  SmileIcon as Smooth,
-  CornerRightUpIcon as Corner,
-  PlugIcon as Fill,
-  FileArchiveIcon as Compress,
-  FlipVerticalIcon as Invert,
-  AlignCenterIcon as Align,
-  ToggleLeftIcon as Left,
-  ArrowRightIcon as Right,
-  FlipHorizontalIcon as Horizontal,
-  EqualIcon as Equals,
-  ListEndIcon as End,
-  RatioIcon as Balance,
-  AlignCenterIcon as Center,
-  BatteryMediumIcon as Middle,
-  PointerIcon as Perspective,
-  AnvilIcon as Angle,
-  RouteIcon as Path,
-  CircleIcon as SuccessCircle,
-  MemoryStickIcon as Memory,
-  RepeatIcon as Record,
-  LightbulbIcon as Brightness,
-  GhostIcon as Shadow,
-  CircleIcon as DiscoveryCircle,
-  AnvilIcon as Alt,
-  CircleIcon as SecurityCircle,
-  TimerIcon as Stopwatch,
-  MegaphoneIcon as Noise,
-  StickyNoteIcon as NoteIcon,
 } from "lucide-react"
 
 interface AdminDashboardProps {
@@ -95,62 +33,13 @@ interface AdminDashboardProps {
 
 export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const { user } = useAuth()
+  const { tickets, updateTicket, assignTicket } = useTickets()
   const [activeTab, setActiveTab] = useState("overview")
-
-  // Mock data for the dashboard
-  const [tickets, setTickets] = useState([
-    {
-      id: "1",
-      title: "مشکل در سیستم ایمیل",
-      category: "email",
-      priority: "high",
-      status: "open",
-      assignedTo: null,
-      assignedTechnicianName: null,
-      createdAt: "2024-01-15T10:30:00Z",
-      description: "کاربران قادر به دریافت ایمیل نیستند",
-      clientName: "احمد رضایی",
-      clientEmail: "ahmad@company.com",
-      clientPhone: "09123456789",
-      clientDepartment: "IT",
-    },
-    {
-      id: "2",
-      title: "خرابی پرینتر اداری",
-      category: "hardware",
-      priority: "medium",
-      status: "in-progress",
-      assignedTo: "tech-001",
-      assignedTechnicianName: "علی احمدی",
-      createdAt: "2024-01-15T09:15:00Z",
-      description: "پرینتر طبقه دوم کار نمی‌کند",
-      clientName: "سارا محمدی",
-      clientEmail: "sara@company.com",
-      clientPhone: "09987654321",
-      clientDepartment: "HR",
-    },
-    {
-      id: "3",
-      title: "مشکل دسترسی به سیستم",
-      category: "access",
-      priority: "urgent",
-      status: "resolved",
-      assignedTo: "tech-002",
-      assignedTechnicianName: "محمد حسینی",
-      createdAt: "2024-01-15T08:45:00Z",
-      description: "کاربر نمی‌تواند وارد سیستم شود",
-      clientName: "فاطمه کریمی",
-      clientEmail: "fateme@company.com",
-      clientPhone: "09112233445",
-      clientDepartment: "Finance",
-    },
-  ])
-
   const [autoAssignmentEnabled, setAutoAssignmentEnabled] = useState(true)
   const [smartAssignmentEnabled, setSmartAssignmentEnabled] = useState(true)
 
   const handleTicketUpdate = (ticketId: string, updates: any) => {
-    setTickets((prev) => prev.map((ticket) => (ticket.id === ticketId ? { ...ticket, ...updates } : ticket)))
+    updateTicket(ticketId, updates)
   }
 
   const handleAutoAssignment = () => {
@@ -170,11 +59,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
       )
 
       if (suitable) {
-        handleTicketUpdate(ticket.id, {
-          assignedTo: suitable.id,
-          assignedTechnicianName: suitable.name,
-          status: "in-progress",
-        })
+        assignTicket(ticket.id, suitable.id, suitable.name)
         assignedCount++
       }
     })
@@ -201,11 +86,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
       const bestTechnician = technicians.sort((a, b) => b.score - a.score || a.workload - b.workload)[0]
 
       if (bestTechnician) {
-        handleTicketUpdate(ticket.id, {
-          assignedTo: bestTechnician.id,
-          assignedTechnicianName: bestTechnician.name,
-          status: "in-progress",
-        })
+        assignTicket(ticket.id, bestTechnician.id, bestTechnician.name)
         assignedCount++
       }
     })
