@@ -16,6 +16,14 @@ export interface User {
 interface AuthContextType {
   user: User | null
   login: (email: string, password: string, role: string) => Promise<boolean>
+  register: (userData: {
+    name: string
+    email: string
+    phone?: string
+    department?: string
+    role: string
+    password: string
+  }) => Promise<boolean>
   logout: () => void
   isLoading: boolean
 }
@@ -52,42 +60,100 @@ const mockUsers: User[] = [
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     // Check for saved user in localStorage
     const savedUser = localStorage.getItem("currentUser")
     if (savedUser) {
-      setUser(JSON.parse(savedUser))
+      try {
+        setUser(JSON.parse(savedUser))
+      } catch (error) {
+        localStorage.removeItem("currentUser")
+      }
     }
-    setIsLoading(false)
   }, [])
 
   const login = async (email: string, password: string, role: string): Promise<boolean> => {
     setIsLoading(true)
 
-    // Convert role from Persian to English
-    const roleMap: { [key: string]: string } = {
-      مدیر: "admin",
-      تکنسین: "technician",
-      کاربر: "client",
+    // Simulate API delay
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    try {
+      // Convert role from Persian to English if needed
+      const roleMap: { [key: string]: string } = {
+        مدیر: "admin",
+        تکنسین: "technician",
+        کاربر: "client",
+        admin: "admin",
+        technician: "technician",
+        client: "client",
+      }
+
+      const englishRole = roleMap[role] || role
+
+      // Find user by email and role
+      const foundUser = mockUsers.find((u) => u.email === email && u.role === englishRole)
+
+      // Simple password check (in real app, this would be hashed)
+      if (foundUser && password === "123456") {
+        setUser(foundUser)
+        localStorage.setItem("currentUser", JSON.stringify(foundUser))
+        setIsLoading(false)
+        return true
+      }
+
+      setIsLoading(false)
+      return false
+    } catch (error) {
+      setIsLoading(false)
+      return false
     }
+  }
 
-    const englishRole = roleMap[role] || role
+  const register = async (userData: {
+    name: string
+    email: string
+    phone?: string
+    department?: string
+    role: string
+    password: string
+  }): Promise<boolean> => {
+    setIsLoading(true)
 
-    // Find user by email and role
-    const foundUser = mockUsers.find((u) => u.email === email && u.role === englishRole)
+    // Simulate API delay
+    await new Promise((resolve) => setTimeout(resolve, 1000))
 
-    // Simple password check (in real app, this would be hashed)
-    if (foundUser && password === "123456") {
-      setUser(foundUser)
-      localStorage.setItem("currentUser", JSON.stringify(foundUser))
+    try {
+      // Check if user already exists
+      const existingUser = mockUsers.find((u) => u.email === userData.email)
+      if (existingUser) {
+        setIsLoading(false)
+        return false
+      }
+
+      // Create new user
+      const newUser: User = {
+        id: Date.now().toString(),
+        name: userData.name,
+        email: userData.email,
+        role: userData.role as "admin" | "technician" | "client",
+        department: userData.department,
+        phone: userData.phone,
+      }
+
+      // Add to mock users (in real app, this would be API call)
+      mockUsers.push(newUser)
+
+      setUser(newUser)
+      localStorage.setItem("currentUser", JSON.stringify(newUser))
       setIsLoading(false)
       return true
+    } catch (error) {
+      setIsLoading(false)
+      return false
     }
-
-    setIsLoading(false)
-    return false
   }
 
   const logout = () => {
@@ -95,7 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("currentUser")
   }
 
-  return <AuthContext.Provider value={{ user, login, logout, isLoading }}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {
