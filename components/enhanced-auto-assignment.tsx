@@ -271,7 +271,7 @@ const defaultAssignmentRules = [
 ]
 
 interface EnhancedAutoAssignmentProps {
-  tickets: any[]
+  tickets?: any[]
   onTicketUpdate: (ticketId: string, updates: any) => void
 }
 
@@ -291,7 +291,7 @@ const priorityLabels = {
   low: "کم",
 }
 
-export function EnhancedAutoAssignment({ tickets, onTicketUpdate }: EnhancedAutoAssignmentProps) {
+export function EnhancedAutoAssignment({ tickets = [], onTicketUpdate }: EnhancedAutoAssignmentProps) {
   const [technicians, setTechnicians] = useState(enhancedTechnicians)
   const [criteriaWeights, setCriteriaWeights] = useState(defaultCriteriaWeights)
   const [assignmentRules, setAssignmentRules] = useState(defaultAssignmentRules)
@@ -360,9 +360,9 @@ export function EnhancedAutoAssignment({ tickets, onTicketUpdate }: EnhancedAuto
     const reasons = []
 
     if (scores.expertiseScore >= 90) {
-      reasons.push(`متخصص برتر در ${categoryLabels[ticket.category]}`)
+      reasons.push(`متخصص برتر در ${categoryLabels[ticket.category] || ticket.category}`)
     } else if (scores.expertiseScore >= 70) {
-      reasons.push(`تخصص مناسب در ${categoryLabels[ticket.category]}`)
+      reasons.push(`تخصص مناسب در ${categoryLabels[ticket.category] || ticket.category}`)
     }
 
     if (scores.availabilityScore >= 80) {
@@ -511,6 +511,8 @@ export function EnhancedAutoAssignment({ tickets, onTicketUpdate }: EnhancedAuto
 
   // Update analytics
   useEffect(() => {
+    if (!tickets || tickets.length === 0) return
+
     const assignedTickets = tickets.filter((ticket) => ticket.assignedTo)
     const totalAssignments = assignedTickets.length
     const avgSatisfaction =
@@ -762,7 +764,7 @@ export function EnhancedAutoAssignment({ tickets, onTicketUpdate }: EnhancedAuto
                       </div>
 
                       <div className="text-xs text-muted-foreground">
-                        <p>تخصص‌ها: {tech.specialties.map((s) => categoryLabels[s]).join("، ")}</p>
+                        <p>تخصص‌ها: {tech.specialties.map((s) => categoryLabels[s] || s).join("، ")}</p>
                         <p>گواهینامه‌ها: {tech.certifications.join("، ")}</p>
                       </div>
                     </div>
@@ -854,7 +856,8 @@ export function EnhancedAutoAssignment({ tickets, onTicketUpdate }: EnhancedAuto
                         <div className="text-right">
                           <h4 className="font-medium">{result.ticket.title}</h4>
                           <p className="text-sm text-muted-foreground">
-                            {categoryLabels[result.ticket.category]} | {priorityLabels[result.ticket.priority]}
+                            {categoryLabels[result.ticket.category] || result.ticket.category} |{" "}
+                            {priorityLabels[result.ticket.priority]}
                           </p>
                         </div>
                         <Badge className="bg-green-100 text-green-800">اطمینان {Math.round(result.confidence)}%</Badge>
@@ -993,7 +996,10 @@ export function EnhancedAutoAssignment({ tickets, onTicketUpdate }: EnhancedAuto
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-purple-600">
-                    {Math.round((tickets.filter((t) => t.assignedTo).length / tickets.length) * 100)}%
+                    {tickets.length > 0
+                      ? Math.round((tickets.filter((t) => t.assignedTo).length / tickets.length) * 100)
+                      : 0}
+                    %
                   </p>
                   <p className="text-sm text-muted-foreground">نرخ تعیین</p>
                 </div>
