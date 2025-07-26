@@ -3,17 +3,17 @@
 import type React from "react"
 
 import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { FileUpload } from "@/components/file-upload"
 import { useAuth } from "@/lib/auth-context"
 import { useTickets, ticketCategories } from "@/lib/ticket-context"
-import { FileUpload } from "@/components/file-upload"
 import { toast } from "@/hooks/use-toast"
-import { Send, User, Mail, Phone, Building, FileText, Flag, Upload, X } from "lucide-react"
+import { User, Mail, Phone, Building, Send, X } from "lucide-react"
 
 interface SimpleTicketFormProps {
   onCancel?: () => void
@@ -22,6 +22,7 @@ interface SimpleTicketFormProps {
 export function SimpleTicketForm({ onCancel }: SimpleTicketFormProps) {
   const { user } = useAuth()
   const { addTicket } = useTickets()
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -30,7 +31,6 @@ export function SimpleTicketForm({ onCancel }: SimpleTicketFormProps) {
     priority: "medium" as "low" | "medium" | "high" | "urgent",
   })
   const [attachments, setAttachments] = useState<File[]>([])
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({
@@ -41,17 +41,8 @@ export function SimpleTicketForm({ onCancel }: SimpleTicketFormProps) {
     }))
   }
 
-  const handleFileUpload = (files: File[]) => {
-    setAttachments((prev) => [...prev, ...files])
-  }
-
-  const removeAttachment = (index: number) => {
-    setAttachments((prev) => prev.filter((_, i) => i !== index))
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!user) return
 
     if (!formData.title.trim() || !formData.description.trim() || !formData.category) {
       toast({
@@ -66,29 +57,26 @@ export function SimpleTicketForm({ onCancel }: SimpleTicketFormProps) {
 
     try {
       // Simulate file upload delay
-      if (attachments.length > 0) {
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-      }
+      await new Promise((resolve) => setTimeout(resolve, 1000))
 
-      const newTicket = {
+      addTicket({
         title: formData.title,
         description: formData.description,
         category: formData.category,
         subcategory: formData.subcategory,
         priority: formData.priority,
-        status: "open" as const,
-        clientId: user.id,
-        clientName: user.name,
-        clientEmail: user.email,
-        clientPhone: user.phone || "",
-        clientDepartment: user.department || "",
-      }
-
-      addTicket(newTicket)
+        status: "open",
+        clientId: user?.id || "unknown",
+        clientName: user?.name || "کاربر ناشناس",
+        clientEmail: user?.email || "",
+        clientPhone: user?.phone || "",
+        clientDepartment: user?.department || "",
+        attachments: attachments.map((file) => file.name),
+      })
 
       toast({
-        title: "تیکت با موفقیت ایجاد شد",
-        description: "تیکت شما ثبت شد و به زودی بررسی خواهد شد",
+        title: "تیکت ثبت شد",
+        description: "تیکت شما با موفقیت ثبت شد و به زودی بررسی خواهد شد",
       })
 
       // Reset form
@@ -101,13 +89,14 @@ export function SimpleTicketForm({ onCancel }: SimpleTicketFormProps) {
       })
       setAttachments([])
 
+      // Go back to tickets list
       if (onCancel) {
         onCancel()
       }
     } catch (error) {
       toast({
         title: "خطا در ارسال",
-        description: "مشکلی در ارسال تیکت پیش آمد. لطفاً دوباره تلاش کنید",
+        description: "مشکلی در ثبت تیکت پیش آمد. لطفاً دوباره تلاش کنید",
         variant: "destructive",
       })
     } finally {
@@ -115,86 +104,89 @@ export function SimpleTicketForm({ onCancel }: SimpleTicketFormProps) {
     }
   }
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return "0 Bytes"
-    const k = 1024
-    const sizes = ["Bytes", "KB", "MB", "GB"]
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
-  }
+  const availableSubcategories = formData.category ? ticketCategories[formData.category] || [] : []
 
   return (
-    <div className="max-w-4xl mx-auto font-iran" dir="rtl">
+    <div className="space-y-6 font-iran" dir="rtl">
       <Card>
         <CardHeader>
-          <CardTitle className="text-right flex items-center gap-2 font-iran">
-            <FileText className="w-6 h-6 text-blue-600" />
-            ایجاد تیکت جدید
-          </CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-right font-iran">ثبت تیکت جدید</CardTitle>
+            {onCancel && (
+              <Button variant="ghost" size="sm" onClick={onCancel} className="gap-2 font-iran">
+                <X className="w-4 h-4" />
+                انصراف
+              </Button>
+            )}
+          </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* User Information Display */}
+            {/* User Information - RTL Layout */}
             <div className="bg-blue-50 rounded-lg p-4 border-r-4 border-r-blue-500" dir="rtl">
-              <h3 className="font-semibold mb-3 text-right font-iran">اطلاعات کاربر</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center gap-2 justify-end">
-                  <span className="font-medium font-iran">{user?.name}</span>
-                  <User className="w-4 h-4 text-blue-600" />
+              <h3 className="font-semibold mb-4 text-right font-iran">اطلاعات درخواست‌کننده</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4" dir="rtl">
+                <div className="flex items-center gap-3 justify-end" dir="rtl">
+                  <div className="text-right">
+                    <p className="font-medium font-iran">{user?.name}</p>
+                    <p className="text-sm text-muted-foreground font-iran">نام کامل</p>
+                  </div>
+                  <User className="w-5 h-5 text-blue-600" />
                 </div>
-                <div className="flex items-center gap-2 justify-end">
-                  <span className="font-iran">{user?.email}</span>
-                  <Mail className="w-4 h-4 text-blue-600" />
+
+                <div className="flex items-center gap-3 justify-end" dir="rtl">
+                  <div className="text-right">
+                    <p className="font-medium font-iran">{user?.email}</p>
+                    <p className="text-sm text-muted-foreground font-iran">ایمیل</p>
+                  </div>
+                  <Mail className="w-5 h-5 text-blue-600" />
                 </div>
-                <div className="flex items-center gap-2 justify-end">
-                  <span className="font-iran">{user?.phone}</span>
-                  <Phone className="w-4 h-4 text-blue-600" />
+
+                <div className="flex items-center gap-3 justify-end" dir="rtl">
+                  <div className="text-right">
+                    <p className="font-medium font-iran">{user?.phone}</p>
+                    <p className="text-sm text-muted-foreground font-iran">تلفن</p>
+                  </div>
+                  <Phone className="w-5 h-5 text-blue-600" />
                 </div>
-                <div className="flex items-center gap-2 justify-end">
-                  <span className="font-iran">{user?.department}</span>
-                  <Building className="w-4 h-4 text-blue-600" />
+
+                <div className="flex items-center gap-3 justify-end" dir="rtl">
+                  <div className="text-right">
+                    <p className="font-medium font-iran">{user?.department}</p>
+                    <p className="text-sm text-muted-foreground font-iran">بخش</p>
+                  </div>
+                  <Building className="w-5 h-5 text-blue-600" />
                 </div>
               </div>
             </div>
 
             {/* Ticket Details */}
             <div className="space-y-4">
-              <div>
-                <Label htmlFor="title" className="text-right block mb-2 font-iran">
+              <div className="space-y-2">
+                <Label htmlFor="title" className="text-right font-iran">
                   عنوان تیکت *
                 </Label>
                 <Input
                   id="title"
+                  placeholder="عنوان مشکل یا درخواست خود را وارد کنید..."
                   value={formData.title}
                   onChange={(e) => handleInputChange("title", e.target.value)}
-                  placeholder="عنوان مشکل یا درخواست خود را بنویسید..."
                   className="text-right font-iran"
                   dir="rtl"
                   required
                 />
               </div>
 
-              <div>
-                <Label htmlFor="description" className="text-right block mb-2 font-iran">
-                  توضیحات *
-                </Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => handleInputChange("description", e.target.value)}
-                  placeholder="توضیح کاملی از مشکل یا درخواست خود ارائه دهید..."
-                  className="text-right font-iran min-h-[120px]"
-                  dir="rtl"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="category" className="text-right block mb-2 font-iran">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="category" className="text-right font-iran">
                     دسته‌بندی *
                   </Label>
-                  <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
+                  <Select
+                    value={formData.category}
+                    onValueChange={(value) => handleInputChange("category", value)}
+                    dir="rtl"
+                  >
                     <SelectTrigger className="text-right font-iran" dir="rtl">
                       <SelectValue placeholder="انتخاب دسته‌بندی" />
                     </SelectTrigger>
@@ -208,109 +200,94 @@ export function SimpleTicketForm({ onCancel }: SimpleTicketFormProps) {
                   </Select>
                 </div>
 
-                <div>
-                  <Label htmlFor="subcategory" className="text-right block mb-2 font-iran">
-                    زیر دسته‌بندی
+                <div className="space-y-2">
+                  <Label htmlFor="subcategory" className="text-right font-iran">
+                    زیر دسته
                   </Label>
                   <Select
                     value={formData.subcategory}
                     onValueChange={(value) => handleInputChange("subcategory", value)}
                     disabled={!formData.category}
+                    dir="rtl"
                   >
                     <SelectTrigger className="text-right font-iran" dir="rtl">
-                      <SelectValue placeholder="انتخاب زیر دسته‌بندی" />
+                      <SelectValue placeholder="انتخاب زیر دسته" />
                     </SelectTrigger>
                     <SelectContent dir="rtl" className="font-iran">
-                      {formData.category &&
-                        ticketCategories[formData.category as keyof typeof ticketCategories]?.map((subcategory) => (
-                          <SelectItem key={subcategory} value={subcategory} className="text-right font-iran">
-                            {subcategory}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="priority" className="text-right block mb-2 font-iran">
-                    اولویت
-                  </Label>
-                  <Select value={formData.priority} onValueChange={(value) => handleInputChange("priority", value)}>
-                    <SelectTrigger className="text-right font-iran" dir="rtl">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent dir="rtl" className="font-iran">
-                      <SelectItem value="low" className="text-right font-iran">
-                        <div className="flex items-center gap-2">
-                          <Flag className="w-3 h-3 text-green-600" />
-                          پایین
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="medium" className="text-right font-iran">
-                        <div className="flex items-center gap-2">
-                          <Flag className="w-3 h-3 text-yellow-600" />
-                          متوسط
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="high" className="text-right font-iran">
-                        <div className="flex items-center gap-2">
-                          <Flag className="w-3 h-3 text-orange-600" />
-                          بالا
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="urgent" className="text-right font-iran">
-                        <div className="flex items-center gap-2">
-                          <Flag className="w-3 h-3 text-red-600" />
-                          فوری
-                        </div>
-                      </SelectItem>
+                      {availableSubcategories.map((subcategory) => (
+                        <SelectItem key={subcategory} value={subcategory} className="text-right font-iran">
+                          {subcategory}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="priority" className="text-right font-iran">
+                  اولویت
+                </Label>
+                <Select
+                  value={formData.priority}
+                  onValueChange={(value) => handleInputChange("priority", value)}
+                  dir="rtl"
+                >
+                  <SelectTrigger className="text-right font-iran" dir="rtl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent dir="rtl" className="font-iran">
+                    <SelectItem value="low" className="text-right font-iran">
+                      پایین
+                    </SelectItem>
+                    <SelectItem value="medium" className="text-right font-iran">
+                      متوسط
+                    </SelectItem>
+                    <SelectItem value="high" className="text-right font-iran">
+                      بالا
+                    </SelectItem>
+                    <SelectItem value="urgent" className="text-right font-iran">
+                      فوری
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description" className="text-right font-iran">
+                  شرح مشکل *
+                </Label>
+                <Textarea
+                  id="description"
+                  placeholder="لطفاً مشکل یا درخواست خود را به تفصیل شرح دهید..."
+                  value={formData.description}
+                  onChange={(e) => handleInputChange("description", e.target.value)}
+                  className="text-right font-iran min-h-[120px]"
+                  dir="rtl"
+                  required
+                />
+              </div>
+
+              {/* File Upload */}
+              <div className="space-y-2">
+                <Label className="text-right font-iran">پیوست فایل (اختیاری)</Label>
+                <FileUpload
+                  onFilesChange={setAttachments}
+                  maxFiles={5}
+                  maxSize={10 * 1024 * 1024} // 10MB
+                  acceptedTypes={[".jpg", ".jpeg", ".png", ".pdf", ".doc", ".docx", ".txt", ".zip"]}
+                />
+              </div>
             </div>
 
-            {/* File Upload Section */}
-            <div>
-              <Label className="text-right block mb-2 font-iran">
-                <Upload className="w-4 h-4 inline ml-1" />
-                پیوست فایل (اختیاری)
-              </Label>
-              <FileUpload onFileUpload={handleFileUpload} />
-
-              {/* Uploaded Files Display */}
-              {attachments.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  <h4 className="text-sm font-medium text-right font-iran">فایل‌های پیوست شده:</h4>
-                  {attachments.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between bg-gray-50 rounded-lg p-3 border">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeAttachment(index)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                      <div className="text-right">
-                        <p className="text-sm font-medium font-iran">{file.name}</p>
-                        <p className="text-xs text-muted-foreground font-iran">{formatFileSize(file.size)}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Form Actions */}
-            <div className="flex gap-3 justify-end pt-4 border-t">
+            {/* Submit Button */}
+            <div className="flex gap-3 justify-end">
               {onCancel && (
                 <Button type="button" variant="outline" onClick={onCancel} className="font-iran bg-transparent">
                   انصراف
                 </Button>
               )}
-              <Button type="submit" disabled={isSubmitting} className="gap-2 bg-blue-600 hover:bg-blue-700 font-iran">
+              <Button type="submit" disabled={isSubmitting} className="gap-2 font-iran">
                 {isSubmitting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -319,7 +296,7 @@ export function SimpleTicketForm({ onCancel }: SimpleTicketFormProps) {
                 ) : (
                   <>
                     <Send className="w-4 h-4" />
-                    ارسال تیکت
+                    ثبت تیکت
                   </>
                 )}
               </Button>
