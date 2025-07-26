@@ -1,19 +1,67 @@
-import { TicketTable } from "./ticket-table"
+"use client"
+
+import type React from "react"
+
+import { useState } from "react"
+import { AdminTicketManagement } from "./admin-ticket-management"
+import { AdminTechnicianAssignment } from "./admin-technician-assignment"
 import { CategoryManagement } from "./category-management"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { TicketIcon, UserPlus, FolderTree } from "lucide-react"
+import { EnhancedAutoAssignment } from "./enhanced-auto-assignment"
+import { Settings } from "lucide-react"
 
 interface AdminDashboardProps {
   tickets: any[]
   onTicketUpdate: (ticketId: string, updates: any) => void
-  categories?: any
-  onCategoryUpdate?: (categories: any) => void
+  categories: any
+  onCategoryUpdate: (categories: any) => void
 }
 
-export function AdminDashboard({ tickets, onTicketUpdate, categories, onCategoryUpdate }: AdminDashboardProps) {
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({
+  tickets,
+  onTicketUpdate,
+  categories,
+  onCategoryUpdate,
+}) => {
+  const [activeTab, setActiveTab] = useState("tickets")
+
   return (
-    <div>
-      <h1>Admin Dashboard</h1>
-      <TicketTable tickets={tickets} onTicketUpdate={onTicketUpdate} />
-      <CategoryManagement categories={categories} onCategoryUpdate={onCategoryUpdate} />
-    </div>
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
+      <TabsList className="grid w-full grid-cols-4">
+        <TabsTrigger value="tickets" className="gap-2">
+          <TicketIcon className="w-4 h-4" />
+          مدیریت کامل تیکت‌ها
+        </TabsTrigger>
+        <TabsTrigger value="assignment" className="gap-2">
+          <UserPlus className="w-4 h-4" />
+          تعیین تکنسین
+        </TabsTrigger>
+        <TabsTrigger value="categories" className="gap-2">
+          <FolderTree className="w-4 h-4" />
+          مدیریت دسته‌بندی
+        </TabsTrigger>
+        <TabsTrigger value="auto-settings" className="gap-2">
+          <Settings className="w-4 h-4" />
+          تنظیمات خودکار
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="tickets">
+        <AdminTicketManagement tickets={tickets} onTicketUpdate={onTicketUpdate} />
+      </TabsContent>
+
+      <TabsContent value="assignment">
+        <AdminTechnicianAssignment tickets={tickets} onTicketUpdate={onTicketUpdate} />
+      </TabsContent>
+
+      <TabsContent value="categories">
+        <CategoryManagement categories={categories} onCategoryUpdate={onCategoryUpdate} />
+      </TabsContent>
+
+      <TabsContent value="auto-settings">
+        <EnhancedAutoAssignment tickets={tickets} onTicketUpdate={onTicketUpdate} />
+      </TabsContent>
+    </Tabs>
   )
 }
