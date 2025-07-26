@@ -66,6 +66,7 @@ export function ClientDashboard({ onLogout }: ClientDashboardProps) {
     const newTicket = {
       ...ticketData,
       category: ticketData.mainIssue,
+      clientId: user.id,
       clientName: user.name,
       clientEmail: user.email,
       clientPhone: ticketData.clientPhone || user.phone || "",

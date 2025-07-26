@@ -15,35 +15,38 @@ export interface Ticket {
   clientName: string
   clientEmail: string
   clientPhone: string
+  clientDepartment?: string
   assignedTo?: string
   assignedTechnicianName?: string
-  createdAt: Date
-  updatedAt: Date
-  resolvedAt?: Date
+  createdAt: string
+  updatedAt: string
+  resolvedAt?: string
   attachments?: string[]
-  comments?: TicketComment[]
+  responses: TicketResponse[]
   estimatedTime?: number
   actualTime?: number
 }
 
-export interface TicketComment {
+export interface TicketResponse {
   id: string
   ticketId: string
+  author: string
   authorId: string
-  authorName: string
-  content: string
-  createdAt: Date
-  isInternal: boolean
+  type: "client" | "technician" | "admin"
+  text: string
+  timestamp: string
+  isInternal?: boolean
 }
 
 interface TicketContextType {
   tickets: Ticket[]
-  addTicket: (ticket: Omit<Ticket, "id" | "createdAt" | "updatedAt">) => void
+  addTicket: (ticket: Omit<Ticket, "id" | "createdAt" | "updatedAt" | "responses">) => void
   updateTicket: (id: string, updates: Partial<Ticket>) => void
   deleteTicket: (id: string) => void
   getTicketsByClient: (clientId: string) => Ticket[]
+  getTicketsByUser: (userEmail: string) => Ticket[]
   getTicketsByTechnician: (technicianId: string) => Ticket[]
-  addComment: (ticketId: string, comment: Omit<TicketComment, "id" | "createdAt">) => void
+  addResponse: (ticketId: string, response: Omit<TicketResponse, "id" | "timestamp">) => void
 }
 
 const TicketContext = createContext<TicketContextType | undefined>(undefined)
@@ -54,17 +57,7 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const savedTickets = localStorage.getItem("tickets")
     if (savedTickets) {
-      const parsedTickets = JSON.parse(savedTickets).map((ticket: any) => ({
-        ...ticket,
-        createdAt: new Date(ticket.createdAt),
-        updatedAt: new Date(ticket.updatedAt),
-        resolvedAt: ticket.resolvedAt ? new Date(ticket.resolvedAt) : undefined,
-        comments:
-          ticket.comments?.map((comment: any) => ({
-            ...comment,
-            createdAt: new Date(comment.createdAt),
-          })) || [],
-      }))
+      const parsedTickets = JSON.parse(savedTickets)
       setTickets(parsedTickets)
     } else {
       // Initialize with sample data
@@ -75,15 +68,16 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
           description: "کامپیوتر من نمی‌تواند به اینترنت متصل شود. لطفاً کمک کنید.",
           priority: "high",
           status: "open",
-          category: "شبکه",
+          category: "network",
           subcategory: "اتصال اینترنت",
           clientId: "3",
-          clientName: "سارا محمدی",
-          clientEmail: "sara.mohammadi@company.com",
+          clientName: "احمد محمدی",
+          clientEmail: "ahmad@company.com",
           clientPhone: "09123456787",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          comments: [],
+          clientDepartment: "حسابداری",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          responses: [],
         },
         {
           id: "2",
@@ -91,17 +85,28 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
           description: "نیاز به نصب نرم‌افزار حسابداری جدید دارم.",
           priority: "medium",
           status: "in-progress",
-          category: "نرم‌افزار",
+          category: "software",
           subcategory: "نصب",
           clientId: "3",
-          clientName: "سارا محمدی",
-          clientEmail: "sara.mohammadi@company.com",
+          clientName: "احمد محمدی",
+          clientEmail: "ahmad@company.com",
           clientPhone: "09123456787",
+          clientDepartment: "حسابداری",
           assignedTo: "2",
           assignedTechnicianName: "علی احمدی",
-          createdAt: new Date(Date.now() - 86400000),
-          updatedAt: new Date(),
-          comments: [],
+          createdAt: new Date(Date.now() - 86400000).toISOString(),
+          updatedAt: new Date().toISOString(),
+          responses: [
+            {
+              id: "1",
+              ticketId: "2",
+              author: "علی احمدی",
+              authorId: "2",
+              type: "technician",
+              text: "سلام، تیکت شما را بررسی کردم. نرم‌افزار مورد نظر را آماده نصب می‌کنم.",
+              timestamp: new Date(Date.now() - 3600000).toISOString(),
+            },
+          ],
         },
       ]
       setTickets(sampleTickets)
@@ -114,13 +119,13 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("tickets", JSON.stringify(newTickets))
   }
 
-  const addTicket = (ticketData: Omit<Ticket, "id" | "createdAt" | "updatedAt">) => {
+  const addTicket = (ticketData: Omit<Ticket, "id" | "createdAt" | "updatedAt" | "responses">) => {
     const newTicket: Ticket = {
       ...ticketData,
       id: Date.now().toString(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      comments: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      responses: [],
     }
     const newTickets = [...tickets, newTicket]
     saveTickets(newTickets)
@@ -128,7 +133,7 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
 
   const updateTicket = (id: string, updates: Partial<Ticket>) => {
     const newTickets = tickets.map((ticket) =>
-      ticket.id === id ? { ...ticket, ...updates, updatedAt: new Date() } : ticket,
+      ticket.id === id ? { ...ticket, ...updates, updatedAt: new Date().toISOString() } : ticket,
     )
     saveTickets(newTickets)
   }
@@ -142,23 +147,27 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
     return tickets.filter((ticket) => ticket.clientId === clientId)
   }
 
+  const getTicketsByUser = (userEmail: string) => {
+    return tickets.filter((ticket) => ticket.clientEmail === userEmail)
+  }
+
   const getTicketsByTechnician = (technicianId: string) => {
     return tickets.filter((ticket) => ticket.assignedTo === technicianId)
   }
 
-  const addComment = (ticketId: string, commentData: Omit<TicketComment, "id" | "createdAt">) => {
-    const newComment: TicketComment = {
-      ...commentData,
+  const addResponse = (ticketId: string, responseData: Omit<TicketResponse, "id" | "timestamp">) => {
+    const newResponse: TicketResponse = {
+      ...responseData,
       id: Date.now().toString(),
-      createdAt: new Date(),
+      timestamp: new Date().toISOString(),
     }
 
     const newTickets = tickets.map((ticket) =>
       ticket.id === ticketId
         ? {
             ...ticket,
-            comments: [...(ticket.comments || []), newComment],
-            updatedAt: new Date(),
+            responses: [...ticket.responses, newResponse],
+            updatedAt: new Date().toISOString(),
           }
         : ticket,
     )
@@ -173,8 +182,9 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
         updateTicket,
         deleteTicket,
         getTicketsByClient,
+        getTicketsByUser,
         getTicketsByTechnician,
-        addComment,
+        addResponse,
       }}
     >
       {children}
