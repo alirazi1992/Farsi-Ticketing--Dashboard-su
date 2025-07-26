@@ -132,32 +132,10 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
     }
   }
 
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case "admin":
-        return <Shield className="w-4 h-4" />
-      case "technician":
-        return <Wrench className="w-4 h-4" />
-      default:
-        return <User className="w-4 h-4" />
-    }
-  }
-
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case "admin":
-        return "مدیر سیستم"
-      case "technician":
-        return "تکنسین"
-      default:
-        return "کاربر"
-    }
-  }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg" dir="rtl">
-        <DialogHeader>
+        <DialogHeader className="text-right">
           <DialogTitle className="text-right">
             {activeTab === "login" ? "ورود به سیستم" : "ثبت‌نام در سیستم"}
           </DialogTitle>
@@ -169,12 +147,12 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login" className="gap-2">
+          <TabsList className="grid w-full grid-cols-2" dir="rtl">
+            <TabsTrigger value="login" className="gap-2 flex-row-reverse">
               <LogIn className="w-4 h-4" />
               ورود
             </TabsTrigger>
-            <TabsTrigger value="signup" className="gap-2">
+            <TabsTrigger value="signup" className="gap-2 flex-row-reverse">
               <UserPlus className="w-4 h-4" />
               ثبت‌نام
             </TabsTrigger>
@@ -185,16 +163,16 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
             <div className="space-y-2">
               <Label className="text-right">نوع کاربری</Label>
               <Tabs value={loginType} onValueChange={setLoginType} className="w-full" dir="rtl">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="client" className="gap-1 text-xs">
+                <TabsList className="grid w-full grid-cols-3" dir="rtl">
+                  <TabsTrigger value="client" className="gap-1 text-xs flex-row-reverse">
                     <User className="w-3 h-3" />
                     کاربر
                   </TabsTrigger>
-                  <TabsTrigger value="technician" className="gap-1 text-xs">
+                  <TabsTrigger value="technician" className="gap-1 text-xs flex-row-reverse">
                     <Wrench className="w-3 h-3" />
                     تکنسین
                   </TabsTrigger>
-                  <TabsTrigger value="admin" className="gap-1 text-xs">
+                  <TabsTrigger value="admin" className="gap-1 text-xs flex-row-reverse">
                     <Shield className="w-3 h-3" />
                     مدیر
                   </TabsTrigger>
@@ -232,7 +210,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                         {...field}
                         type={showPassword ? "text" : "password"}
                         placeholder="رمز عبور خود را وارد کنید"
-                        className="text-right pl-10"
+                        className="text-right pr-10"
                         dir="rtl"
                       />
                     )}
@@ -241,7 +219,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="absolute left-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
@@ -265,15 +243,15 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
             <div className="pt-4 border-t">
               <p className="text-xs text-muted-foreground text-center mb-2">حساب‌های نمونه برای تست:</p>
               <div className="space-y-1 text-xs text-muted-foreground">
-                <div className="flex justify-between items-center p-2 bg-muted/50 rounded">
+                <div className="flex justify-between items-center p-2 bg-muted/50 rounded text-right">
                   <span>کاربر: ahmad@company.com / 123456</span>
                   <User className="w-3 h-3" />
                 </div>
-                <div className="flex justify-between items-center p-2 bg-muted/50 rounded">
+                <div className="flex justify-between items-center p-2 bg-muted/50 rounded text-right">
                   <span>تکنسین: ali@company.com / 123456</span>
                   <Wrench className="w-3 h-3" />
                 </div>
-                <div className="flex justify-between items-center p-2 bg-muted/50 rounded">
+                <div className="flex justify-between items-center p-2 bg-muted/50 rounded text-right">
                   <span>مدیر: admin@company.com / 123456</span>
                   <Shield className="w-3 h-3" />
                 </div>
@@ -357,7 +335,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                         <SelectTrigger className="text-right">
                           <SelectValue placeholder="انتخاب بخش" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent dir="rtl">
                           <SelectItem value="it">فناوری اطلاعات</SelectItem>
                           <SelectItem value="hr">منابع انسانی</SelectItem>
                           <SelectItem value="finance">مالی</SelectItem>
@@ -387,15 +365,15 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                         <SelectTrigger className="text-right">
                           <SelectValue placeholder="انتخاب نقش" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent dir="rtl">
                           <SelectItem value="client">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-row-reverse">
                               <User className="w-4 h-4" />
                               کاربر
                             </div>
                           </SelectItem>
-                          <SelectItem value="engineer">
-                            <div className="flex items-center gap-2">
+                          <SelectItem value="technician">
+                            <div className="flex items-center gap-2 flex-row-reverse">
                               <Wrench className="w-4 h-4" />
                               تکنسین
                             </div>
@@ -422,7 +400,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                           {...field}
                           type={showPassword ? "text" : "password"}
                           placeholder="حداقل ۶ کاراکتر"
-                          className="text-right pl-10"
+                          className="text-right pr-10"
                           dir="rtl"
                         />
                       )}
@@ -431,7 +409,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="absolute left-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? (
@@ -459,7 +437,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                           {...field}
                           type={showConfirmPassword ? "text" : "password"}
                           placeholder="رمز عبور را مجدداً وارد کنید"
-                          className="text-right pl-10"
+                          className="text-right pr-10"
                           dir="rtl"
                         />
                       )}
@@ -468,7 +446,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="absolute left-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     >
                       {showConfirmPassword ? (

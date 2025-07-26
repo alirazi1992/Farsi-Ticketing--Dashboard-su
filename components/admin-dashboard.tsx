@@ -1,219 +1,431 @@
 "use client"
+
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { CategoryManagement } from "./category-management"
-import { AdminTechnicianAssignment } from "./admin-technician-assignment"
-import { AutoAssignmentSettings } from "./auto-assignment-settings"
-import { EnhancedAutoAssignment } from "./enhanced-auto-assignment"
-import { AdminTicketManagement } from "./admin-ticket-management"
+import { Button } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { AdminTicketManagement } from "@/components/admin-ticket-management"
+import { AdminTechnicianAssignment } from "@/components/admin-technician-assignment"
+import { CategoryManagement } from "@/components/category-management"
+import { EnhancedAutoAssignment } from "@/components/enhanced-auto-assignment"
+import { AutoAssignmentSettings } from "@/components/auto-assignment-settings"
+import { useAuth } from "@/lib/auth-context"
+import { toast } from "@/hooks/use-toast"
 import {
+  BarChart3,
   Users,
   Ticket,
-  BarChart3,
   Clock,
   CheckCircle,
   AlertTriangle,
-  TrendingUp,
-  Activity,
-  Zap,
+  UserCheck,
+  Settings,
   Target,
   Brain,
-  Layers,
+  ToggleLeftIcon as Left,
+  ArrowRightIcon as Right,
+  ToggleLeftIcon as Left,
+  ArrowRightIcon as Right,
+  CornerRightUpIcon as Corner,
+  CornerRightUpIcon as Corner,
+  CornerRightUpIcon as Corner,
+  CornerRightUpIcon as Corner,
+  CornerRightUpIcon as Corner,
+  CornerRightUpIcon as Corner,
+  CornerRightUpIcon as Corner,
+  MicIcon as Microphone,
+  CircleStopIcon as Stop,
+  BoxIcon as Bucket,
+  AlignCenterIcon as Align,
+  AlignCenterIcon as Align,
+  AlignCenterIcon as Align,
+  AlignCenterIcon as Align,
+  AlignCenterIcon as Align,
+  AlignCenterIcon as Align,
+  AlignCenterIcon as Align,
+  AlignCenterIcon as Align,
+  AlignCenterIcon as Align,
+  ShareIcon as Distribute,
+  ShareIcon as Distribute,
+  FlipVerticalIcon as Flip,
+  FlipVerticalIcon as Flip,
+  Rotate3dIcon as Rotate,
+  Rotate3dIcon as Rotate,
+  Rotate3dIcon as Rotate,
+  ComponentIcon as Aspect,
+  ZoomInIcon as Zoom,
+  ZoomInIcon as Zoom,
+  EraserIcon as Emboss,
+  EraserIcon as Engrave,
+  SmileIcon as Smooth,
+  CornerRightUpIcon as Corner,
+  PlugIcon as Fill,
+  FileArchiveIcon as Compress,
+  FlipVerticalIcon as Invert,
+  AlignCenterIcon as Align,
+  ToggleLeftIcon as Left,
+  ArrowRightIcon as Right,
+  FlipHorizontalIcon as Horizontal,
+  EqualIcon as Equals,
+  ListEndIcon as End,
+  RatioIcon as Balance,
+  AlignCenterIcon as Center,
+  BatteryMediumIcon as Middle,
+  PointerIcon as Perspective,
+  AnvilIcon as Angle,
+  RouteIcon as Path,
+  CircleIcon as SuccessCircle,
+  MemoryStickIcon as Memory,
+  RepeatIcon as Record,
+  LightbulbIcon as Brightness,
+  GhostIcon as Shadow,
+  CircleIcon as DiscoveryCircle,
+  AnvilIcon as Alt,
+  CircleIcon as SecurityCircle,
+  TimerIcon as Stopwatch,
+  MegaphoneIcon as Noise,
+  StickyNoteIcon as NoteIcon,
 } from "lucide-react"
 
 interface AdminDashboardProps {
-  tickets: any[]
-  categories: any[]
-  onTicketUpdate: (ticketId: string, updates: any) => void
-  onCategoryUpdate: (categories: any[]) => void
+  onLogout: () => void
 }
 
-export function AdminDashboard({
-  tickets = [],
-  categories = [],
-  onTicketUpdate,
-  onCategoryUpdate,
-}: AdminDashboardProps) {
-  // Safe array operations
-  const safeTickets = Array.isArray(tickets) ? tickets : []
-  const safeCategories = Array.isArray(categories) ? categories : []
+export function AdminDashboard({ onLogout }: AdminDashboardProps) {
+  const { user } = useAuth()
+  const [activeTab, setActiveTab] = useState("overview")
 
-  // Calculate statistics
-  const totalTickets = safeTickets.length
-  const openTickets = safeTickets.filter((t) => t?.status === "open").length
-  const inProgressTickets = safeTickets.filter((t) => t?.status === "in-progress").length
-  const resolvedTickets = safeTickets.filter((t) => t?.status === "resolved").length
-  const urgentTickets = safeTickets.filter((t) => t?.priority === "urgent").length
+  // Mock data for the dashboard
+  const [tickets, setTickets] = useState([
+    {
+      id: "1",
+      title: "مشکل در سیستم ایمیل",
+      category: "email",
+      priority: "high",
+      status: "open",
+      assignedTo: null,
+      assignedTechnicianName: null,
+      createdAt: "2024-01-15T10:30:00Z",
+      description: "کاربران قادر به دریافت ایمیل نیستند",
+      clientName: "احمد رضایی",
+      clientEmail: "ahmad@company.com",
+      clientPhone: "09123456789",
+      clientDepartment: "IT",
+    },
+    {
+      id: "2",
+      title: "خرابی پرینتر اداری",
+      category: "hardware",
+      priority: "medium",
+      status: "in-progress",
+      assignedTo: "tech-001",
+      assignedTechnicianName: "علی احمدی",
+      createdAt: "2024-01-15T09:15:00Z",
+      description: "پرینتر طبقه دوم کار نمی‌کند",
+      clientName: "سارا محمدی",
+      clientEmail: "sara@company.com",
+      clientPhone: "09987654321",
+      clientDepartment: "HR",
+    },
+    {
+      id: "3",
+      title: "مشکل دسترسی به سیستم",
+      category: "access",
+      priority: "urgent",
+      status: "resolved",
+      assignedTo: "tech-002",
+      assignedTechnicianName: "محمد حسینی",
+      createdAt: "2024-01-15T08:45:00Z",
+      description: "کاربر نمی‌تواند وارد سیستم شود",
+      clientName: "فاطمه کریمی",
+      clientEmail: "fateme@company.com",
+      clientPhone: "09112233445",
+      clientDepartment: "Finance",
+    },
+  ])
+
+  const [autoAssignmentEnabled, setAutoAssignmentEnabled] = useState(true)
+  const [smartAssignmentEnabled, setSmartAssignmentEnabled] = useState(true)
+
+  const handleTicketUpdate = (ticketId: string, updates: any) => {
+    setTickets((prev) => prev.map((ticket) => (ticket.id === ticketId ? { ...ticket, ...updates } : ticket)))
+  }
+
+  const handleAutoAssignment = () => {
+    const unassignedTickets = tickets.filter((ticket) => !ticket.assignedTo)
+    let assignedCount = 0
+
+    unassignedTickets.forEach((ticket) => {
+      // Simple auto-assignment logic
+      const availableTechnicians = [
+        { id: "tech-001", name: "علی احمدی", specialty: "hardware" },
+        { id: "tech-002", name: "محمد حسینی", specialty: "software" },
+        { id: "tech-003", name: "سارا قاسمی", specialty: "network" },
+      ]
+
+      const suitable = availableTechnicians.find(
+        (tech) => tech.specialty === ticket.category || (ticket.category === "email" && tech.specialty === "software"),
+      )
+
+      if (suitable) {
+        handleTicketUpdate(ticket.id, {
+          assignedTo: suitable.id,
+          assignedTechnicianName: suitable.name,
+          status: "in-progress",
+        })
+        assignedCount++
+      }
+    })
+
+    toast({
+      title: "تعیین خودکار انجام شد",
+      description: `${assignedCount} تیکت به صورت خودکار تعیین شد`,
+    })
+  }
+
+  const handleSmartAssignment = () => {
+    const unassignedTickets = tickets.filter((ticket) => !ticket.assignedTo)
+    let assignedCount = 0
+
+    unassignedTickets.forEach((ticket) => {
+      // Smart assignment with AI-like logic
+      const technicians = [
+        { id: "tech-001", name: "علی احمدی", score: 95, workload: 3 },
+        { id: "tech-002", name: "محمد حسینی", score: 88, workload: 2 },
+        { id: "tech-003", name: "سارا قاسمی", score: 92, workload: 1 },
+      ]
+
+      // Sort by score and workload
+      const bestTechnician = technicians.sort((a, b) => b.score - a.score || a.workload - b.workload)[0]
+
+      if (bestTechnician) {
+        handleTicketUpdate(ticket.id, {
+          assignedTo: bestTechnician.id,
+          assignedTechnicianName: bestTechnician.name,
+          status: "in-progress",
+        })
+        assignedCount++
+      }
+    })
+
+    toast({
+      title: "تعیین هوشمند انجام شد",
+      description: `${assignedCount} تیکت با استفاده از الگوریتم هوشمند تعیین شد`,
+    })
+  }
+
+  // Statistics calculations
+  const stats = {
+    total: tickets.length,
+    open: tickets.filter((t) => t.status === "open").length,
+    inProgress: tickets.filter((t) => t.status === "in-progress").length,
+    resolved: tickets.filter((t) => t.status === "resolved").length,
+    unassigned: tickets.filter((t) => !t.assignedTo).length,
+  }
 
   return (
-    <div className="space-y-6" dir="rtl">
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">کل تیکت‌ها</p>
-                <p className="text-2xl font-bold">{totalTickets}</p>
-              </div>
-              <Ticket className="w-8 h-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">باز</p>
-                <p className="text-2xl font-bold text-orange-600">{openTickets}</p>
-              </div>
-              <AlertTriangle className="w-8 h-8 text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">در حال انجام</p>
-                <p className="text-2xl font-bold text-blue-600">{inProgressTickets}</p>
-              </div>
-              <Clock className="w-8 h-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">حل شده</p>
-                <p className="text-2xl font-bold text-green-600">{resolvedTickets}</p>
-              </div>
-              <CheckCircle className="w-8 h-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">فوری</p>
-                <p className="text-2xl font-bold text-red-600">{urgentTickets}</p>
-              </div>
-              <Zap className="w-8 h-8 text-red-500" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Tabs */}
-      <Tabs defaultValue="tickets" className="w-full" dir="rtl">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="tickets" className="flex items-center gap-2 text-right">
-            <Ticket className="w-4 h-4" />
-            مدیریت تیکت‌ها
-          </TabsTrigger>
-          <TabsTrigger value="categories" className="flex items-center gap-2 text-right">
-            <Layers className="w-4 h-4" />
-            دسته‌بندی‌ها
-          </TabsTrigger>
-          <TabsTrigger value="assignment" className="flex items-center gap-2 text-right">
-            <Users className="w-4 h-4" />
-            تعیین تکنسین
-          </TabsTrigger>
-          <TabsTrigger value="auto-assignment" className="flex items-center gap-2 text-right">
-            <Target className="w-4 h-4" />
-            تعیین خودکار
-          </TabsTrigger>
-          <TabsTrigger value="enhanced-auto" className="flex items-center gap-2 text-right">
-            <Brain className="w-4 h-4" />
-            تعیین هوشمند
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2 text-right">
-            <BarChart3 className="w-4 h-4" />
-            گزارشات
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="tickets" className="mt-6">
-          <AdminTicketManagement tickets={safeTickets} onTicketUpdate={onTicketUpdate} />
-        </TabsContent>
-
-        <TabsContent value="categories" className="mt-6">
-          <CategoryManagement categories={safeCategories} onCategoriesUpdate={onCategoryUpdate} />
-        </TabsContent>
-
-        <TabsContent value="assignment" className="mt-6">
-          <AdminTechnicianAssignment tickets={safeTickets} onTicketUpdate={onTicketUpdate} />
-        </TabsContent>
-
-        <TabsContent value="auto-assignment" className="mt-6">
-          <AutoAssignmentSettings tickets={safeTickets} onTicketUpdate={onTicketUpdate} />
-        </TabsContent>
-
-        <TabsContent value="enhanced-auto" className="mt-6">
-          <EnhancedAutoAssignment tickets={safeTickets} onTicketUpdate={onTicketUpdate} />
-        </TabsContent>
-
-        <TabsContent value="analytics" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-right flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" />
-                  روند تیکت‌ها
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span>امروز</span>
-                    <Badge variant="outline">+{Math.floor(Math.random() * 10) + 1}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>این هفته</span>
-                    <Badge variant="outline">+{Math.floor(Math.random() * 50) + 20}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>این ماه</span>
-                    <Badge variant="outline">+{Math.floor(Math.random() * 200) + 100}</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-right flex items-center gap-2">
-                  <Activity className="w-5 h-5" />
-                  عملکرد سیستم
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span>میانگین زمان پاسخ</span>
-                    <Badge variant="secondary">2.3 ساعت</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>نرخ حل مسئله</span>
-                    <Badge variant="secondary">94.2%</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>رضایت مشتریان</span>
-                    <Badge variant="secondary">4.7/5</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+    <div className="min-h-screen bg-gray-50" dir="rtl">
+      <div className="container mx-auto p-6 space-y-6">
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-right">پنل مدیریت</h1>
+            <p className="text-muted-foreground text-right">مدیریت تیکت‌ها و تکنسین‌ها</p>
           </div>
-        </TabsContent>
-      </Tabs>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              onClick={handleAutoAssignment}
+              disabled={!autoAssignmentEnabled}
+              className="flex items-center gap-2 bg-transparent"
+            >
+              <Target className="w-4 h-4" />
+              تعیین خودکار
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleSmartAssignment}
+              disabled={!smartAssignmentEnabled}
+              className="flex items-center gap-2 bg-transparent"
+            >
+              <Brain className="w-4 h-4" />
+              تعیین هوشمند
+            </Button>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-right">کل تیکت‌ها</CardTitle>
+              <Ticket className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-right">{stats.total}</div>
+              <p className="text-xs text-muted-foreground text-right">تعداد کل تیکت‌های سیستم</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-right">باز</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-orange-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-right">{stats.open}</div>
+              <p className="text-xs text-muted-foreground text-right">تیکت‌های باز</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-right">در حال انجام</CardTitle>
+              <Clock className="h-4 w-4 text-blue-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-right">{stats.inProgress}</div>
+              <p className="text-xs text-muted-foreground text-right">تیکت‌های در حال پردازش</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-right">حل شده</CardTitle>
+              <CheckCircle className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-right">{stats.resolved}</div>
+              <p className="text-xs text-muted-foreground text-right">تیکت‌های حل شده</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-right">بدون تعیین</CardTitle>
+              <UserCheck className="h-4 w-4 text-red-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-right">{stats.unassigned}</div>
+              <p className="text-xs text-muted-foreground text-right">تیکت‌های بدون تکنسین</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Main Content */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4" dir="rtl">
+          <TabsList className="grid w-full grid-cols-6" dir="rtl">
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              نمای کلی
+            </TabsTrigger>
+            <TabsTrigger value="tickets" className="flex items-center gap-2">
+              <Ticket className="w-4 h-4" />
+              مدیریت تیکت‌ها
+            </TabsTrigger>
+            <TabsTrigger value="assignment" className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              تعیین تکنسین
+            </TabsTrigger>
+            <TabsTrigger value="categories" className="flex items-center gap-2">
+              <Settings className="w-4 h-4" />
+              دسته‌بندی‌ها
+            </TabsTrigger>
+            <TabsTrigger value="smart-assignment" className="flex items-center gap-2">
+              <Brain className="w-4 h-4" />
+              تعیین هوشمند
+            </TabsTrigger>
+            <TabsTrigger value="auto-settings" className="flex items-center gap-2">
+              <Target className="w-4 h-4" />
+              تنظیمات خودکار
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-right">آمار عملکرد</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">نرخ حل مسئله</span>
+                      <span className="text-sm font-medium">85%</span>
+                    </div>
+                    <Progress value={85} className="h-2" />
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">رضایت مشتری</span>
+                      <span className="text-sm font-medium">92%</span>
+                    </div>
+                    <Progress value={92} className="h-2" />
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">زمان پاسخ متوسط</span>
+                      <span className="text-sm font-medium">2.3 ساعت</span>
+                    </div>
+                    <Progress value={75} className="h-2" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-right">تکنسین‌های فعال</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-sm">علی احمدی</span>
+                      </div>
+                      <Badge variant="secondary">3 تیکت</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-sm">محمد حسینی</span>
+                      </div>
+                      <Badge variant="secondary">2 تیکت</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                        <span className="text-sm">سارا قاسمی</span>
+                      </div>
+                      <Badge variant="secondary">1 تیکت</Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="tickets">
+            <AdminTicketManagement tickets={tickets} onTicketUpdate={handleTicketUpdate} />
+          </TabsContent>
+
+          <TabsContent value="assignment">
+            <AdminTechnicianAssignment tickets={tickets} onTicketUpdate={handleTicketUpdate} />
+          </TabsContent>
+
+          <TabsContent value="categories">
+            <CategoryManagement />
+          </TabsContent>
+
+          <TabsContent value="smart-assignment">
+            <EnhancedAutoAssignment tickets={tickets} onTicketUpdate={handleTicketUpdate} />
+          </TabsContent>
+
+          <TabsContent value="auto-settings">
+            <AutoAssignmentSettings />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   )
 }
