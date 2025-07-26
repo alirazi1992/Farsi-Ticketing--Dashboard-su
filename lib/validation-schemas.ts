@@ -55,11 +55,20 @@ const step2Schema = yup.object({
 
 export const getCombinedSchema = (step: number) => {
   if (step === 1) {
-    return step1Schema
-  } else if (step === 2) {
-    return step2Schema
+    return yup.object({
+      clientName: yup.string().required("نام الزامی است"),
+      clientEmail: yup.string().email("ایمیل معتبر وارد کنید").required("ایمیل الزامی است"),
+      clientPhone: yup.string().required("شماره تماس الزامی است"),
+      priority: yup.string().required("انتخاب اولویت الزامی است"),
+      mainIssue: yup.string().required("انتخاب دسته اصلی مشکل الزامی است"),
+      subIssue: yup.string().required("انتخاب مشکل دقیق الزامی است"),
+    })
   }
-  return yup.object({})
+
+  return yup.object({
+    title: yup.string().required("عنوان تیکت الزامی است"),
+    description: yup.string().required("شرح مشکل الزامی است"),
+  })
 }
 
 export const getFullTicketSchema = () => {

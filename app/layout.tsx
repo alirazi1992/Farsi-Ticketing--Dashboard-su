@@ -24,7 +24,9 @@ export default function RootLayout({
       <body className={`${inter.className}`} dir="rtl">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <AuthProvider>
-            {children}
+            <div dir="rtl" className="min-h-screen">
+              {children}
+            </div>
             <Toaster />
           </AuthProvider>
         </ThemeProvider>

@@ -135,7 +135,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
       color: "bg-gray-500",
     },
     {
-      role: "engineer",
+      role: "technician",
       email: "ali@company.com",
       password: "123456",
       name: "علی تکنسین (تکنسین)",
@@ -166,24 +166,30 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]" dir="rtl">
-        <DialogHeader>
+        <DialogHeader className="text-right">
           <DialogTitle className="text-right">ورود به سیستم</DialogTitle>
           <DialogDescription className="text-right">
             برای دسترسی به سیستم مدیریت تیکت، وارد حساب کاربری خود شوید
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="login">ورود</TabsTrigger>
-            <TabsTrigger value="register">ثبت‌نام</TabsTrigger>
-            <TabsTrigger value="demo">ورود سریع</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
+          <TabsList className="grid w-full grid-cols-3" dir="rtl">
+            <TabsTrigger value="login" className="text-right">
+              ورود
+            </TabsTrigger>
+            <TabsTrigger value="register" className="text-right">
+              ثبت‌نام
+            </TabsTrigger>
+            <TabsTrigger value="demo" className="text-right">
+              ورود سریع
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="login" className="space-y-4">
+          <TabsContent value="login" className="space-y-4" dir="rtl">
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-right">
+                <Label htmlFor="email" className="text-right block">
                   ایمیل
                 </Label>
                 <Input
@@ -198,7 +204,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-right">
+                <Label htmlFor="password" className="text-right block">
                   رمز عبور
                 </Label>
                 <div className="relative">
@@ -206,7 +212,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="رمز عبور خود را وارد کنید"
-                    className="text-right pr-10"
+                    className="text-right pl-10"
                     dir="rtl"
                     value={loginForm.password}
                     onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
@@ -215,7 +221,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    className="absolute left-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
@@ -228,17 +234,27 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="role" className="text-right">
+                <Label htmlFor="role" className="text-right block">
                   نقش کاربری
                 </Label>
-                <Select value={loginForm.role} onValueChange={(value) => setLoginForm({ ...loginForm, role: value })}>
-                  <SelectTrigger>
+                <Select
+                  value={loginForm.role}
+                  onValueChange={(value) => setLoginForm({ ...loginForm, role: value })}
+                  dir="rtl"
+                >
+                  <SelectTrigger className="text-right" dir="rtl">
                     <SelectValue placeholder="نقش خود را انتخاب کنید" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="client">کاربر</SelectItem>
-                    <SelectItem value="technician">تکنسین</SelectItem>
-                    <SelectItem value="admin">مدیر</SelectItem>
+                  <SelectContent dir="rtl">
+                    <SelectItem value="client" className="text-right">
+                      کاربر
+                    </SelectItem>
+                    <SelectItem value="technician" className="text-right">
+                      تکنسین
+                    </SelectItem>
+                    <SelectItem value="admin" className="text-right">
+                      مدیر
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -259,11 +275,11 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
             </form>
           </TabsContent>
 
-          <TabsContent value="register" className="space-y-4">
+          <TabsContent value="register" className="space-y-4" dir="rtl">
             <form onSubmit={handleRegister} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name" className="text-right">
+                  <Label htmlFor="name" className="text-right block">
                     نام و نام خانوادگی
                   </Label>
                   <Input
@@ -276,7 +292,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone" className="text-right">
+                  <Label htmlFor="phone" className="text-right block">
                     شماره تماس
                   </Label>
                   <Input
@@ -291,7 +307,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="reg-email" className="text-right">
+                <Label htmlFor="reg-email" className="text-right block">
                   ایمیل
                 </Label>
                 <Input
@@ -307,39 +323,55 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="department" className="text-right">
+                  <Label htmlFor="department" className="text-right block">
                     بخش
                   </Label>
                   <Select
                     value={registerForm.department}
                     onValueChange={(value) => setRegisterForm({ ...registerForm, department: value })}
+                    dir="rtl"
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="text-right" dir="rtl">
                       <SelectValue placeholder="بخش" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="IT">فناوری اطلاعات</SelectItem>
-                      <SelectItem value="HR">منابع انسانی</SelectItem>
-                      <SelectItem value="Finance">مالی</SelectItem>
-                      <SelectItem value="Operations">عملیات</SelectItem>
+                    <SelectContent dir="rtl">
+                      <SelectItem value="IT" className="text-right">
+                        فناوری اطلاعات
+                      </SelectItem>
+                      <SelectItem value="HR" className="text-right">
+                        منابع انسانی
+                      </SelectItem>
+                      <SelectItem value="Finance" className="text-right">
+                        مالی
+                      </SelectItem>
+                      <SelectItem value="Operations" className="text-right">
+                        عملیات
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="reg-role" className="text-right">
+                  <Label htmlFor="reg-role" className="text-right block">
                     نقش
                   </Label>
                   <Select
                     value={registerForm.role}
                     onValueChange={(value) => setRegisterForm({ ...registerForm, role: value })}
+                    dir="rtl"
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="text-right" dir="rtl">
                       <SelectValue placeholder="نقش" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="client">کاربر</SelectItem>
-                      <SelectItem value="engineer">تکنسین</SelectItem>
-                      <SelectItem value="admin">مدیر</SelectItem>
+                    <SelectContent dir="rtl">
+                      <SelectItem value="client" className="text-right">
+                        کاربر
+                      </SelectItem>
+                      <SelectItem value="technician" className="text-right">
+                        تکنسین
+                      </SelectItem>
+                      <SelectItem value="admin" className="text-right">
+                        مدیر
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -347,7 +379,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="reg-password" className="text-right">
+                  <Label htmlFor="reg-password" className="text-right block">
                     رمز عبور
                   </Label>
                   <Input
@@ -361,7 +393,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="confirm-password" className="text-right">
+                  <Label htmlFor="confirm-password" className="text-right block">
                     تکرار رمز عبور
                   </Label>
                   <Input
@@ -392,7 +424,7 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
             </form>
           </TabsContent>
 
-          <TabsContent value="demo" className="space-y-4">
+          <TabsContent value="demo" className="space-y-4" dir="rtl">
             <div className="text-center mb-4">
               <h3 className="text-lg font-semibold mb-2">ورود سریع برای تست</h3>
               <p className="text-sm text-muted-foreground">برای تست سیستم، از حساب‌های آماده استفاده کنید</p>
@@ -406,17 +438,20 @@ export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                   className="w-full justify-between h-auto p-4 bg-transparent"
                   onClick={() => handleQuickLogin(option.email, option.password, option.role)}
                   disabled={isLoading}
+                  dir="rtl"
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-full ${option.color} flex items-center justify-center`}>
-                      <option.icon className="w-4 h-4 text-white" />
-                    </div>
+                    <LogIn className="w-4 h-4" />
+                  </div>
+                  <div className="flex items-center gap-3">
                     <div className="text-right">
                       <div className="font-medium">{option.name}</div>
                       <div className="text-sm text-muted-foreground">{option.email}</div>
                     </div>
+                    <div className={`w-8 h-8 rounded-full ${option.color} flex items-center justify-center`}>
+                      <option.icon className="w-4 h-4 text-white" />
+                    </div>
                   </div>
-                  <LogIn className="w-4 h-4" />
                 </Button>
               ))}
             </div>

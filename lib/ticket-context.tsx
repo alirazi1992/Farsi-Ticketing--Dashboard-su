@@ -1,15 +1,7 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useState } from "react"
-
-interface TicketResponse {
-  id: string
-  text: string
-  author: string
-  timestamp: string
-  type: "client" | "technician" | "admin"
-}
+import { createContext, useContext, useState, useEffect } from "react"
 
 interface Ticket {
   id: string
@@ -17,124 +9,119 @@ interface Ticket {
   description: string
   category: string
   priority: "low" | "medium" | "high" | "urgent"
-  status: "open" | "in-progress" | "resolved"
+  status: "open" | "in-progress" | "resolved" | "closed"
   clientName: string
   clientEmail: string
   clientPhone: string
   clientDepartment: string
-  assignedTo: string | null
-  assignedTechnicianName: string | null
+  assignedTo?: string | null
+  assignedTechnicianName?: string | null
   createdAt: string
   updatedAt: string
-  responses: TicketResponse[]
+  responses: Array<{
+    id: string
+    text: string
+    author: string
+    timestamp: string
+    type: "client" | "technician" | "admin"
+  }>
   resolution?: string
-  estimatedTime?: string
   actualTime?: string
+  estimatedTime?: string
+  attachments?: any[]
 }
 
 interface TicketContextType {
   tickets: Ticket[]
-  addTicket: (ticket: Omit<Ticket, "id" | "createdAt" | "updatedAt" | "responses">) => void
-  updateTicket: (id: string, updates: Partial<Ticket>) => void
+  addTicket: (ticket: Omit<Ticket, "id" | "responses">) => void
+  updateTicket: (ticketId: string, updates: Partial<Ticket>) => void
   assignTicket: (ticketId: string, technicianId: string, technicianName: string) => void
-  addResponse: (ticketId: string, response: Omit<TicketResponse, "id" | "timestamp">) => void
+  addResponse: (ticketId: string, response: Omit<Ticket["responses"][0], "id" | "timestamp">) => void
   getTicketsByUser: (userEmail: string) => Ticket[]
   getTicketsByTechnician: (technicianId: string) => Ticket[]
 }
 
 const TicketContext = createContext<TicketContextType | undefined>(undefined)
 
-// Mock initial tickets
+// Mock tickets data
 const initialTickets: Ticket[] = [
   {
     id: "TKT-001",
-    title: "مشکل در سیستم ایمیل",
-    description: "کاربران قادر به دریافت ایمیل نیستند و پیام‌های خطا دریافت می‌کنند",
-    category: "email",
+    title: "مشکل اتصال به اینترنت",
+    description: "اینترنت در بخش حسابداری قطع شده و کارمندان نمی‌توانند به سیستم‌های آنلاین دسترسی داشته باشند.",
+    category: "network",
     priority: "high",
     status: "open",
     clientName: "احمد محمدی",
     clientEmail: "ahmad@company.com",
     clientPhone: "09123456789",
-    clientDepartment: "IT",
+    clientDepartment: "حسابداری",
     assignedTo: null,
     assignedTechnicianName: null,
-    createdAt: "2024-01-15T10:30:00Z",
-    updatedAt: "2024-01-15T10:30:00Z",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     responses: [],
   },
   {
     id: "TKT-002",
-    title: "خرابی پرینتر اداری",
-    description: "پرینتر طبقه دوم کار نمی‌کند و کاغذ گیر می‌کند",
+    title: "چاپگر کار نمی‌کند",
+    description: "چاپگر طبقه دوم هیچ خروجی نمی‌دهد و چراغ قرمز روشن است.",
     category: "hardware",
     priority: "medium",
     status: "in-progress",
-    clientName: "سارا احمدی",
-    clientEmail: "sara@company.com",
-    clientPhone: "09987654321",
-    clientDepartment: "HR",
+    clientName: "احمد محمدی",
+    clientEmail: "ahmad@company.com",
+    clientPhone: "09123456789",
+    clientDepartment: "فناوری اطلاعات",
     assignedTo: "tech-001",
-    assignedTechnicianName: "علی تکنسین",
-    createdAt: "2024-01-15T09:15:00Z",
-    updatedAt: "2024-01-15T11:20:00Z",
+    assignedTechnicianName: "علی احمدی",
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+    updatedAt: new Date().toISOString(),
     responses: [
       {
         id: "resp-001",
-        text: "مشکل بررسی شد. قطعه جدید سفارش داده شده است.",
-        author: "علی تکنسین",
-        timestamp: "2024-01-15T11:20:00Z",
+        text: "تیکت شما دریافت شد و در حال بررسی است.",
+        author: "علی احمدی",
+        timestamp: new Date(Date.now() - 3600000).toISOString(),
         type: "technician",
       },
     ],
-  },
-  {
-    id: "TKT-003",
-    title: "مشکل دسترسی به سیستم",
-    description: "کاربر نمی‌تواند وارد سیستم شود و پیام خطای احراز هویت دریافت می‌کند",
-    category: "access",
-    priority: "urgent",
-    status: "resolved",
-    clientName: "فاطمه کریمی",
-    clientEmail: "fateme@company.com",
-    clientPhone: "09112233445",
-    clientDepartment: "Finance",
-    assignedTo: "tech-002",
-    assignedTechnicianName: "محمد حسینی",
-    createdAt: "2024-01-15T08:45:00Z",
-    updatedAt: "2024-01-15T12:30:00Z",
-    responses: [
-      {
-        id: "resp-002",
-        text: "رمز عبور ریست شد و دسترسی بازیابی گردید.",
-        author: "محمد حسینی",
-        timestamp: "2024-01-15T12:30:00Z",
-        type: "technician",
-      },
-    ],
-    resolution: "رمز عبور کاربر ریست شد و مشکل دسترسی حل گردید.",
-    actualTime: "45 دقیقه",
   },
 ]
 
 export function TicketProvider({ children }: { children: React.ReactNode }) {
   const [tickets, setTickets] = useState<Ticket[]>(initialTickets)
 
-  const addTicket = (ticketData: Omit<Ticket, "id" | "createdAt" | "updatedAt" | "responses">) => {
+  // Load tickets from localStorage on mount
+  useEffect(() => {
+    const savedTickets = localStorage.getItem("tickets")
+    if (savedTickets) {
+      try {
+        setTickets(JSON.parse(savedTickets))
+      } catch (error) {
+        console.error("Error parsing saved tickets:", error)
+      }
+    }
+  }, [])
+
+  // Save tickets to localStorage whenever tickets change
+  useEffect(() => {
+    localStorage.setItem("tickets", JSON.stringify(tickets))
+  }, [tickets])
+
+  const addTicket = (ticketData: Omit<Ticket, "id" | "responses">) => {
     const newTicket: Ticket = {
       ...ticketData,
       id: `TKT-${String(tickets.length + 1).padStart(3, "0")}`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
       responses: [],
     }
     setTickets((prev) => [newTicket, ...prev])
   }
 
-  const updateTicket = (id: string, updates: Partial<Ticket>) => {
+  const updateTicket = (ticketId: string, updates: Partial<Ticket>) => {
     setTickets((prev) =>
       prev.map((ticket) =>
-        ticket.id === id
+        ticket.id === ticketId
           ? {
               ...ticket,
               ...updates,
@@ -153,8 +140,8 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
     })
   }
 
-  const addResponse = (ticketId: string, response: Omit<TicketResponse, "id" | "timestamp">) => {
-    const newResponse: TicketResponse = {
+  const addResponse = (ticketId: string, response: Omit<Ticket["responses"][0], "id" | "timestamp">) => {
+    const newResponse = {
       ...response,
       id: `resp-${Date.now()}`,
       timestamp: new Date().toISOString(),
@@ -181,7 +168,7 @@ export function TicketProvider({ children }: { children: React.ReactNode }) {
     return tickets.filter((ticket) => ticket.assignedTo === technicianId)
   }
 
-  const value = {
+  const value: TicketContextType = {
     tickets,
     addTicket,
     updateTicket,

@@ -9,98 +9,65 @@ interface User {
   email: string
   phone?: string
   department?: string
-  role: "client" | "engineer" | "admin"
+  role: "client" | "technician" | "admin"
+  avatar?: string
 }
 
 interface AuthContextType {
   user: User | null
   login: (email: string, password: string, role?: string) => Promise<boolean>
-  register: (userData: {
-    name: string
-    email: string
-    phone: string
-    department: string
-    role: string
-    password: string
-  }) => Promise<boolean>
+  register: (userData: any) => Promise<boolean>
   logout: () => void
+  updateProfile: (data: any) => Promise<boolean>
+  changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>
   isLoading: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// Mock users database with all three roles
-const mockUsers: (User & { password: string })[] = [
-  // Client Users
+// Mock users database
+const mockUsers: User[] = [
   {
-    id: "client-001",
+    id: "user-001",
     name: "احمد محمدی",
     email: "ahmad@company.com",
     phone: "09123456789",
-    department: "IT",
+    department: "فناوری اطلاعات",
     role: "client",
-    password: "123456",
   },
-  {
-    id: "client-002",
-    name: "سارا احمدی",
-    email: "sara@company.com",
-    phone: "09123456788",
-    department: "HR",
-    role: "client",
-    password: "123456",
-  },
-  // Technician/Engineer Users
   {
     id: "tech-001",
-    name: "علی تکنسین",
+    name: "علی احمدی",
     email: "ali@company.com",
-    phone: "09123456787",
-    department: "IT",
-    role: "engineer",
-    password: "123456",
+    phone: "09123456788",
+    department: "پشتیبانی فنی",
+    role: "technician",
   },
-  {
-    id: "tech-002",
-    name: "محمد حسینی",
-    email: "mohammad@company.com",
-    phone: "09123456786",
-    department: "IT",
-    role: "engineer",
-    password: "123456",
-  },
-  {
-    id: "tech-003",
-    name: "سارا قاسمی",
-    email: "sara.ghasemi@company.com",
-    phone: "09123456785",
-    department: "IT",
-    role: "engineer",
-    password: "123456",
-  },
-  // Admin Users
   {
     id: "admin-001",
     name: "مدیر سیستم",
     email: "admin@company.com",
-    phone: "09123456784",
-    department: "IT",
+    phone: "09123456787",
+    department: "مدیریت",
     role: "admin",
-    password: "123456",
   },
 ]
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
 
+  // Load user from localStorage on mount
   useEffect(() => {
-    // Check for stored user session
-    const storedUser = localStorage.getItem("user")
-    if (storedUser) {
-      setUser(JSON.parse(storedUser))
+    const savedUser = localStorage.getItem("currentUser")
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser))
+      } catch (error) {
+        console.error("Error parsing saved user:", error)
+        localStorage.removeItem("currentUser")
+      }
     }
-    setIsLoading(false)
   }, [])
 
   const login = async (email: string, password: string, role?: string): Promise<boolean> => {
@@ -109,87 +76,112 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Simulate API call delay
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
-    const foundUser = mockUsers.find((u) => u.email === email && u.password === password)
+    try {
+      // Find user by email and role
+      const foundUser = mockUsers.find((u) => {
+        const emailMatch = u.email.toLowerCase() === email.toLowerCase()
+        const roleMatch = !role || u.role === role
+        return emailMatch && roleMatch
+      })
 
-    if (foundUser) {
-      // If role is specified, check if it matches
-      if (role && role === "technician" && foundUser.role !== "engineer") {
-        setIsLoading(false)
-        return false
+      if (foundUser && password === "123456") {
+        setUser(foundUser)
+        localStorage.setItem("currentUser", JSON.stringify(foundUser))
+        return true
       }
-      if (role && role === "client" && foundUser.role !== "client") {
-        setIsLoading(false)
-        return false
-      }
-      if (role && role === "admin" && foundUser.role !== "admin") {
-        setIsLoading(false)
-        return false
-      }
-
-      const { password: _, ...userWithoutPassword } = foundUser
-      setUser(userWithoutPassword)
-      localStorage.setItem("user", JSON.stringify(userWithoutPassword))
+      return false
+    } finally {
       setIsLoading(false)
-      return true
     }
-
-    setIsLoading(false)
-    return false
   }
 
-  const register = async (userData: {
-    name: string
-    email: string
-    phone: string
-    department: string
-    role: string
-    password: string
-  }): Promise<boolean> => {
+  const register = async (userData: any): Promise<boolean> => {
     setIsLoading(true)
 
     // Simulate API call delay
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
-    // Check if user already exists
-    const existingUser = mockUsers.find((u) => u.email === userData.email)
-    if (existingUser) {
+    try {
+      // Check if user already exists
+      const existingUser = mockUsers.find((u) => u.email.toLowerCase() === userData.email.toLowerCase())
+      if (existingUser) {
+        return false
+      }
+
+      // Create new user
+      const newUser: User = {
+        id: `user-${Date.now()}`,
+        name: userData.name,
+        email: userData.email,
+        phone: userData.phone,
+        department: userData.department,
+        role: userData.role,
+      }
+
+      mockUsers.push(newUser)
+      setUser(newUser)
+      localStorage.setItem("currentUser", JSON.stringify(newUser))
+      return true
+    } finally {
       setIsLoading(false)
-      return false
     }
-
-    // Create new user
-    const newUser = {
-      id: `${userData.role}-${mockUsers.length + 1}`.padStart(3, "0"),
-      name: userData.name,
-      email: userData.email,
-      phone: userData.phone,
-      department: userData.department,
-      role: userData.role as "client" | "engineer" | "admin",
-      password: userData.password,
-    }
-
-    // Add to mock database
-    mockUsers.push(newUser)
-
-    // Auto-login the new user
-    const { password: _, ...userWithoutPassword } = newUser
-    setUser(userWithoutPassword)
-    localStorage.setItem("user", JSON.stringify(userWithoutPassword))
-
-    setIsLoading(false)
-    return true
   }
 
   const logout = () => {
     setUser(null)
-    localStorage.removeItem("user")
+    localStorage.removeItem("currentUser")
   }
 
-  const value = {
+  const updateProfile = async (data: any): Promise<boolean> => {
+    setIsLoading(true)
+
+    // Simulate API call delay
+    await new Promise((resolve) => setTimeout(resolve, 500))
+
+    try {
+      if (!user) return false
+
+      const updatedUser = { ...user, ...data }
+      setUser(updatedUser)
+      localStorage.setItem("currentUser", JSON.stringify(updatedUser))
+
+      // Update in mock database
+      const userIndex = mockUsers.findIndex((u) => u.id === user.id)
+      if (userIndex !== -1) {
+        mockUsers[userIndex] = updatedUser
+      }
+
+      return true
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const changePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
+    setIsLoading(true)
+
+    // Simulate API call delay
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    try {
+      // In a real app, you would verify the current password
+      if (currentPassword === "123456") {
+        // Password would be updated in the backend
+        return true
+      }
+      return false
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const value: AuthContextType = {
     user,
     login,
     register,
     logout,
+    updateProfile,
+    changePassword,
     isLoading,
   }
 

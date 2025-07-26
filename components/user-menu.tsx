@@ -66,14 +66,14 @@ export function UserMenu() {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setSettingsOpen(true)} className="cursor-pointer text-right">
-            <Settings className="mr-2 h-4 w-4" />
+          <DropdownMenuItem onClick={() => setSettingsOpen(true)} className="cursor-pointer text-right justify-end">
             <span>تنظیمات</span>
+            <Settings className="ml-2 h-4 w-4" />
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={logout} className="cursor-pointer text-right">
-            <LogOut className="mr-2 h-4 w-4" />
+          <DropdownMenuItem onClick={logout} className="cursor-pointer text-right justify-end">
             <span>خروج</span>
+            <LogOut className="ml-2 h-4 w-4" />
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
